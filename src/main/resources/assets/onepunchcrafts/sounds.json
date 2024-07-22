@@ -1,0 +1,10 @@
+{
+  "seriouspunch": {
+    "sounds": [
+      {
+        "name": "onepunchcrafts:seriouspunch",
+        "stream": false
+      }
+    ]
+  }
+}
