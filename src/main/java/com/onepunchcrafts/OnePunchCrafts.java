@@ -36,7 +36,7 @@ public class OnePunchCrafts {
     // Define mod id in a common place for everything to reference
     public static final String MODID = "onepunchcrafts";
     // Directly reference a slf4j logger
-    private static final Logger LOGGER = LogUtils.getLogger();
+    public static final Logger LOGGER = LogUtils.getLogger();
 
     public static final Capability<OnePunchPlayer> ONE_PLAYER_CAPABILITY = CapabilityManager.get(new CapabilityToken<>() {
     });
@@ -79,7 +79,7 @@ public class OnePunchCrafts {
 //        modEventBus.addListener(this::addCreative);
 
         // Register our mod's ForgeConfigSpec so that Forge can create and load the config file for us
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+//        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
     }
 
     @SubscribeEvent
