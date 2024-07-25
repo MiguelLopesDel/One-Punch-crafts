@@ -1,0 +1,16 @@
+{
+  "key.categories.onepunchcrafts" : "One Punch Crafts",
+  "key.onepunchcrafts.change_skill" : "Tecla para muda a habilidade",
+  "key.onepunchcrafts.use_special_skill" : "Tecla para usar/ativa a habilidade especial",
+  "skill.saitama.weak_punch" : "Soco Fraco",
+  "skill.saitama.normal_punch": "Soco Normal",
+  "skill.saitama.serious_punch": "Soco Sério",
+  "skill.saitama.serious_fart": "Peido Sério",
+  "skill.saitama.weakening_punch": "Soco Enfraquecedor",
+  "skill.saitama.quick_backstab": "Soco Por trás rapido",
+  "skill.saitama.super_speed" : "Super Velocidade",
+  "skill.saitama.break_blocks_quickly" : "Quebrar Blocos Rapidamente",
+
+  "death.attack.serious_punch_damage" : "Não irrite Saitama.",
+  "death.attack.serious_punch_second_damage": "Talvez tenha sido sem querer"
+}

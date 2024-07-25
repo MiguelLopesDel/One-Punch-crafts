@@ -1,4 +1,16 @@
 {
   "key.categories.onepunchcrafts" : "One Punch Crafts",
-  "key.onepunchcrafts.change_skill" : "Key to change skill"
+  "key.onepunchcrafts.change_skill" : "Key to change skill",
+  "key.onepunchcrafts.use_special_skill" : "Key to use/active skill",
+  "skill.saitama.weak_punch": "Weak Punch",
+  "skill.saitama.normal_punch": "Normal Punch",
+  "skill.saitama.serious_punch": "Serious Punch",
+  "skill.saitama.serious_fart": "Serious Fart",
+  "skill.saitama.weakening_punch": "Weakening Punch",
+  "skill.saitama.quick_backstab": "Quick Backstab",
+  "skill.saitama.super_speed" : "Super Speed",
+  "skill.saitama.break_blocks_quickly" : "Break Blocks Quickly",
+
+  "death.attack.serious_punch_damage": "Don't anger Saitama.",
+  "death.attack.serious_punch_second_damage": "Maybe it was unintentional."
 }
