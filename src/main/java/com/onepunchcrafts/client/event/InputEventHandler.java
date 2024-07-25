@@ -1,15 +1,16 @@
-package com.onepunchcrafts.common.event;
+package com.onepunchcrafts.client.event;
 
 import com.onepunchcrafts.OnePunchCrafts;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.SeriousPunchPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(value = Dist.CLIENT)
 public class InputEventHandler {
 
     @SubscribeEvent

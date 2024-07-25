@@ -1,12 +1,9 @@
 package com.onepunchcrafts.common.event;
 
-import com.onepunchcrafts.OnePunchCrafts;
+import com.onepunchcrafts.util.HelpUtility;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -14,17 +11,14 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber
 public class LivingAttackEventHandler {
 
-    @SubscribeEvent(receiveCanceled = true, priority = EventPriority.LOWEST)
-    public static void onSaitamaAttacked(LivingAttackEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) {
-            saitamaWasAttacked(event, player);
+    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
+    public static void saitamaAttack(LivingAttackEvent event) {
+        if (event.getSource().getEntity() instanceof ServerPlayer player) {
+            HelpUtility.verifyIsSaitamaAndGetCapability(player).ifPresent(cap -> {
+                if (cap.getActualAbility() == 2) {
+                    event.setCanceled(false);
+                }
+            });
         }
-    }
-
-    private static void saitamaWasAttacked(LivingAttackEvent event, ServerPlayer player) {
-        player.getCapability(OnePunchCrafts.ONE_PLAYER_CAPABILITY).ifPresent(cap -> {
-            if (cap.isSaitama())
-                event.setCanceled(true);
-        });
     }
 }
