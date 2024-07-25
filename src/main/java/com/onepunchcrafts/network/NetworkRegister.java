@@ -1,9 +1,6 @@
 package com.onepunchcrafts.network;
 
-import com.onepunchcrafts.network.packet.AnimationPacket;
-import com.onepunchcrafts.network.packet.PlayerSyncPacket;
-import com.onepunchcrafts.network.packet.SeriousPunchPacket;
-import com.onepunchcrafts.network.packet.SpecialSkillPacket;
+import com.onepunchcrafts.network.packet.*;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkDirection;
@@ -42,6 +39,11 @@ public class NetworkRegister {
                 .decoder(AnimationPacket::new)
                 .consumerMainThread(AnimationPacket::handle)
                 .add();
+//        INSTANCE.messageBuilder(SettingRenderPacket.class, ++id, NetworkDirection.PLAY_TO_CLIENT)
+//                .encoder(SettingRenderPacket::encode)
+//                .decoder(SettingRenderPacket::new)
+//                .consumerMainThread(SettingRenderPacket::handle)
+//                .add();
     }
 
     public static void sendToServer(Object msg) {
@@ -52,7 +54,7 @@ public class NetworkRegister {
         INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), msg);
     }
 
-    public static void sendToAllClients(PacketDistributor.PacketTarget msg) {
-        INSTANCE.send(msg, PacketDistributor.ALL.noArg());
+    public static void sendToAllClients(Object msg) {
+        INSTANCE.send(PacketDistributor.ALL.noArg(), msg);
     }
 }
