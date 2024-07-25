@@ -30,6 +30,18 @@ public class PlayerTickEventHandler {
         if (event.player instanceof ServerPlayer player) {
             player.getCapability(ONE_PLAYER_CAPABILITY).ifPresent(cap -> {
                 if (cap.isSaitama()) {
+                    int superSpeed = 100;
+                    if (player.isOnFire())
+                        player.clearFire();
+                    boolean lessVelocity = player.getEffect(MobEffects.MOVEMENT_SPEED) == null ||
+                            player.getEffect(MobEffects.MOVEMENT_SPEED).getAmplifier() < superSpeed;
+                    boolean greatVelocity = player.getEffect(MobEffects.MOVEMENT_SPEED) != null &&
+                            player.getEffect(MobEffects.MOVEMENT_SPEED).getAmplifier() >= superSpeed;
+                    if (cap.isSuperSpeed() && lessVelocity) {
+                        player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, -1, superSpeed));
+                    } else if (!cap.isSuperSpeed() && greatVelocity)
+                        player.removeEffect(MobEffects.MOVEMENT_SPEED);
+                    removeEffectsOfSaitama(player);
                     applyEffectInSaitama(player);
                     int value = shiftHoldTime.getOrDefault(player, 0);
                     if (player.isShiftKeyDown()) {
@@ -40,9 +52,36 @@ public class PlayerTickEventHandler {
                     if (shiftHoldTime.containsKey(player)) {
                         player.addEffect(new MobEffectInstance(MobEffects.JUMP, 1, Math.min(value, 127)));
                     }
+                    if (player.isShiftKeyDown() && cap.isSeriousFartActive())
+                        player.serverLevel().explode(null, player.getX(), player.getY(), player.getZ(), 5,
+                                Level.ExplosionInteraction.MOB);
                 }
             });
             explodeNormalMobs(player);
+        }
+    }
+
+    private static void removeEffectsOfSaitama(ServerPlayer player) {
+        if (player.getEffect(MobEffects.DARKNESS) != null) {
+            player.removeEffect(MobEffects.DARKNESS);
+        }
+        if (player.getEffect(MobEffects.MOVEMENT_SLOWDOWN) != null) {
+            player.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
+        }
+        if (player.getEffect(MobEffects.BLINDNESS) != null) {
+            player.removeEffect(MobEffects.BLINDNESS);
+        }
+        if (player.getEffect(MobEffects.WEAKNESS) != null) {
+            player.removeEffect(MobEffects.WEAKNESS);
+        }
+        if (player.getEffect(MobEffects.LEVITATION) != null) {
+            player.removeEffect(MobEffects.LEVITATION);
+        }
+        if (player.getEffect(MobEffects.POISON) != null) {
+            player.removeEffect(MobEffects.POISON);
+        }
+        if (player.getEffect(MobEffects.DIG_SLOWDOWN) != null) {
+            player.removeEffect(MobEffects.DIG_SLOWDOWN);
         }
     }
 
@@ -67,18 +106,16 @@ public class PlayerTickEventHandler {
         double z = player.getZ();
         AABB aabb = new AABB(x - 100, y - 100, z - 100, x + 100, y + 100, z + 100);
         ServerLevel level = (ServerLevel) player.level();
-        level.getEntitiesOfClass(LivingEntity.class, aabb, e -> e.getTags().contains("targetsaitama")).forEach(
+        level.getEntitiesOfClass(LivingEntity.class, aabb, e -> e.getTags().contains("targetnormalpunch")).stream().filter(LivingEntity::isDeadOrDying).forEach(
                 e -> {
                     double x1 = e.getX();
                     double y1 = e.getY();
                     double z1 = e.getZ();
                     level.explode(e, x1, y1 + 0.0625D, z1, 12.0F, Level.ExplosionInteraction.MOB);
-                    for (ServerPlayer sPlayer : level.players()) {
-                        level.sendParticles(sPlayer, ParticleTypes.FLAME, true, x1, y1, z1, 10, 0, 0, 0, 0);
-                        level.sendParticles(sPlayer, ParticleTypes.FLASH, true, x1, y1, z1, 10, 0, 0, 0, 0);
-                        level.sendParticles(sPlayer, ParticleTypes.FIREWORK, true, x1, y1, z1, 10, 0, 0, 0, 0);
-                        level.sendParticles(sPlayer, ParticleTypes.FIREWORK, true, x1, y1, z1, 10, 0, 0, 0, 0);
-                    }
+                    level.sendParticles(ParticleTypes.FLAME, x1, y1, z1, 10, 0, 0, 0, 0);
+                    level.sendParticles(ParticleTypes.FLASH, x1, y1, z1, 10, 0, 0, 0, 0);
+                    level.sendParticles(ParticleTypes.FIREWORK, x1, y1, z1, 10, 0, 0, 0, 0);
+                    level.sendParticles(ParticleTypes.FIREWORK, x1, y1, z1, 10, 0, 0, 0, 0);
                 }
         );
     }
