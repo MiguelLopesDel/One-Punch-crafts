@@ -1,50 +1,38 @@
 package com.onepunchcrafts.network.packet;
 
-import com.google.common.base.Charsets;
-import com.onepunchcrafts.common.capability.OnePunchPlayer;
-import dev.kosmx.playerAnim.api.layered.IAnimation;
-import dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer;
-import dev.kosmx.playerAnim.api.layered.ModifierLayer;
-import dev.kosmx.playerAnim.core.data.KeyframeAnimation;
-import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess;
-import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationRegistry;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.nbt.CompoundTag;
+import com.onepunchcrafts.client.packet.HandlerAnimationPacket;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
-
-import static com.onepunchcrafts.OnePunchCrafts.MODID;
-import static net.minecraftforge.common.util.JsonUtils.readNBT;
 
 public class AnimationPacket {
 
     private String idAnimation = "";
+    private String playerExecuteAnimation = "";
 
-    public AnimationPacket(String idAnimation) {
-        this.idAnimation = idAnimation;
+    public AnimationPacket(String stringUUID, String punchAnimation) {
+        this.idAnimation = punchAnimation;
+        this.playerExecuteAnimation = stringUUID;
     }
 
     public AnimationPacket(FriendlyByteBuf friendlyByteBuf) {
         this.idAnimation = friendlyByteBuf.readCharSequence(friendlyByteBuf.readShort(), StandardCharsets.UTF_8).toString();
+        this.playerExecuteAnimation = friendlyByteBuf.readCharSequence(friendlyByteBuf.readShort(), StandardCharsets.UTF_8).toString();
     }
 
     public void encode(FriendlyByteBuf buffer) {
         buffer.writeShort(idAnimation.length());
         buffer.writeCharSequence(idAnimation, StandardCharsets.UTF_8);
+        buffer.writeShort(playerExecuteAnimation.length());
+        buffer.writeCharSequence(playerExecuteAnimation, StandardCharsets.UTF_8);
     }
 
     public void handle(Supplier<NetworkEvent.Context> ctx) {
-        LocalPlayer player = Minecraft.getInstance().player;
-        ModifierLayer<IAnimation> animation = (ModifierLayer<IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData(player).get(new ResourceLocation(MODID, "onecraftsanimation"));
-        if (animation != null)
-            animation.setAnimation(new KeyframeAnimationPlayer(PlayerAnimationRegistry.getAnimation(new ResourceLocation(MODID, idAnimation))));
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> HandlerAnimationPacket.handleClient(playerExecuteAnimation, idAnimation));
         ctx.get().setPacketHandled(true);
     }
 }
