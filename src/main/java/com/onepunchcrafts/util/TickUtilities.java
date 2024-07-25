@@ -1,14 +1,12 @@
 package com.onepunchcrafts.util;
 
+import com.onepunchcrafts.OnePunchCrafts;
+import com.onepunchcrafts.common.damage.DamagesRegistry;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.data.tags.DamageTypeTagsProvider;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.damagesource.DamageSources;
-import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
@@ -25,17 +23,22 @@ public class TickUtilities {
     //e pode se dizer que não tem profundidade é 2D não tem um eixo Z pois só ocupa 1 bloco do eixo Z
     //Então eu preciso pegar esse circulo e extender ele ao logo do eixo Z ou seja dar a ele profundidade
     //para isso posso pegar meu vetor e escalar ele.
-    public boolean fillCylinderAndEmuleEffects(final ServerLevel level, int breakBlocksPerTick, List<BlockPos> blocksPos) {
+    public boolean fillCylinderAndEmuleEffects(ServerPlayer player, final ServerLevel level, int breakBlocksPerTick, List<BlockPos> blocksPos) {
         int currentIteration = 0;
+        if(blocksPos.isEmpty() || startIndex >= blocksPos.size())
+            return true;
         BlockPos pStart = blocksPos.get(startIndex);
         int i = 15;
         AABB pArea = new AABB(new BlockPos(pStart.getX() - i, pStart.getY() - i, pStart.getZ() - i),
                 new BlockPos(pStart.getX() + i, pStart.getY() + i, pStart.getZ() + i));
         List<LivingEntity> entitiesOfClass = level.getEntitiesOfClass(LivingEntity.class, pArea);
         entitiesOfClass.forEach(entity -> {
+            if (player.equals(entity))
+                return;
             entity.setInvulnerable(false);
             entity.setSecondsOnFire(60);
-            entity.hurt(level.damageSources().fellOutOfWorld(), 10_000_000_000_000_000f);
+            DamageSource damagesource = new DamageSource(level.registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(DamagesRegistry.SERIOUS_PUNCH_SECOND), player, player);
+            entity.hurt(damagesource, 10_000_000_000_000_000f);
         });
 
         for (int c = startIndex; c < blocksPos.size(); c++) {

@@ -9,13 +9,14 @@ import java.time.DateTimeException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 //In tests
 @Mod.EventBusSubscriber
 public class TickScheduler {
 
-    private static final Map<Integer, TickTask> tasks = new HashMap<>();
+    private static final Map<Integer, TickTask> tasks = new ConcurrentHashMap<>();
     private static final Queue<Integer> tasksToCancel = new LinkedList<>();
     private static long ticksElapsed = 0;
     private static final Random rand = new Random();
@@ -34,11 +35,11 @@ public class TickScheduler {
             //esperava a proxima vez até pode executar.
             //ja no else if a logica era analisar se ja estava no intervalo de execuções se sim eu via quantas faltavam
             //se não faltasse nenhuma então eu matava a task e se faltava eu executava e esperava
-            for (Integer id : tasks.keySet()) {
-                TickTask tickTask = tasks.get(id);
+            for (Map.Entry<Integer, TickTask> task : tasks.entrySet()) {
+                TickTask tickTask = task.getValue();
                 tickTask.executeTask();
                 if (tickTask.isDone())
-                    tasksToCancel.add(id);
+                    tasksToCancel.add(task.getKey());
             }
         }
 
