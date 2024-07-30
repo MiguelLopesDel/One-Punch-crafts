@@ -25,4 +25,10 @@ public class Keybinding {
             InputConstants.getKey(InputConstants.KEY_Z, -1),
             CATEGORY
     );
+    public final KeyMapping USE_FART = new KeyMapping(
+            defaultKeyCode + "use_fart",
+            KeyConflictContext.IN_GAME,
+            InputConstants.getKey(InputConstants.KEY_P, -1),
+            CATEGORY
+    );
 }

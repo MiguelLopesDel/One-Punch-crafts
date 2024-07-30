@@ -4,6 +4,7 @@ import com.onepunchcrafts.client.Keybinding;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.PlayerSyncPacket;
+import com.onepunchcrafts.network.packet.SeriousFartPacket;
 import com.onepunchcrafts.network.packet.SpecialSkillPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -28,6 +29,9 @@ public class ClientTickEventHandler {
         }
         if (Keybinding.INSTANCE.USE_SPECIAL_SKILL.consumeClick() && playerExist) {
             onKeySpecialSkillPressed();
+        }
+        if (Keybinding.INSTANCE.USE_FART.consumeClick() && playerExist) {
+            NetworkRegister.sendToServer(new SeriousFartPacket());
         }
     }
 
