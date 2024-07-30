@@ -2,6 +2,8 @@
   "key.categories.onepunchcrafts" : "One Punch Crafts",
   "key.onepunchcrafts.change_skill" : "Tecla para muda a habilidade",
   "key.onepunchcrafts.use_special_skill" : "Tecla para usar/ativa a habilidade especial",
+  "key.onepunchcrafts.use_fart" : "Tecla para usar peido sério (Peido sério precisa ser ativado)",
+
   "skill.saitama.weak_punch" : "Soco Fraco",
   "skill.saitama.normal_punch": "Soco Normal",
   "skill.saitama.serious_punch": "Soco Sério",
