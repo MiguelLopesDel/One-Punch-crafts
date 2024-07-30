@@ -14,6 +14,10 @@ base {
     archivesName = mod_id
 }
 
+static def isJetBrainsRuntime() {
+    return System.getProperty('java.vm.vendor').contains('JetBrains')
+}
+
 // Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
@@ -90,6 +94,11 @@ minecraft {
             property 'mixin.env.remapRefMap', 'true'
             property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
 
+            if (isJetBrainsRuntime()) {
+                jvmArgs '-XX:+AllowEnhancedClassRedefinition'
+                jvmArgs '-XX:HotswapAgent=fatjar'
+            }
+
         }
 
         server {
@@ -126,7 +135,9 @@ repositories {
         url 'https://maven.kosmx.dev/'
     }
     maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
-
+    flatDir {
+        dirs 'libs'
+    }
 
     // If you have mod jar dependencies in ./libs, you can declare them as a repository like so.
     // See https://docs.gradle.org/current/userguide/declaring_repositories.html#sub:flat_dir_resolver
@@ -145,6 +156,13 @@ dependencies {
     compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'
     implementation fg.deobf("dev.kosmx.player-anim:player-animation-lib-forge:1.0.2-rc1+1.20")
+    implementation fg.deobf("com.betterchunkloading:betterchunkloading:1.20.1-4.3")
+    implementation fg.deobf("com.cupboard:cupboard:1.20.1-2.7")
+    implementation fg.deobf("org.embeddedt:embeddium:0.3.28+mc1.20.1")
+//    implementation fg.deobf("juliand665:dynamic-fps:3.6.4")
+//    implementation fg.deobf("org.embeddedt:embeddium-1.20.1:0.3.28")
+//    implementation fg.deobf("malte0811.ferritecore:ferritecore-6.1.1-FerriteCore:6.1.1")
+//    implementation fg.deobf("org.embeddedt:modernfix-forge-5.19.0+mc1.20.1:5.19.0")
     // Example mod dependency with JEI - using fg.deobf() ensures the dependency is remapped to your development mappings
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
     // compileOnly fg.deobf("mezz.jei:jei-${mc_version}-common-api:${jei_version}")
