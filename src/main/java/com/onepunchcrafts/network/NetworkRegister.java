@@ -39,11 +39,11 @@ public class NetworkRegister {
                 .decoder(AnimationPacket::new)
                 .consumerMainThread(AnimationPacket::handle)
                 .add();
-//        INSTANCE.messageBuilder(SettingRenderPacket.class, ++id, NetworkDirection.PLAY_TO_CLIENT)
-//                .encoder(SettingRenderPacket::encode)
-//                .decoder(SettingRenderPacket::new)
-//                .consumerMainThread(SettingRenderPacket::handle)
-//                .add();
+        INSTANCE.messageBuilder(SeriousFartPacket.class, ++id, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(SeriousFartPacket::encode)
+                .decoder(SeriousFartPacket::new)
+                .consumerMainThread(SeriousFartPacket::handle)
+                .add();
     }
 
     public static void sendToServer(Object msg) {

@@ -52,9 +52,6 @@ public class PlayerTickEventHandler {
                     if (shiftHoldTime.containsKey(player)) {
                         player.addEffect(new MobEffectInstance(MobEffects.JUMP, 1, Math.min(value, 127)));
                     }
-                    if (player.isShiftKeyDown() && cap.isSeriousFartActive())
-                        player.serverLevel().explode(null, player.getX(), player.getY(), player.getZ(), 5,
-                                Level.ExplosionInteraction.MOB);
                 }
             });
             explodeNormalMobs(player);
