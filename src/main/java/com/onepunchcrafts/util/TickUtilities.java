@@ -37,7 +37,7 @@ public class TickUtilities {
                 return;
             entity.setInvulnerable(false);
             entity.setSecondsOnFire(60);
-            DamageSource damagesource = new DamageSource(level.registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(DamagesRegistry.SERIOUS_PUNCH_SECOND), player, player);
+            DamageSource damagesource = new DamageSource(level.registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(DamagesRegistry.SERIOUS_PUNCH_SECOND), null, player);
             entity.hurt(damagesource, 10_000_000_000_000_000f);
         });
 
