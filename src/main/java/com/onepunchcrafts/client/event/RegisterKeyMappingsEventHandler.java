@@ -13,5 +13,6 @@ public class RegisterKeyMappingsEventHandler {
     public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
         event.register(Keybinding.INSTANCE.CHANGE_SKILL);
         event.register(Keybinding.INSTANCE.USE_SPECIAL_SKILL);
+        event.register(Keybinding.INSTANCE.USE_FART);
     }
 }
