@@ -60,6 +60,7 @@ public class LivingDamageEventHandler {
                         knockback(target, 5, d0, d1);
                         event.setAmount(event.getAmount() * 10_000_000);
                         event.getEntity().addTag("targetnormalpunch");
+                        TickScheduler.scheduleFromHere(Duration.of(5, ChronoUnit.SECONDS), () -> event.getEntity().removeTag("targetnormalpunch"));
                         break;
                     case 2:
                         if (event.getSource().is(DamagesRegistry.SERIOUS_PUNCH_SECOND))

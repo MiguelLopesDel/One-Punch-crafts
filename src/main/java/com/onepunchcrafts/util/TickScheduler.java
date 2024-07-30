@@ -10,7 +10,6 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 
 //In tests
 @Mod.EventBusSubscriber
@@ -35,9 +34,10 @@ public class TickScheduler {
             //esperava a proxima vez até pode executar.
             //ja no else if a logica era analisar se ja estava no intervalo de execuções se sim eu via quantas faltavam
             //se não faltasse nenhuma então eu matava a task e se faltava eu executava e esperava
+            ticksElapsed++;
             for (Map.Entry<Integer, TickTask> task : tasks.entrySet()) {
                 TickTask tickTask = task.getValue();
-                tickTask.executeTask();
+                tickTask.executeTask(ticksElapsed);
                 if (tickTask.isDone())
                     tasksToCancel.add(task.getKey());
             }
@@ -72,6 +72,15 @@ public class TickScheduler {
     }
 
     public static int scheduleWithCondition(Duration timeUnit, Callable<Boolean> task) {
+        int id;
+        do {
+            id = rand.nextInt();
+        } while (tasks.containsKey(id));
+        tasks.put(id, checkAndConvertToTickTask(timeUnit, task));
+        return id;
+    }
+
+    public static int scheduleFromHere(Duration timeUnit, Runnable task) {
         int id;
         do {
             id = rand.nextInt();
@@ -144,6 +153,7 @@ public class TickScheduler {
         private int elapsedTicks;
         private boolean hasCondition;
         private boolean taskWillCancel;
+        private long creationTick;
         private int executionsLeft;
         @Getter
         private final int tickInterval;
@@ -159,6 +169,7 @@ public class TickScheduler {
 
         public TickTask(int tickInterval, int executions) {
             this(tickInterval, executions, null);
+            this.creationTick = ticksElapsed;
         }
 
         public TickTask(int tickInterval, Object task) {
@@ -172,10 +183,13 @@ public class TickScheduler {
         /**
          * @return true significa que a
          */
-        public void executeTask() throws Exception {
-            if (task instanceof Runnable runnable)
-                runnable.run();
-            else if (task instanceof Callable<?> callable) {
+        public void executeTask(long ticksElapsed) throws Exception {
+            if (task instanceof Runnable runnable) {
+                if (ticksElapsed - creationTick == tickInterval) {
+                    runnable.run();
+                    taskWillCancel = true;
+                }
+            } else if (task instanceof Callable<?> callable) {
                 if (((Callable<Boolean>) callable).call())
                     taskWillCancel = true;
             }
