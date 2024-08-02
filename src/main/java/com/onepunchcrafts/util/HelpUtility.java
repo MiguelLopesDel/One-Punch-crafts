@@ -45,40 +45,35 @@ public class HelpUtility {
         });
     }
 
-    public static int allowDamageInDraconicGuardian(LivingEntity entity) {
+    static boolean handleIfDraconicGuardian(LivingEntity entity, DamageSource damageSource) {
         if (!(entity instanceof DraconicGuardianEntity draconicGuardian))
-            return -1;
+            return false;
         GuardianFightManager fightManager = draconicGuardian.getFightManager();
         if (fightManager == null)
-            return -1;
+            return false;
         try {
             Field fieldAliveCrystal = fightManager.getClass().getDeclaredField("aliveCrystals");
             Field fieldEntityData = Class.forName("net.minecraft.world.entity.Entity").getDeclaredField("entityData");
             fieldAliveCrystal.setAccessible(true);
             fieldEntityData.setAccessible(true);
 
-            int aliveCrystal = (int) fieldAliveCrystal.get(fightManager);
-            int oldValue = aliveCrystal;
+            int oldCrystalNum = (int) fieldAliveCrystal.get(fightManager);
+            float oldShieldPower = draconicGuardian.getShieldPower();
+            SynchedEntityData entityData = (SynchedEntityData) fieldEntityData.get(draconicGuardian);
 
             fieldAliveCrystal.set(fightManager, 0);
-            ((SynchedEntityData) fieldEntityData.get(draconicGuardian)).set(SHIELD_POWER, 0f);
+            entityData.set(SHIELD_POWER, 0f);
 
-            return oldValue;
+            entity.setInvulnerable(false);
+            entity.setSecondsOnFire(60);
+            entity.hurt(damageSource, 10_000_000_000_000_000f);
+
+            fieldAliveCrystal.set(fightManager, oldCrystalNum);
+            entityData.set(SHIELD_POWER, oldShieldPower);
+            return true;
+
         } catch (NoSuchFieldException | IllegalAccessException | ClassNotFoundException e) {
-        }
-        return -1;
-    }
-
-    public static void setCrystalToDefault(LivingEntity entity, int crystalNum) {
-        DraconicGuardianEntity draconicGuardian = (DraconicGuardianEntity) entity;
-        GuardianFightManager fightManager = draconicGuardian.getFightManager();
-        if (fightManager == null)
-            return;
-        try {
-            Field fieldAliveCrystal = fightManager.getClass().getDeclaredField("aliveCrystals");
-            fieldAliveCrystal.setAccessible(true);
-            fieldAliveCrystal.set(fightManager, crystalNum);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
+            return false;
         }
     }
 }
