@@ -1,7 +1,10 @@
 package com.onepunchcrafts.common.damage;
 
+import com.brandon3055.draconicevolution.init.DEDamage;
+import com.onepunchcrafts.OnePunchCrafts;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.data.DataProvider;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.tags.TagsProvider;
 import net.minecraft.resources.ResourceKey;
@@ -38,6 +41,7 @@ public class OneDamageProvider extends TagsProvider<DamageType> {
         this.tag(DamageTypeTags.BURNS_ARMOR_STANDS).add(seriousPunch);
         this.tag(DamageTypeTags.AVOIDS_GUARDIAN_THORNS).add(seriousPunch);
         this.tag(DamageTypeTags.ALWAYS_HURTS_ENDER_DRAGONS).add(seriousPunch);
+        this.tag(DEDamage.Tags.CHAOTIC).add(seriousPunch);
 
         this.tag(DamageTypeTags.DAMAGES_HELMET).add(seriousPunchSecond);
         this.tag(DamageTypeTags.BYPASSES_ARMOR).add(seriousPunchSecond);
@@ -52,5 +56,6 @@ public class OneDamageProvider extends TagsProvider<DamageType> {
         this.tag(DamageTypeTags.BURNS_ARMOR_STANDS).add(seriousPunchSecond);
         this.tag(DamageTypeTags.AVOIDS_GUARDIAN_THORNS).add(seriousPunchSecond);
         this.tag(DamageTypeTags.ALWAYS_HURTS_ENDER_DRAGONS).add(seriousPunchSecond);
+        this.tag(DEDamage.Tags.CHAOTIC).add(seriousPunchSecond);
     }
 }
