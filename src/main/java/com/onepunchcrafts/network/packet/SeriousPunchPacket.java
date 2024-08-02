@@ -14,6 +14,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import static com.onepunchcrafts.OnePunchCrafts.ONE_PLAYER_CAPABILITY;
@@ -32,13 +33,13 @@ public class SeriousPunchPacket {
                 return;
             Vec3 position = sender.position();
             Vec3 add = position.add(sender.getLookAngle().scale(5));
-            Entity entity = sender.serverLevel().getEntities(sender, new AABB(position, add)).get(0);
-            if (entity != null) {
-                if (entity instanceof WitherBoss witherBoss)
+            Optional<Entity> entity = sender.serverLevel().getEntities(sender, new AABB(position, add)).stream().findFirst();
+            entity.ifPresent(entity1 -> {
+                if (entity1 instanceof WitherBoss witherBoss)
                     witherBoss.setInvulnerableTicks(0);
-                entity.setInvulnerable(false);
-                sender.attack(entity);
-            }
+                entity1.setInvulnerable(false);
+                sender.attack(entity1);
+            });
         });
         ctx.get().setPacketHandled(true);
     }
