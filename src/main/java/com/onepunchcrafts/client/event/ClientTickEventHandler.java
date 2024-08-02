@@ -30,7 +30,7 @@ public class ClientTickEventHandler {
         if (Keybinding.INSTANCE.USE_SPECIAL_SKILL.consumeClick() && playerExist) {
             onKeySpecialSkillPressed();
         }
-        if (Keybinding.INSTANCE.USE_FART.consumeClick() && playerExist) {
+        if (Keybinding.INSTANCE.USE_FART.isDown() && playerExist) {
             NetworkRegister.sendToServer(new SeriousFartPacket());
         }
     }
