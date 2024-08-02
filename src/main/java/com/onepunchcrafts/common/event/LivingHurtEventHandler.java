@@ -28,7 +28,9 @@ public class LivingHurtEventHandler {
         if (event.getSource().getEntity() instanceof ServerPlayer player) {
             Optional<OnePunchPlayer> onePunchPlayer = verifyIsSaitamaAndGetCapability(player);
             onePunchPlayer.ifPresent(cap -> {
-                if (cap.getActualAbility() == 4) {
+                if (cap.getActualAbility() == 2) {
+                    event.setCanceled(false);
+                } else if (cap.getActualAbility() == 4) {
                     LivingEntity target = event.getEntity();
                     target.spawnAtLocation(target.getMainHandItem());
                     target.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
