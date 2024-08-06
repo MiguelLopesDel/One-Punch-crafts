@@ -16,6 +16,7 @@ public class PlayerChangedDimensionEventHandler {
     public static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             OnePunchPlayer onePunchPlayer = player.getCapability(OnePunchCrafts.ONE_PLAYER_CAPABILITY).orElse(new OnePunchPlayer(false));
+            if (onePunchPlayer.isSaitama()) player.removeAllEffects();
             NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(onePunchPlayer));
         }
     }
