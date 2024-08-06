@@ -3,6 +3,7 @@
   "key.onepunchcrafts.change_skill" : "Key to change skill",
   "key.onepunchcrafts.use_special_skill" : "Key to use/active skill",
   "key.onepunchcrafts.use_fart" : "Key to use serious fart (serious fart needs to be enabled)",
+  "key.onepunchcrafts.use_teleport" : "key to use teleport (be saitama)",
 
   "skill.saitama.weak_punch": "Weak Punch",
   "skill.saitama.normal_punch": "Normal Punch",
@@ -10,8 +11,12 @@
   "skill.saitama.serious_fart": "Serious Fart",
   "skill.saitama.weakening_punch": "Weakening Punch",
   "skill.saitama.quick_backstab": "Quick Backstab",
-  "skill.saitama.super_speed" : "Super Speed",
+  "skill.saitama.super_speed" : "Speed %1$s",
   "skill.saitama.break_blocks_quickly" : "Break Blocks Quickly",
+  "skill.saitama.set_weight": "Weight %1$s",
+  "skill.saitama.knockback_resistance": "Knockback Resistance %1$s",
+  "skill.saitama.attack_knockback": "Attack Knockback %1$s",
+  "skill.saitama.swim_speed": "Swim Speed %1$s",
 
   "death.attack.serious_punch_damage": "Don't anger Saitama.",
   "death.attack.serious_punch_second_damage": "Maybe it was unintentional."
