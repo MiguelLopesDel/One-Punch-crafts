@@ -6,6 +6,7 @@ import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.PlayerSyncPacket;
 import com.onepunchcrafts.network.packet.SeriousFartPacket;
 import com.onepunchcrafts.network.packet.SpecialSkillPacket;
+import com.onepunchcrafts.network.packet.TeleportPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraftforge.api.distmarker.Dist;
@@ -32,6 +33,9 @@ public class ClientTickEventHandler {
         }
         if (Keybinding.INSTANCE.USE_FART.isDown() && playerExist) {
             NetworkRegister.sendToServer(new SeriousFartPacket());
+        }
+        if (Keybinding.INSTANCE.USE_TELEPORT.consumeClick() && playerExist) {
+            NetworkRegister.sendToServer(new TeleportPacket());
         }
     }
 

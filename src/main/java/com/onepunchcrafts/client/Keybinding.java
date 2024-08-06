@@ -31,4 +31,10 @@ public class Keybinding {
             InputConstants.getKey(InputConstants.KEY_P, -1),
             CATEGORY
     );
+    public final KeyMapping USE_TELEPORT = new KeyMapping(
+            defaultKeyCode + "use_teleport",
+            KeyConflictContext.IN_GAME,
+            InputConstants.getKey(InputConstants.KEY_J, -1),
+            CATEGORY
+    );
 }

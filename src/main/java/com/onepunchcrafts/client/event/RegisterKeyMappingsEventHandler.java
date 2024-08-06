@@ -14,5 +14,6 @@ public class RegisterKeyMappingsEventHandler {
         event.register(Keybinding.INSTANCE.CHANGE_SKILL);
         event.register(Keybinding.INSTANCE.USE_SPECIAL_SKILL);
         event.register(Keybinding.INSTANCE.USE_FART);
+        event.register(Keybinding.INSTANCE.USE_TELEPORT);
     }
 }
