@@ -46,7 +46,7 @@ public class TickUtilities {
             if (player.equals(entity))
                 return;
             if (DRACONIC_MOD.isPresent()) {
-                if (isDraconicEntity(entity, damageSource)) return;
+                if (HelpUtility.handleIfDraconicGuardian(entity, damageSource)) return;
             }
             entity.setInvulnerable(false);
             entity.setSecondsOnFire(60);
@@ -70,17 +70,5 @@ public class TickUtilities {
                 return false;
         }
         return true;
-    }
-
-    private static boolean isDraconicEntity(LivingEntity entity, DamageSource damageSource) {
-        int crystalNum = HelpUtility.allowDamageInDraconicGuardian(entity);
-        if (crystalNum != -1) {
-            entity.setInvulnerable(false);
-            entity.setSecondsOnFire(60);
-            entity.hurt(damageSource, 10_000_000_000_000_000f);
-            HelpUtility.setCrystalToDefault(entity, crystalNum);
-            return true;
-        }
-        return false;
     }
 }
