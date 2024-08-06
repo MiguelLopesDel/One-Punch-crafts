@@ -19,6 +19,7 @@ import net.minecraft.server.level.ServerPlayer;
 import java.util.function.Predicate;
 
 import static com.onepunchcrafts.OnePunchCrafts.ONE_PLAYER_CAPABILITY;
+import static com.onepunchcrafts.util.HelpUtility.removeSaitamaEffectsSet;
 
 public class OneUtilCommand {
 
@@ -44,7 +45,10 @@ public class OneUtilCommand {
             ServerPlayer player = arguments.getArgument(target, EntitySelector.class).findSinglePlayer(source);
             OnePunchPlayer cap = player.getCapability(ONE_PLAYER_CAPABILITY).orElse(new OnePunchPlayer(isSaitama));
             cap.setSaitama(isSaitama);
-            if(!isSaitama) HelpUtility.setAttributesToDefault(player);
+            if (!isSaitama) {
+                HelpUtility.setAttributesToDefault(player);
+                removeSaitamaEffectsSet(player);
+            }
             NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(cap));
             source.sendSuccess(() -> MutableComponent.create(new LiteralContents("sucess")), false);
             return 1;

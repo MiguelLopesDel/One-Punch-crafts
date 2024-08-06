@@ -10,6 +10,8 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
@@ -21,6 +23,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 
 import java.lang.reflect.Field;
 import java.util.List;
@@ -62,7 +65,7 @@ public class HelpUtility {
             return false;
         try {
             Field fieldAliveCrystal = fightManager.getClass().getDeclaredField("aliveCrystals");
-            Field fieldEntityData = Class.forName("net.minecraft.world.entity.Entity").getDeclaredField("entityData");
+            Field fieldEntityData = Class.forName("net.minecraft.world.entity.Entity").getDeclaredField(FMLEnvironment.production ? "f_19804_" : "entityData");
             fieldAliveCrystal.setAccessible(true);
             fieldEntityData.setAccessible(true);
 
@@ -122,5 +125,23 @@ public class HelpUtility {
         }
         if (closestEntity != null)
             sender.teleportTo(closestEntity.getX(), closestEntity.getY(), closestEntity.getZ());
+    }
+
+    public static void applySaitamaEffectsSet(ServerPlayer player) {
+        if (player.getEffect(MobEffects.NIGHT_VISION) == null) {
+            player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, -1, 255));
+        }
+        if (player.getEffect(MobEffects.DIG_SPEED) == null) {
+            player.addEffect(new MobEffectInstance(MobEffects.DIG_SPEED, -1, 255));
+        }
+        if (player.getEffect(MobEffects.DOLPHINS_GRACE) == null) {
+            player.addEffect(new MobEffectInstance(MobEffects.DOLPHINS_GRACE, -1, 255));
+        }
+    }
+
+    public static void removeSaitamaEffectsSet(ServerPlayer player) {
+        player.removeEffect(MobEffects.NIGHT_VISION);
+        player.removeEffect(MobEffects.DIG_SPEED);
+        player.removeEffect(MobEffects.DOLPHINS_GRACE);
     }
 }

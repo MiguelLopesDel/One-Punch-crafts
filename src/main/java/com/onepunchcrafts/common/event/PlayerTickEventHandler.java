@@ -1,21 +1,17 @@
 package com.onepunchcrafts.common.event;
 
-import com.onepunchcrafts.OnePunchCrafts;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
-import net.minecraft.core.particles.ParticleType;
+import com.onepunchcrafts.util.HelpUtility;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.attributes.AttributeInstance;
-import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -38,8 +34,8 @@ public class PlayerTickEventHandler {
                     modifyAttributes(player, cap);
                     if (player.isOnFire())
                         player.clearFire();
-                    removeEffectsOfSaitama(player);
-                    applyEffectInSaitama(player);
+                    removeNegativeEffectsOfSaitama(player);
+                    HelpUtility.applySaitamaEffectsSet(player);
                     handlerJumpPower(player);
                 }
             });
@@ -90,7 +86,7 @@ public class PlayerTickEventHandler {
         player.getAttribute(Attributes.ATTACK_SPEED).setBaseValue(500F);
     }
 
-    private static void removeEffectsOfSaitama(ServerPlayer player) {
+    private static void removeNegativeEffectsOfSaitama(ServerPlayer player) {
         if (player.getEffect(MobEffects.DARKNESS) != null) {
             player.removeEffect(MobEffects.DARKNESS);
         }
@@ -114,18 +110,6 @@ public class PlayerTickEventHandler {
         }
         if (player.getEffect(MobEffects.CONFUSION) != null) {
             player.removeEffect(MobEffects.CONFUSION);
-        }
-    }
-
-    private static void applyEffectInSaitama(ServerPlayer player) {
-        if (player.getEffect(MobEffects.NIGHT_VISION) == null) {
-            player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, -1, 255));
-        }
-        if (player.getEffect(MobEffects.DIG_SPEED) == null) {
-            player.addEffect(new MobEffectInstance(MobEffects.DIG_SPEED, -1, 255));
-        }
-        if (player.getEffect(MobEffects.DOLPHINS_GRACE) == null) {
-            player.addEffect(new MobEffectInstance(MobEffects.DOLPHINS_GRACE, -1, 255));
         }
     }
 
