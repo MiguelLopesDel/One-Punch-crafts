@@ -1,6 +1,7 @@
 package com.onepunchcrafts.common.event;
 
 import com.onepunchcrafts.OnePunchCrafts;
+import com.onepunchcrafts.common.capability.OnePunchPlayer;
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -8,10 +9,14 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -30,32 +35,59 @@ public class PlayerTickEventHandler {
         if (event.player instanceof ServerPlayer player) {
             player.getCapability(ONE_PLAYER_CAPABILITY).ifPresent(cap -> {
                 if (cap.isSaitama()) {
-                    int superSpeed = 100;
+                    modifyAttributes(player, cap);
                     if (player.isOnFire())
                         player.clearFire();
-                    boolean lessVelocity = player.getEffect(MobEffects.MOVEMENT_SPEED) == null ||
-                            player.getEffect(MobEffects.MOVEMENT_SPEED).getAmplifier() < superSpeed;
-                    boolean greatVelocity = player.getEffect(MobEffects.MOVEMENT_SPEED) != null &&
-                            player.getEffect(MobEffects.MOVEMENT_SPEED).getAmplifier() >= superSpeed;
-                    if (cap.isSuperSpeed() && lessVelocity) {
-                        player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, -1, superSpeed));
-                    } else if (!cap.isSuperSpeed() && greatVelocity)
-                        player.removeEffect(MobEffects.MOVEMENT_SPEED);
                     removeEffectsOfSaitama(player);
                     applyEffectInSaitama(player);
-                    int value = shiftHoldTime.getOrDefault(player, 0);
-                    if (player.isShiftKeyDown()) {
-                        shiftHoldTime.put(player, ++value);
-                    } else {
-                        shiftHoldTime.remove(player);
-                    }
-                    if (shiftHoldTime.containsKey(player)) {
-                        player.addEffect(new MobEffectInstance(MobEffects.JUMP, 1, Math.min(value, 127)));
-                    }
+                    handlerJumpPower(player);
                 }
             });
             explodeNormalMobs(player);
         }
+    }
+
+    private static void handlerJumpPower(ServerPlayer player) {
+        int value = shiftHoldTime.getOrDefault(player, 0);
+        if (player.isShiftKeyDown()) {
+            shiftHoldTime.put(player, ++value);
+        } else {
+            shiftHoldTime.remove(player);
+        }
+        if (shiftHoldTime.containsKey(player)) {
+            player.addEffect(new MobEffectInstance(MobEffects.JUMP, 1, Math.min(value, 127)));
+        }
+    }
+
+    private static void modifyAttributes(ServerPlayer player, OnePunchPlayer cap) {
+        if (player.isSpectator())
+            return;
+        //0.08
+        if (cap.getWeight() != 0)
+            player.getAttribute(ForgeMod.ENTITY_GRAVITY.get()).setBaseValue((double) cap.getWeight() / 10);
+        else
+            player.getAttribute(ForgeMod.ENTITY_GRAVITY.get()).setBaseValue(0.08);
+        if (cap.getSpeed() != 0)
+            player.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue((double) cap.getSpeed() / 9);
+        else
+            player.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.1F);
+
+        if (cap.getAttackKnockback() != 0)
+            player.getAttribute(Attributes.ATTACK_KNOCKBACK).setBaseValue(cap.getAttackKnockback());
+        else
+            player.getAttribute(Attributes.ATTACK_KNOCKBACK).setBaseValue(0);
+
+        if (cap.getKnockbackResistance() != 0)
+            player.getAttribute(Attributes.KNOCKBACK_RESISTANCE).setBaseValue(cap.getKnockbackResistance());
+        else
+            player.getAttribute(Attributes.KNOCKBACK_RESISTANCE).setBaseValue(0);
+
+        if (cap.getSwimSpeed() != 0)
+            player.getAttribute(ForgeMod.SWIM_SPEED.get()).setBaseValue(cap.getSwimSpeed());
+        else
+            player.getAttribute(ForgeMod.SWIM_SPEED.get()).setBaseValue(1.0D);
+
+        player.getAttribute(Attributes.ATTACK_SPEED).setBaseValue(500F);
     }
 
     private static void removeEffectsOfSaitama(ServerPlayer player) {
@@ -80,6 +112,9 @@ public class PlayerTickEventHandler {
         if (player.getEffect(MobEffects.DIG_SLOWDOWN) != null) {
             player.removeEffect(MobEffects.DIG_SLOWDOWN);
         }
+        if (player.getEffect(MobEffects.CONFUSION) != null) {
+            player.removeEffect(MobEffects.CONFUSION);
+        }
     }
 
     private static void applyEffectInSaitama(ServerPlayer player) {
@@ -91,9 +126,6 @@ public class PlayerTickEventHandler {
         }
         if (player.getEffect(MobEffects.DOLPHINS_GRACE) == null) {
             player.addEffect(new MobEffectInstance(MobEffects.DOLPHINS_GRACE, -1, 255));
-        }
-        if (player.getEffect(MobEffects.MOVEMENT_SPEED) == null) {
-            player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, -1, 5));
         }
     }
 
