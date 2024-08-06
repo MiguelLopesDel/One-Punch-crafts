@@ -6,6 +6,10 @@ import com.onepunchcrafts.common.capability.OnePunchCraftsProvider;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.PlayerSyncPacket;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -22,6 +26,7 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.OptionalMod;
 import net.minecraftforge.fml.common.Mod;
@@ -30,6 +35,8 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
+
+import java.awt.*;
 
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod(OnePunchCrafts.MODID)
@@ -138,7 +145,10 @@ public class OnePunchCrafts {
     // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
-        // Do something when the server starts
-//        LOGGER.info("HELLO from server starting");
+        if (!event.getServer().isDedicatedServer() || ModList.get().isLoaded("attributefix"))
+            return;
+        String message = String.format("%s (%s)", "It is recommended to download the mod attributes " +
+                "fix,", "https://www.curseforge.com/minecraft/mc-mods/attributefix/files/all?page=1&pageSize=20");
+        LOGGER.info(message);
     }
 }
