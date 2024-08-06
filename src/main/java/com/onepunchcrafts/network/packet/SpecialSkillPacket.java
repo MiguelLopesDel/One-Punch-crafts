@@ -50,10 +50,6 @@ public class SpecialSkillPacket {
                         case 5:
                             quickBackstab(cap, sender);
                             break;
-                        case 6:
-                            cap.setSuperSpeed(!cap.isSuperSpeed());
-                            NetworkRegister.sendToPlayer(sender, new PlayerSyncPacket(cap));
-                            break;
                         case 7:
                             cap.setBreakBlocksQuickly(!cap.isBreakBlocksQuickly());
                             NetworkRegister.sendToPlayer(sender, new PlayerSyncPacket(cap));
