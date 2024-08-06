@@ -11,10 +11,19 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.common.util.LazyOptional;
 
 import java.lang.reflect.Field;
+import java.util.List;
 import java.util.Optional;
 
 import static com.brandon3055.draconicevolution.entity.guardian.DraconicGuardianEntity.SHIELD_POWER;
@@ -75,5 +84,43 @@ public class HelpUtility {
         } catch (NoSuchFieldException | IllegalAccessException | ClassNotFoundException e) {
             return false;
         }
+    }
+
+    public static void setAttributesToDefault(ServerPlayer player) {
+        player.getAttribute(ForgeMod.ENTITY_GRAVITY.get()).setBaseValue(0.08);
+        player.getAttribute(ForgeMod.SWIM_SPEED.get()).setBaseValue(1.0D);
+        player.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.1F);
+        player.getAttribute(Attributes.ATTACK_KNOCKBACK).setBaseValue(0);
+        player.getAttribute(Attributes.KNOCKBACK_RESISTANCE).setBaseValue(0);
+        player.getAttribute(Attributes.ATTACK_SPEED).setBaseValue(4.0D);
+    }
+
+    public static void teleportPlayerToTarget(ServerPlayer sender) {
+        Vec3 startVec = sender.getEyePosition();
+        int distance = 300;
+        Vec3 lookVec = sender.getLookAngle().scale(distance);
+        Vec3 endVec = startVec.add(lookVec);
+        Level level = sender.level();
+        HitResult hitResult = level.clip(new ClipContext(startVec, endVec, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, sender));
+        if (hitResult.getType() == HitResult.Type.MISS) {
+            endVec = hitResult.getLocation();
+        }
+        AABB boundingBox = new AABB(startVec, endVec).inflate(1.0);
+        List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, boundingBox, entity -> entity != sender && entity.isAlive());
+        LivingEntity closestEntity = null;
+        double closestDistance = distance * distance;
+        for (LivingEntity entity : entities) {
+            AABB entityBox = entity.getBoundingBox().inflate(0.3);
+            EntityHitResult entityHitResult = ProjectileUtil.getEntityHitResult(sender, startVec, endVec, entityBox, entity1 -> !entity1.isSpectator() && entity1.isPickable(), closestDistance);
+            if (entityHitResult != null) {
+                double distanceToEntity = startVec.distanceToSqr(entityHitResult.getLocation());
+                if (distanceToEntity < closestDistance) {
+                    closestEntity = entity;
+                    closestDistance = distanceToEntity;
+                }
+            }
+        }
+        if (closestEntity != null)
+            sender.teleportTo(closestEntity.getX(), closestEntity.getY(), closestEntity.getZ());
     }
 }
