@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.function.Supplier;
 
 import static com.onepunchcrafts.OnePunchCrafts.ONE_PLAYER_CAPABILITY;
+import static com.onepunchcrafts.common.capability.OnePunchPlayer.getMaxNumSkill;
 
 public class PlayerSyncPacket {
 
@@ -56,9 +57,12 @@ public class PlayerSyncPacket {
                 case "issaitama":
                     if (serverData.isSaitama())
                         NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(serverData));
-                        break;
+                    break;
                 case "actualability":
                     if (Math.abs(serverData.getActualAbility() - clientData.getActualAbility()) == 1)
+                        serverData.setActualAbility(clientData.getActualAbility());
+                    else if ((serverData.getActualAbility() == getMaxNumSkill() && clientData.getActualAbility() == 0) || (
+                            serverData.getActualAbility() == 0 && clientData.getActualAbility() == getMaxNumSkill()))
                         serverData.setActualAbility(clientData.getActualAbility());
                     break;
                 case "seriousfart":
@@ -69,14 +73,48 @@ public class PlayerSyncPacket {
                     break;
                 case "superspeedsaitama":
                     if (serverData.isSaitama()) {
-                        serverData.setSuperSpeed(clientData.isSuperSpeed());
-                        NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(serverData));
+                        boolean b = clientData.getSpeed() < 0;
+                        serverData.setSpeed(b ? 0 : clientData.getSpeed());
+                        if (b)
+                            NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(serverData));
                     }
                     break;
                 case "breakblocksquickly":
                     if (serverData.isSaitama()) {
                         serverData.setBreakBlocksQuickly(clientData.isBreakBlocksQuickly());
                         NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(serverData));
+                    }
+                    break;
+                case "weight":
+                    if (serverData.isSaitama()) {
+                        boolean b = clientData.getWeight() < 0;
+                        serverData.setWeight(b ? 0 : clientData.getWeight());
+                        if (b)
+                            NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(serverData));
+                    }
+                    break;
+                case "saitamaknockbackresistance":
+                    if (serverData.isSaitama()) {
+                        boolean b = clientData.getKnockbackResistance() < 0;
+                        serverData.setKnockbackResistance(b ? 0 : clientData.getKnockbackResistance());
+                        if (b)
+                            NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(serverData));
+                    }
+                    break;
+                case "saitamaattackknockback":
+                    if (serverData.isSaitama()) {
+                        boolean b = clientData.getAttackKnockback() < 0;
+                        serverData.setAttackKnockback(b ? 0 : clientData.getAttackKnockback());
+                        if (b)
+                            NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(serverData));
+                    }
+                    break;
+                case "saitamaswimspeed":
+                    if (serverData.isSaitama()) {
+                        boolean b = clientData.getSwimSpeed() < 0;
+                        serverData.setSwimSpeed(b ? 0 : clientData.getSwimSpeed());
+                        if (b)
+                            NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(serverData));
                     }
                     break;
             }
