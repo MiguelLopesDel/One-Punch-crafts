@@ -18,11 +18,23 @@ public class OnePunchPlayer {
     private boolean seriousFartActive;
     @Setter
     @Getter
-    private boolean superSpeed;
+    private short speed;
     @Setter
     @Getter
     private boolean breakBlocksQuickly;
     private int actualAbility;
+    @Setter
+    @Getter
+    private short weight;
+    @Setter
+    @Getter
+    private short knockbackResistance;
+    @Setter
+    @Getter
+    private short attackKnockback;
+    @Setter
+    @Getter
+    private short swimSpeed;
 
     public OnePunchPlayer(boolean isSaitama) {
         this.isSaitama = isSaitama;
@@ -32,9 +44,13 @@ public class OnePunchPlayer {
         CompoundTag nbt = new CompoundTag();
         nbt.putBoolean(NbtBooleanValues.isSaitama.getValue(), this.isSaitama);
         nbt.putBoolean(NbtBooleanValues.seriousFartActive.getValue(), this.seriousFartActive);
-        nbt.putBoolean(NbtBooleanValues.superSpeed.getValue(), this.isSuperSpeed());
         nbt.putBoolean(NbtBooleanValues.breakBlocksQuickly.getValue(), this.isBreakBlocksQuickly());
         nbt.putInt("actualability", this.actualAbility);
+        nbt.putShort("weight", this.weight);
+        nbt.putShort(NbtBooleanValues.superSpeed.getValue(), this.speed);
+        nbt.putShort("saitamaknockbackresistance", this.knockbackResistance);
+        nbt.putShort("saitamaattackknockback", this.attackKnockback);
+        nbt.putShort("saitamaswimspeed", this.swimSpeed);
         return nbt;
     }
 
@@ -42,9 +58,13 @@ public class OnePunchPlayer {
         CompoundTag nbt = (CompoundTag) tag;
         this.isSaitama = nbt.getBoolean(NbtBooleanValues.isSaitama.getValue());
         this.seriousFartActive = nbt.getBoolean(NbtBooleanValues.seriousFartActive.getValue());
-        this.superSpeed = nbt.getBoolean(NbtBooleanValues.superSpeed.getValue());
         this.breakBlocksQuickly = nbt.getBoolean(NbtBooleanValues.breakBlocksQuickly.getValue());
         this.actualAbility = nbt.getInt("actualability");
+        this.weight = nbt.getShort("weight");
+        this.speed = nbt.getShort(NbtBooleanValues.superSpeed.getValue());
+        this.knockbackResistance = nbt.getShort("saitamaknockbackresistance");
+        this.attackKnockback = nbt.getShort("saitamaattackknockback");
+        this.swimSpeed = nbt.getShort("saitamaswimspeed");
     }
 
     /**
@@ -61,18 +81,32 @@ public class OnePunchPlayer {
         if (this.actualAbility != otherData.actualAbility) {
             changed.add("actualability");
         }
-        if (this.superSpeed != otherData.superSpeed) {
+        if (this.speed != otherData.speed) {
             changed.add(NbtBooleanValues.superSpeed.getValue());
         }
         if (this.breakBlocksQuickly != otherData.breakBlocksQuickly) {
             changed.add(NbtBooleanValues.breakBlocksQuickly.getValue());
         }
+        if (this.getWeight() != otherData.getWeight()) {
+            changed.add("weight");
+        }
+        if (this.getKnockbackResistance() != otherData.getKnockbackResistance()) {
+            changed.add("saitamaknockbackresistance");
+        }
+        if (this.getAttackKnockback() != otherData.getAttackKnockback()) {
+            changed.add("saitamaattackknockback");
+        }
+        if (this.getSwimSpeed() != otherData.getSwimSpeed()) {
+            changed.add("saitamaswimspeed");
+        }
         return changed;
     }
 
     public void setActualAbility(int actualAbility) {
-        if (actualAbility > 7 || actualAbility < 0)
-            return;
-        this.actualAbility = actualAbility;
+        this.actualAbility = (actualAbility > getMaxNumSkill()) ? 0 : (actualAbility < 0) ? getMaxNumSkill() : actualAbility;
+    }
+
+    public static int getMaxNumSkill(){
+        return 11;
     }
 }
