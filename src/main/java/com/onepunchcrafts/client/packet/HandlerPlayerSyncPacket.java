@@ -17,8 +17,12 @@ public class HandlerPlayerSyncPacket {
             cap.setSaitama(data.isSaitama());
             cap.setActualAbility(data.getActualAbility());
             cap.setSeriousFartActive(data.isSeriousFartActive());
-            cap.setSuperSpeed(data.isSuperSpeed());
+            cap.setSpeed(data.getSpeed());
             cap.setBreakBlocksQuickly(data.isBreakBlocksQuickly());
+            cap.setWeight(data.getWeight());
+            cap.setKnockbackResistance(data.getKnockbackResistance());
+            cap.setAttackKnockback(data.getAttackKnockback());
+            cap.setSwimSpeed(data.getSwimSpeed());
         });
     }
 }
