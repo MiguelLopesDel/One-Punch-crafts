@@ -44,6 +44,11 @@ public class NetworkRegister {
                 .decoder(SeriousFartPacket::new)
                 .consumerMainThread(SeriousFartPacket::handle)
                 .add();
+        INSTANCE.messageBuilder(TeleportPacket.class, ++id, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(TeleportPacket::encode)
+                .decoder(TeleportPacket::new)
+                .consumerMainThread(TeleportPacket::handle)
+                .add();
     }
 
     public static void sendToServer(Object msg) {
