@@ -7,6 +7,7 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.PlayerSyncPacket;
+import com.onepunchcrafts.util.HelpUtility;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
@@ -43,6 +44,7 @@ public class OneUtilCommand {
             ServerPlayer player = arguments.getArgument(target, EntitySelector.class).findSinglePlayer(source);
             OnePunchPlayer cap = player.getCapability(ONE_PLAYER_CAPABILITY).orElse(new OnePunchPlayer(isSaitama));
             cap.setSaitama(isSaitama);
+            if(!isSaitama) HelpUtility.setAttributesToDefault(player);
             NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(cap));
             source.sendSuccess(() -> MutableComponent.create(new LiteralContents("sucess")), false);
             return 1;
