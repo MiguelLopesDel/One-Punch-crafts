@@ -29,5 +29,6 @@ public class SeriousFartPacket {
                 player.serverLevel().explode(null, player.getX(), player.getY(), player.getZ(), 5,
                         Level.ExplosionInteraction.MOB);
         });
+        ctx.get().setPacketHandled(true);
     }
 }
