@@ -6,6 +6,8 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageSources;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
 import net.minecraft.world.level.block.Blocks;
@@ -51,6 +53,7 @@ public class TickUtilities {
             entity.setInvulnerable(false);
             entity.setSecondsOnFire(60);
             boolean hurt = entity.hurt(damageSource, 10_000_000_000_000_000f);
+//            entity.hurt(player.damageSources().fellOutOfWorld(), 1f);
             if (!hurt) {
                 entity.setLastHurtByPlayer(player);
                 entity.hurt(new DamageSource(level.registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(DamagesRegistry.SERIOUS_PUNCH_SECOND), player, null), 10_000_000_000_000_000f);

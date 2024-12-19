@@ -3,6 +3,7 @@ package com.onepunchcrafts.common.event;
 import com.onepunchcrafts.OnePunchCrafts;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
 import com.onepunchcrafts.common.damage.DamagesRegistry;
+import com.onepunchcrafts.common.skills.SaitamaPack;
 import com.onepunchcrafts.util.HelpUtility;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -35,9 +36,9 @@ public class LivingDeathEventHandler {
                     event.setCanceled(false);
                 }
             } else if (source.getDirectEntity() instanceof ServerPlayer player) {
-                Optional<OnePunchPlayer> onePunchPlayer = HelpUtility.verifyIsSaitamaAndGetCapability(player);
-                onePunchPlayer.ifPresent(cap -> {
-                    if (cap.getActualAbility() == 2)
+                Optional<SaitamaPack> saitamaPack = HelpUtility.verifyIsSaitamaAndGetCapability(player);
+                saitamaPack.ifPresent(cap -> {
+                    if (cap.getCurrentSkill() == 2)
                         event.setCanceled(false);
                 });
             }
@@ -45,7 +46,7 @@ public class LivingDeathEventHandler {
     }
 
     private static boolean cancelDeathSaitama(LivingDeathEvent event, ServerPlayer player) {
-        Optional<OnePunchPlayer> onePunchPlayer = HelpUtility.verifyIsSaitamaAndGetCapability(player);
+        Optional<SaitamaPack> onePunchPlayer = HelpUtility.verifyIsSaitamaAndGetCapability(player);
         onePunchPlayer.ifPresent(cap -> {
             event.setCanceled(true);
             player.setHealth(player.getMaxHealth());

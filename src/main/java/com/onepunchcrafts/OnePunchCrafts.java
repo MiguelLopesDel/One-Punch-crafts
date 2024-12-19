@@ -4,17 +4,14 @@ import com.mojang.logging.LogUtils;
 import com.onepunchcrafts.common.RegisterSounds;
 import com.onepunchcrafts.common.capability.OnePunchCraftsProvider;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
+import com.onepunchcrafts.common.skills.WithoutPack;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.PlayerSyncPacket;
-import net.minecraft.network.chat.ClickEvent;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.HoverEvent;
-import net.minecraft.network.chat.MutableComponent;
+import com.onepunchcrafts.util.HelpUtility;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityManager;
@@ -27,24 +24,20 @@ import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.OptionalMod;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 
-import java.awt.*;
-
-// The value here should match an entry in the META-INF/mods.toml file
 @Mod(OnePunchCrafts.MODID)
 public class OnePunchCrafts {
-    // Define mod id in a common place for everything to reference
+
     public static final String MODID = "onepunchcrafts";
-    // Directly reference a slf4j logger
+
     public static final Logger LOGGER = LogUtils.getLogger();
+
+    public static final WithoutPack WITHOUT_PACK = new WithoutPack();
 
     public static final Capability<OnePunchPlayer> ONE_PLAYER_CAPABILITY = CapabilityManager.get(new CapabilityToken<>() {
     });
@@ -96,8 +89,8 @@ public class OnePunchCrafts {
     public void onPlayerRespawned(final PlayerEvent.PlayerRespawnEvent event) {
         Player player = event.getEntity();
         if (!player.level().isClientSide()) {
-            OnePunchPlayer onePunchPlayer = player.getCapability(ONE_PLAYER_CAPABILITY).orElse(new OnePunchPlayer(false));
-            NetworkRegister.sendToPlayer((ServerPlayer) player, new PlayerSyncPacket(onePunchPlayer));
+            OnePunchPlayer onePunchPlayer = player.getCapability(ONE_PLAYER_CAPABILITY).orElse(new OnePunchPlayer(WITHOUT_PACK));
+            HelpUtility.syncWithPlayer((ServerPlayer) player, onePunchPlayer);
         }
     }
 
@@ -105,7 +98,7 @@ public class OnePunchCrafts {
     public void playerClone(PlayerEvent.Clone event) {
         ServerPlayer original = (ServerPlayer) event.getOriginal();
         ServerPlayer player = (ServerPlayer) event.getEntity();
-        OnePunchPlayer onePunchPlayer = new OnePunchPlayer(false);
+        OnePunchPlayer onePunchPlayer = new OnePunchPlayer(WITHOUT_PACK);
         original.revive();
         OnePunchPlayer oldOnePunchPlayer = original.getCapability(OnePunchCrafts.ONE_PLAYER_CAPABILITY, null).orElse(onePunchPlayer);
         reinsertCapability(player, onePunchPlayer, oldOnePunchPlayer);
@@ -114,8 +107,8 @@ public class OnePunchCrafts {
 
     private static void reinsertCapability(ServerPlayer player, OnePunchPlayer onePunchPlayer, OnePunchPlayer oldOnePunchPlayer) {
         OnePunchPlayer playerCap = player.getCapability(OnePunchCrafts.ONE_PLAYER_CAPABILITY, null).orElse(onePunchPlayer);
-        playerCap.setSaitama(oldOnePunchPlayer.isSaitama());
-        playerCap.setActualAbility(oldOnePunchPlayer.getActualAbility());
+        playerCap.setSkillPack(oldOnePunchPlayer.getSkillPack());
+        playerCap.setCurrentSkill(oldOnePunchPlayer.getActualAbility());
     }
 
     @SubscribeEvent

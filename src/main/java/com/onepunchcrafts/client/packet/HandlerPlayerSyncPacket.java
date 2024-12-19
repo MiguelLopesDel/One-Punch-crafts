@@ -1,28 +1,18 @@
 package com.onepunchcrafts.client.packet;
 
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
+import com.onepunchcrafts.common.skills.SkillPack;
+import com.onepunchcrafts.util.HelpUtility;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
-import static com.onepunchcrafts.OnePunchCrafts.ONE_PLAYER_CAPABILITY;
-
 @OnlyIn(Dist.CLIENT)
 public class HandlerPlayerSyncPacket {
 
-    public static void clientLogic(OnePunchPlayer data) {
+    public static void clientLogic(SkillPack data) {
         LocalPlayer player = Minecraft.getInstance().player;
-        player.getCapability(ONE_PLAYER_CAPABILITY).ifPresent(cap -> {
-            cap.setSaitama(data.isSaitama());
-            cap.setActualAbility(data.getActualAbility());
-            cap.setSeriousFartActive(data.isSeriousFartActive());
-            cap.setSpeed(data.getSpeed());
-            cap.setBreakBlocksQuickly(data.isBreakBlocksQuickly());
-            cap.setWeight(data.getWeight());
-            cap.setKnockbackResistance(data.getKnockbackResistance());
-            cap.setAttackKnockback(data.getAttackKnockback());
-            cap.setSwimSpeed(data.getSwimSpeed());
-        });
+        HelpUtility.getSkillData(player).setSkillPack(data);
     }
 }

@@ -3,8 +3,11 @@ package com.onepunchcrafts.common.event;
 import com.onepunchcrafts.OnePunchCrafts;
 import com.onepunchcrafts.common.RegisterSounds;
 import com.onepunchcrafts.common.damage.DamagesRegistry;
+import com.onepunchcrafts.common.skills.SaitamaPack;
+import com.onepunchcrafts.common.skills.SkillPack;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.AnimationPacket;
+import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.util.TickScheduler;
 import com.onepunchcrafts.util.TickUtilities;
 import net.minecraft.core.BlockPos;
@@ -22,6 +25,7 @@ import net.minecraftforge.fml.common.Mod;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.concurrent.Callable;
 
 import static com.mojang.text2speech.Narrator.LOGGER;
 
@@ -33,7 +37,7 @@ public class LivingDamageEventHandler {
     public static void saitamaAttack(LivingDamageEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             player.getCapability(OnePunchCrafts.ONE_PLAYER_CAPABILITY).ifPresent(cap -> {
-                if (cap.isSaitama()) {
+                if (cap.getSkillPack() instanceof SaitamaPack) {
                     event.setCanceled(true);
                 }
             });
@@ -44,31 +48,29 @@ public class LivingDamageEventHandler {
     }
 
     private static void saitamaOnAttackEntity(LivingDamageEvent event, ServerPlayer player) {
-        player.getCapability(OnePunchCrafts.ONE_PLAYER_CAPABILITY).ifPresent(cap -> {
-            if (cap.isSaitama()) {
-                switch (cap.getActualAbility()) {
-                    case 0:
-                        event.setAmount(event.getAmount() * 100_000);
-                        break;
-                    case 1:
-                        LivingEntity target = event.getEntity();
-                        double d1;
-                        double d0 = player.getX() - target.getX();
-                        for (d1 = player.getZ() - target.getZ(); d0 * d0 + d1 * d1 < 1.0E-4D; d1 = (Math.random() - Math.random()) * 0.01D) {
-                            d0 = (Math.random() - Math.random()) * 0.01D;
-                        }
-                        knockback(target, 5, d0, d1);
-                        event.setAmount(event.getAmount() * 10_000_000);
-                        event.getEntity().addTag("targetnormalpunch");
-                        TickScheduler.scheduleFromHere(Duration.of(5, ChronoUnit.SECONDS), () -> event.getEntity().removeTag("targetnormalpunch"));
-                        break;
-                    case 2:
-                        if (event.getSource().is(DamagesRegistry.SERIOUS_PUNCH_SECOND))
-                            applyDamageAndReactiveEvent(event, event.getEntity());
-                        else
-                            PerformSeriousPunch(event, player);
-                        break;
-                }
+        HelpUtility.getSaitamaPack(player).ifPresent(cap -> {
+            switch (cap.getActualAbility()) {
+                case 0:
+                    event.setAmount(event.getAmount() * 100_000);
+                    break;
+                case 1:
+                    LivingEntity target = event.getEntity();
+                    double d1;
+                    double d0 = player.getX() - target.getX();
+                    for (d1 = player.getZ() - target.getZ(); d0 * d0 + d1 * d1 < 1.0E-4D; d1 = (Math.random() - Math.random()) * 0.01D) {
+                        d0 = (Math.random() - Math.random()) * 0.01D;
+                    }
+                    knockback(target, 5, d0, d1);
+                    event.setAmount(event.getAmount() * 10_000_000);
+                    event.getEntity().addTag("targetnormalpunch");
+                    TickScheduler.scheduleFromHere(Duration.of(5, ChronoUnit.SECONDS), () -> event.getEntity().removeTag("targetnormalpunch"));
+                    break;
+                case 2:
+                    if (event.getSource().is(DamagesRegistry.SERIOUS_PUNCH_SECOND))
+                        applyDamageAndReactiveEvent(event, event.getEntity());
+                    else
+                        PerformSeriousPunch(event, player);
+                    break;
             }
         });
     }

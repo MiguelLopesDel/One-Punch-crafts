@@ -15,7 +15,7 @@ public class LivingAttackEventHandler {
     public static void saitamaAttack(LivingAttackEvent event) {
         if (event.getSource().getEntity() instanceof ServerPlayer player) {
             HelpUtility.verifyIsSaitamaAndGetCapability(player).ifPresent(cap -> {
-                if (cap.getActualAbility() == 2) {
+                if (cap.getCurrentSkill() == 2) {
                     event.setCanceled(false);
                 }
             });

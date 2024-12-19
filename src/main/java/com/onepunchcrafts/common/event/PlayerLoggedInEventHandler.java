@@ -16,6 +16,7 @@ import net.minecraftforge.fml.common.Mod;
 
 import java.awt.*;
 
+import static com.onepunchcrafts.OnePunchCrafts.WITHOUT_PACK;
 import static java.awt.PageAttributes.ColorType.COLOR;
 
 @Mod.EventBusSubscriber
@@ -33,8 +34,8 @@ public class PlayerLoggedInEventHandler {
             player.sendSystemMessage(msn);
         }
         if (!player.level().isClientSide()) {
-            OnePunchPlayer onePunchPlayer = player.getCapability(OnePunchCrafts.ONE_PLAYER_CAPABILITY).orElse(new OnePunchPlayer(false));
-            NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(onePunchPlayer));
+            OnePunchPlayer onePunchPlayer = player.getCapability(OnePunchCrafts.ONE_PLAYER_CAPABILITY).orElse(new OnePunchPlayer(WITHOUT_PACK));
+            NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(onePunchPlayer.getSkillPack()));
         }
     }
 }

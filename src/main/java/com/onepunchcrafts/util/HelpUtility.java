@@ -6,6 +6,11 @@ import com.brandon3055.draconicevolution.entity.guardian.DraconicGuardianEntity;
 import com.brandon3055.draconicevolution.entity.guardian.GuardianFightManager;
 import com.onepunchcrafts.OnePunchCrafts;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
+import com.onepunchcrafts.common.skills.SaitamaPack;
+import com.onepunchcrafts.common.skills.SkillPack;
+import com.onepunchcrafts.network.NetworkRegister;
+import com.onepunchcrafts.network.packet.PlayerSyncPacket;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -14,6 +19,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
@@ -24,12 +30,17 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.fml.loading.FMLEnvironment;
+import org.apache.commons.lang3.tuple.Pair;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 
 import static com.brandon3055.draconicevolution.entity.guardian.DraconicGuardianEntity.SHIELD_POWER;
+import static com.onepunchcrafts.OnePunchCrafts.ONE_PLAYER_CAPABILITY;
+import static com.onepunchcrafts.OnePunchCrafts.WITHOUT_PACK;
 
 public class HelpUtility {
 
@@ -40,10 +51,12 @@ public class HelpUtility {
      * @return caso o jogador tenha a capacidade e seja um saitama é retorna a propria capacidade caso contrario
      * um optional empty;
      */
-    public static Optional<OnePunchPlayer> verifyIsSaitamaAndGetCapability(ServerPlayer player) {
+    public static Optional<SaitamaPack> verifyIsSaitamaAndGetCapability(ServerPlayer player) {
         LazyOptional<OnePunchPlayer> capability = player.getCapability(OnePunchCrafts.ONE_PLAYER_CAPABILITY);
-        return capability
-                .filter(OnePunchPlayer::isSaitama);
+        return capability.resolve()
+                .map(OnePunchPlayer::getSkillPack)
+                .filter(SaitamaPack.class::isInstance)
+                .map(SaitamaPack.class::cast);
     }
 
     static void hurtDraconicCrystals(ServerLevel level, AABB pArea, DamageSource damageSource) {
@@ -144,4 +157,33 @@ public class HelpUtility {
         player.removeEffect(MobEffects.DIG_SPEED);
         player.removeEffect(MobEffects.DOLPHINS_GRACE);
     }
+
+    public static @NotNull OnePunchPlayer getSkillData(Player player) {
+        return player.getCapability(ONE_PLAYER_CAPABILITY, null).orElse(new OnePunchPlayer(WITHOUT_PACK));
+    }
+
+    public static void syncDataWithServer(OnePunchPlayer data) {
+        NetworkRegister.sendToServer(new PlayerSyncPacket(data.getSkillPack()));
+    }
+
+    public static void syncWithPlayer(ServerPlayer player, OnePunchPlayer cap) {
+        NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(cap.getSkillPack()));
+    }
+
+    public static @NotNull OnePunchPlayer getSkillDataOr(Player player, SkillPack skillPack) {
+        return player.getCapability(ONE_PLAYER_CAPABILITY).orElse(new OnePunchPlayer(skillPack));
+    }
+
+    public static Optional<OnePunchPlayer> getSaitamaPack(Player player) {
+        return player.getCapability(ONE_PLAYER_CAPABILITY).filter(cap -> cap.getSkillPack() instanceof SaitamaPack);
+    }
+
+    public static BiOptional<OnePunchPlayer, SaitamaPack> isSaitama(Player player) {
+        return player.getCapability(ONE_PLAYER_CAPABILITY).filter(cap -> cap.getSkillPack() instanceof SaitamaPack)
+                .map(cap -> BiOptional.of(cap, (SaitamaPack) cap.getSkillPack())).orElse(BiOptional.empty());
+    }
+//
+//    public static boolean isSaitama(Player player) {
+//        return getSkillData(player).getSkillPack() instanceof SaitamaPack;
+//    }
 }

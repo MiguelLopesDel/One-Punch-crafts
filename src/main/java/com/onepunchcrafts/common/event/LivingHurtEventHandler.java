@@ -1,6 +1,7 @@
 package com.onepunchcrafts.common.event;
 
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
+import com.onepunchcrafts.common.skills.SaitamaPack;
 import net.minecraft.network.chat.ChatType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -26,11 +27,11 @@ public class LivingHurtEventHandler {
     @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
     public static void saitamaOnAttack(LivingHurtEvent event) {
         if (event.getSource().getEntity() instanceof ServerPlayer player) {
-            Optional<OnePunchPlayer> onePunchPlayer = verifyIsSaitamaAndGetCapability(player);
+            Optional<SaitamaPack> onePunchPlayer = verifyIsSaitamaAndGetCapability(player);
             onePunchPlayer.ifPresent(cap -> {
-                if (cap.getActualAbility() == 2) {
+                if (cap.getCurrentSkill() == 2) {
                     event.setCanceled(false);
-                } else if (cap.getActualAbility() == 4) {
+                } else if (cap.getCurrentSkill() == 4) {
                     LivingEntity target = event.getEntity();
                     target.spawnAtLocation(target.getMainHandItem());
                     target.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);

@@ -1,6 +1,7 @@
 package com.onepunchcrafts.common.event;
 
 import com.onepunchcrafts.OnePunchCrafts;
+import com.onepunchcrafts.common.skills.SaitamaPack;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -18,7 +19,7 @@ public class LivingJumpEventHandler {
         if (event.getEntity() instanceof ServerPlayer player) {
             player.getCapability(OnePunchCrafts.ONE_PLAYER_CAPABILITY).ifPresent(cap -> {
                 MobEffectInstance effect = player.getEffect(MobEffects.JUMP);
-                if (cap.isSaitama() && effect != null && effect.getAmplifier() >= 20) {
+                if (cap.getSkillPack() instanceof SaitamaPack && effect != null && effect.getAmplifier() >= 20) {
                     player.serverLevel().explode(null, player.getX(), player.getY(), player.getZ(), 10,
                             Level.ExplosionInteraction.MOB);
                 }

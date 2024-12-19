@@ -1,6 +1,7 @@
 package com.onepunchcrafts.common.event;
 
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
+import com.onepunchcrafts.common.skills.SaitamaPack;
 import com.onepunchcrafts.util.HelpUtility;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -30,8 +31,8 @@ public class PlayerTickEventHandler {
     public static void tickPlayer(TickEvent.PlayerTickEvent event) {
         if (event.player instanceof ServerPlayer player) {
             player.getCapability(ONE_PLAYER_CAPABILITY).ifPresent(cap -> {
-                if (cap.isSaitama()) {
-                    modifyAttributes(player, cap);
+                if (cap.getSkillPack() instanceof SaitamaPack saitamaPack) {
+                    modifyAttributes(player, saitamaPack);
                     if (player.isOnFire())
                         player.clearFire();
                     removeNegativeEffectsOfSaitama(player);
@@ -55,7 +56,7 @@ public class PlayerTickEventHandler {
         }
     }
 
-    private static void modifyAttributes(ServerPlayer player, OnePunchPlayer cap) {
+    private static void modifyAttributes(ServerPlayer player, SaitamaPack cap) {
         if (player.isSpectator())
             return;
         //0.08

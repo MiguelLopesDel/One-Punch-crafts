@@ -7,8 +7,9 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
-import com.onepunchcrafts.network.NetworkRegister;
-import com.onepunchcrafts.network.packet.PlayerSyncPacket;
+import com.onepunchcrafts.common.skills.SaitamaPack;
+import com.onepunchcrafts.common.skills.SkillPack;
+import com.onepunchcrafts.util.HelpUtility;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -19,8 +20,6 @@ import net.minecraft.network.chat.contents.LiteralContents;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.SecureRandom;
@@ -28,9 +27,8 @@ import java.security.Signature;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Predicate;
 
-import static com.onepunchcrafts.OnePunchCrafts.ONE_PLAYER_CAPABILITY;
+import static com.onepunchcrafts.OnePunchCrafts.WITHOUT_PACK;
 
 public class GamerUtilCommand {
 
@@ -81,9 +79,10 @@ public class GamerUtilCommand {
             }
             chall.poll();
             ServerPlayer player = arguments.getArgument(target, EntitySelector.class).findSinglePlayer(source);
-            OnePunchPlayer cap = player.getCapability(ONE_PLAYER_CAPABILITY).orElse(new OnePunchPlayer(isSaitama));
-            cap.setSaitama(isSaitama);
-            NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(cap));
+            SkillPack skillPack = isSaitama ? new SaitamaPack() : WITHOUT_PACK;
+            OnePunchPlayer cap = HelpUtility.getSkillDataOr(player, skillPack);
+            cap.setSkillPack(skillPack);
+            HelpUtility.syncWithPlayer(player, cap);
             source.sendSuccess(() -> MutableComponent.create(new LiteralContents("sucess")), false);
             return 1;
         };
@@ -112,5 +111,4 @@ public class GamerUtilCommand {
         KeyFactory keyFactory = KeyFactory.getInstance("EC");
         return keyFactory.generatePublic(spec);
     }
-
 }

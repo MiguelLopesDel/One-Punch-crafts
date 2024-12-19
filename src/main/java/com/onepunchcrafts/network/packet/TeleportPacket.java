@@ -24,9 +24,7 @@ public class TeleportPacket {
 
     public void handle(Supplier<NetworkEvent.Context> ctx) {
         ServerPlayer player = ctx.get().getSender();
-        HelpUtility.verifyIsSaitamaAndGetCapability(player).ifPresent(cap -> {
-            HelpUtility.teleportPlayerToTarget(player);
-        });
+        HelpUtility.verifyIsSaitamaAndGetCapability(player).ifPresent(cap -> HelpUtility.teleportPlayerToTarget(player));
         ctx.get().setPacketHandled(true);
     }
 }
