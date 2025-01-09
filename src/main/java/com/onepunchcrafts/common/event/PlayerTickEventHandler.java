@@ -120,7 +120,7 @@ public class PlayerTickEventHandler {
         double z = player.getZ();
         AABB aabb = new AABB(x - 100, y - 100, z - 100, x + 100, y + 100, z + 100);
         ServerLevel level = (ServerLevel) player.level();
-        level.getEntitiesOfClass(LivingEntity.class, aabb, e -> e.getTags().contains("targetnormalpunch")).stream().filter(LivingEntity::isDeadOrDying).forEach(
+        level.getEntitiesOfClass(LivingEntity.class, aabb, e -> e.getTags().contains("targetnormalpunch")).forEach(
                 e -> {
                     double x1 = e.getX();
                     double y1 = e.getY();

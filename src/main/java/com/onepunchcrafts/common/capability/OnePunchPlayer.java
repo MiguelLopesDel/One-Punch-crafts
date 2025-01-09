@@ -8,6 +8,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.nbt.Tag;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -21,7 +22,7 @@ public class OnePunchPlayer {
     @Setter
     private SkillPack skillPack;
 
-    public OnePunchPlayer(SkillPack skillPack) {
+    public OnePunchPlayer(@NotNull SkillPack skillPack) {
         this.skillPack = skillPack;
     }
 
