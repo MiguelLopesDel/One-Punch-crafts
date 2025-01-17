@@ -5,15 +5,27 @@ import com.brandon3055.draconicevolution.entity.GuardianCrystalEntity;
 import com.brandon3055.draconicevolution.entity.guardian.DraconicGuardianEntity;
 import com.brandon3055.draconicevolution.entity.guardian.GuardianFightManager;
 import com.onepunchcrafts.OnePunchCrafts;
+import com.onepunchcrafts.common.RegisterSounds;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
-import com.onepunchcrafts.common.skills.SaitamaPack;
+import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
 import com.onepunchcrafts.common.skills.SkillPack;
 import com.onepunchcrafts.network.NetworkRegister;
+import com.onepunchcrafts.network.packet.AnimationPacket;
 import com.onepunchcrafts.network.packet.PlayerSyncPacket;
-import net.minecraft.client.player.LocalPlayer;
+import dev.kosmx.playerAnim.api.layered.IAnimation;
+import dev.kosmx.playerAnim.api.layered.ModifierLayer;
+import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess;
+import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.FluidTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -23,24 +35,25 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.material.Fluid;
+import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.fml.loading.FMLEnvironment;
-import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 
 import static com.brandon3055.draconicevolution.entity.guardian.DraconicGuardianEntity.SHIELD_POWER;
-import static com.onepunchcrafts.OnePunchCrafts.ONE_PLAYER_CAPABILITY;
-import static com.onepunchcrafts.OnePunchCrafts.WITHOUT_PACK;
+import static com.onepunchcrafts.OnePunchCrafts.*;
 
 public class HelpUtility {
 
@@ -52,7 +65,7 @@ public class HelpUtility {
      * um optional empty;
      */
     public static Optional<SaitamaPack> verifyIsSaitamaAndGetCapability(ServerPlayer player) {
-        LazyOptional<OnePunchPlayer> capability = player.getCapability(OnePunchCrafts.ONE_PLAYER_CAPABILITY);
+        LazyOptional<OnePunchPlayer> capability = player.getCapability(ONE_PLAYER_CAPABILITY);
         return capability.resolve()
                 .map(OnePunchPlayer::getSkillPack)
                 .filter(SaitamaPack.class::isInstance)
@@ -181,6 +194,33 @@ public class HelpUtility {
     public static BiOptional<OnePunchPlayer, SaitamaPack> isSaitama(Player player) {
         return player.getCapability(ONE_PLAYER_CAPABILITY).filter(cap -> cap.getSkillPack() instanceof SaitamaPack)
                 .map(cap -> BiOptional.of(cap, (SaitamaPack) cap.getSkillPack())).orElse(BiOptional.empty());
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public static Optional<ModifierLayer<IAnimation>> getOneCraftAnimationLayer(AbstractClientPlayer playerByUUID) {
+        return Optional.ofNullable((ModifierLayer<IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData(playerByUUID).get(new ResourceLocation(MODID, "onecraftsanimation")));
+    }
+
+    public static boolean extremeSpeedActivated(Player player) {
+        Optional<OnePunchPlayer> saitamaPack = getSaitamaPack(player);
+        if (saitamaPack.isPresent() && saitamaPack.get().getSkillPack() instanceof SaitamaPack sai) {
+            return sai.isExtremeSpeedActive();
+        }
+        return false;
+    }
+
+    public static boolean canWalk(Player player, FluidState fluid) {
+        if (!extremeSpeedActivated(player))
+            return false;
+        if (fluid.is(FluidTags.WATER)) {
+            return true;
+        }
+        return fluid.is(FluidTags.LAVA);
+    }
+
+    public static void clientEffects(ServerPlayer player) {
+        player.serverLevel().playSound(null, player.getOnPos(), RegisterSounds.SERIOUS_PUNCH.get(), SoundSource.PLAYERS, 1, 1);
+        NetworkRegister.sendToAllClients(new AnimationPacket(player.getStringUUID(), "punch_animation"));
     }
 //
 //    public static boolean isSaitama(Player player) {

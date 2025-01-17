@@ -7,7 +7,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
-import com.onepunchcrafts.common.skills.SaitamaPack;
+import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
 import com.onepunchcrafts.common.skills.SkillPack;
 import com.onepunchcrafts.util.HelpUtility;
 import net.minecraft.ChatFormatting;
