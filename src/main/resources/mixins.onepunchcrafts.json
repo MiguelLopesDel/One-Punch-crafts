@@ -1,0 +1,9 @@
+{
+  "required": true,
+  "package": "com.onepunchcrafts.common.mixin",
+  "refmap": "mixins.onepunchcrafts.refmap.json",
+  "mixins": [
+    "MixinBlockBehaviour"
+  ],
+  "priority": 2147483647
+}
