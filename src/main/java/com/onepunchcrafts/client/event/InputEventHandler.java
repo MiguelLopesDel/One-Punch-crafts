@@ -1,11 +1,8 @@
 package com.onepunchcrafts.client.event;
 
-import com.onepunchcrafts.OnePunchCrafts;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
-import com.onepunchcrafts.common.skills.SaitamaPack;
-import com.onepunchcrafts.common.skills.SkillPack;
+import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
 import com.onepunchcrafts.network.NetworkRegister;
-import com.onepunchcrafts.network.packet.PlayerSyncPacket;
 import com.onepunchcrafts.network.packet.SeriousPunchPacket;
 import com.onepunchcrafts.util.HelpUtility;
 import net.minecraft.client.Minecraft;
@@ -14,8 +11,6 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-
-import static com.onepunchcrafts.util.HelpUtility.syncDataWithServer;
 
 @Mod.EventBusSubscriber(value = Dist.CLIENT)
 public class InputEventHandler {

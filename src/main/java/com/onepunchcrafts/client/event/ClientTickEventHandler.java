@@ -3,30 +3,58 @@ package com.onepunchcrafts.client.event;
 import com.onepunchcrafts.client.Keybinding;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
 import com.onepunchcrafts.network.NetworkRegister;
+import com.onepunchcrafts.network.packet.AnimationPacket;
 import com.onepunchcrafts.network.packet.SeriousFartPacket;
 import com.onepunchcrafts.network.packet.SpecialSkillPacket;
 import com.onepunchcrafts.network.packet.TeleportPacket;
 import com.onepunchcrafts.util.HelpUtility;
+import com.onepunchcrafts.util.TickClientScheduler;
+import com.onepunchcrafts.util.TickScheduler;
+import com.onepunchcrafts.util.TickTask;
+import dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration;
+import dev.kosmx.playerAnim.api.firstPerson.FirstPersonMode;
+import dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer;
+import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationRegistry;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static com.onepunchcrafts.OnePunchCrafts.MODID;
+
 
 @Mod.EventBusSubscriber(Dist.CLIENT)
 public class ClientTickEventHandler {
 
+    private static final List<Integer> tasks = new ArrayList<>();
+
     @SubscribeEvent
-    public static void clientTick(TickEvent.ClientTickEvent event) {
+    public static void clientTick(TickEvent.ClientTickEvent event) throws Exception {
+        TickClientScheduler.tick(event);
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
         boolean playerExist = player != null;
+        buttonsManager(player, playerExist);
+    }
+
+    private static void buttonsManager(LocalPlayer player, boolean playerExist) {
         if (Keybinding.INSTANCE.CHANGE_SKILL.consumeClick() && playerExist) {
             onKeyChangePressed();
         }
+        if (Keybinding.INSTANCE.SPECIAL_CHANGE_SKILL.consumeClick() && playerExist) {
+            onKeySpecialChangePressed();
+        }
         if (Keybinding.INSTANCE.USE_SPECIAL_SKILL.consumeClick() && playerExist) {
+            managerAnimation(player);
             onKeySpecialSkillPressed();
         }
         if (Keybinding.INSTANCE.USE_FART.isDown() && playerExist) {
@@ -39,6 +67,40 @@ public class ClientTickEventHandler {
 
     private static void onKeySpecialSkillPressed() {
         NetworkRegister.sendToServer(new SpecialSkillPacket());
+    }
+
+    private static void managerAnimation(LocalPlayer player) {
+        HelpUtility.getSaitamaPack(player).ifPresent(one -> {
+            switch (one.getActualAbility()) {
+                case 1 -> {
+                    startAnimation(player, "multiple_punches");
+                    tasks.add(TickClientScheduler.scheduleFromHere(Duration.of(5, ChronoUnit.SECONDS), () -> stopAnimation(player)));
+                }
+            }
+        });
+    }
+
+    private static void stopAnimation(LocalPlayer player) {
+        HelpUtility.getOneCraftAnimationLayer(player).ifPresent(animation -> {
+            animation.setAnimation(null);
+        });
+    }
+
+    private static void startAnimation(LocalPlayer player, String idAnimation) {
+        HelpUtility.getOneCraftAnimationLayer(player).ifPresent(animation -> {
+            KeyframeAnimationPlayer animation1 = new KeyframeAnimationPlayer(PlayerAnimationRegistry.getAnimation(new ResourceLocation(MODID, idAnimation))).setFirstPersonMode(FirstPersonMode.THIRD_PERSON_MODEL).setFirstPersonConfiguration(new FirstPersonConfiguration(true, true, false, false));
+            if (!tasks.isEmpty())
+                TickClientScheduler.cancelTask(tasks.get(0));
+            tasks.clear();
+            animation.setAnimation(animation1);
+        });
+    }
+
+    private static void onKeySpecialChangePressed() {
+        LocalPlayer player = Minecraft.getInstance().player;
+        OnePunchPlayer data = HelpUtility.getSkillData(player);
+        data.decideCurrentGroup(player);
+        HelpUtility.syncDataWithServer(data);
     }
 
     private static void onKeyChangePressed() {

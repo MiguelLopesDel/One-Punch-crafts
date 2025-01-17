@@ -12,6 +12,7 @@ public class RegisterKeyMappingsEventHandler {
     @SubscribeEvent
     public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
         event.register(Keybinding.INSTANCE.CHANGE_SKILL);
+        event.register(Keybinding.INSTANCE.SPECIAL_CHANGE_SKILL);
         event.register(Keybinding.INSTANCE.USE_SPECIAL_SKILL);
         event.register(Keybinding.INSTANCE.USE_FART);
         event.register(Keybinding.INSTANCE.USE_TELEPORT);
