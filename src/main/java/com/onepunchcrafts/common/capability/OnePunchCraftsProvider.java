@@ -31,6 +31,6 @@ public class OnePunchCraftsProvider implements ICapabilitySerializable<Tag> {
 
     @Override
     public void deserializeNBT(final Tag nbt) {
-        this.dataPlayer.readNBT(nbt);
+        this.dataPlayer.firstReadNBT(nbt);
     }
 }

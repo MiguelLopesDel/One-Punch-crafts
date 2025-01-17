@@ -1,18 +1,18 @@
 package com.onepunchcrafts.common.skills;
 
-import com.onepunchcrafts.common.capability.OnePunchPlayer;
 import it.unimi.dsi.fastutil.shorts.ShortConsumer;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.event.TickEvent;
 
 import java.util.ArrayList;
 
 public interface SkillPack {
 
-    void execute(ServerPlayer player);
+    void execute(Player player);
 
     void readNBT(Tag tag);
 
@@ -28,7 +28,8 @@ public interface SkillPack {
 
     void setCurrentSkill(int currentSkill);
 
-    int getCurrentSkill();
+    Skill getCurrentSkill();
+    int getCurrentSkillIndex();
 
     int getMaxNumSkill();
 
@@ -39,4 +40,9 @@ public interface SkillPack {
     void handleTheDifferences(ServerPlayer player, ArrayList<String> differences, SkillPack serverData, SkillPack clientData);
 
     void adjustAbility(ShortConsumer setter, short currentValue, double scrollDelta);
+
+    void tick(TickEvent.PlayerTickEvent player);
+
+    void nextOrPrevious(int i);
+
 }

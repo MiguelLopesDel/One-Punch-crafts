@@ -6,13 +6,15 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.event.TickEvent;
 
 import java.util.ArrayList;
 
 public class WithoutPack implements SkillPack {
 
     @Override
-    public void execute(ServerPlayer player) {
+    public void execute(Player player) {
 
     }
 
@@ -37,7 +39,12 @@ public class WithoutPack implements SkillPack {
     }
 
     @Override
-    public int getCurrentSkill() {
+    public Skill getCurrentSkill() {
+        return player -> {};
+    }
+
+    @Override
+    public int getCurrentSkillIndex() {
         return 0;
     }
 
@@ -63,6 +70,16 @@ public class WithoutPack implements SkillPack {
 
     @Override
     public void adjustAbility(ShortConsumer setter, short currentValue, double scrollDelta) {
+
+    }
+
+    @Override
+    public void tick(TickEvent.PlayerTickEvent player) {
+
+    }
+
+    @Override
+    public void nextOrPrevious(int i) {
 
     }
 }
