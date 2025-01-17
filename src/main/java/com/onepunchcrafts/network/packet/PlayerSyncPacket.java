@@ -1,10 +1,8 @@
 package com.onepunchcrafts.network.packet;
 
 import com.onepunchcrafts.client.packet.HandlerPlayerSyncPacket;
-import com.onepunchcrafts.common.capability.OnePunchPlayer;
-import com.onepunchcrafts.common.skills.SaitamaPack;
+import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
 import com.onepunchcrafts.common.skills.SkillPack;
-import com.onepunchcrafts.network.NetworkRegister;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;

@@ -3,8 +3,7 @@ package com.onepunchcrafts.common.event;
 import com.onepunchcrafts.OnePunchCrafts;
 import com.onepunchcrafts.common.RegisterSounds;
 import com.onepunchcrafts.common.damage.DamagesRegistry;
-import com.onepunchcrafts.common.skills.SaitamaPack;
-import com.onepunchcrafts.common.skills.SkillPack;
+import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.AnimationPacket;
 import com.onepunchcrafts.util.HelpUtility;
@@ -14,7 +13,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
@@ -25,9 +23,8 @@ import net.minecraftforge.fml.common.Mod;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.concurrent.Callable;
 
-import static com.mojang.text2speech.Narrator.LOGGER;
+import static com.onepunchcrafts.util.HelpUtility.clientEffects;
 
 
 @Mod.EventBusSubscriber
@@ -54,16 +51,7 @@ public class LivingDamageEventHandler {
                     event.setAmount(event.getAmount() * 100_000);
                     break;
                 case 1:
-                    LivingEntity target = event.getEntity();
-                    double d1;
-                    double d0 = player.getX() - target.getX();
-                    for (d1 = player.getZ() - target.getZ(); d0 * d0 + d1 * d1 < 1.0E-4D; d1 = (Math.random() - Math.random()) * 0.01D) {
-                        d0 = (Math.random() - Math.random()) * 0.01D;
-                    }
-                    knockback(target, 5, d0, d1);
-                    event.setAmount(event.getAmount() * 10_000_000);
-                    event.getEntity().addTag("targetnormalpunch");
-                    TickScheduler.scheduleFromHere(Duration.of(5, ChronoUnit.SECONDS), () -> event.getEntity().removeTag("targetnormalpunch"));
+                    normalPunch(event, player);
                     break;
                 case 2:
                     if (event.getSource().is(DamagesRegistry.SERIOUS_PUNCH_SECOND))
@@ -73,6 +61,19 @@ public class LivingDamageEventHandler {
                     break;
             }
         });
+    }
+
+    private static void normalPunch(LivingDamageEvent event, ServerPlayer player) {
+        LivingEntity target = event.getEntity();
+        double d1;
+        double d0 = player.getX() - target.getX();
+        for (d1 = player.getZ() - target.getZ(); d0 * d0 + d1 * d1 < 1.0E-4D; d1 = (Math.random() - Math.random()) * 0.01D) {
+            d0 = (Math.random() - Math.random()) * 0.01D;
+        }
+        knockback(target, 5, d0, d1);
+        event.setAmount(event.getAmount() * 10_000_000);
+        event.getEntity().addTag("targetnormalpunch");
+        TickScheduler.scheduleFromHere(Duration.of(5, ChronoUnit.SECONDS), () -> event.getEntity().removeTag("targetnormalpunch"));
     }
 
     private static void PerformSeriousPunch(LivingDamageEvent event, ServerPlayer player) {
@@ -102,24 +103,7 @@ public class LivingDamageEventHandler {
         TickScheduler.scheduleWithCondition(Duration.of(50, ChronoUnit.MILLIS), () -> tickU.fillCylinderAndEmuleEffects(player, serverLevel, 1000, blockPos));
     }
 
-    public static void seriousPunchWithoutSpecificTargetWithClientEffects(ServerPlayer player, ServerLevel serverLevel) {
-        clientEffects(player);
-        Vec3 lookVec = player.getLookAngle();
-        Vec3 playerPos = player.position();
-        Vec3 cylinderStartPos = playerPos.add(lookVec.scale(3));
-
-
-        ArrayList<BlockPos> blockPos = markBlocksToClear(serverLevel, 15, 1000, (int) Math.floor(cylinderStartPos.x), (int) Math.floor(cylinderStartPos.y), (int) Math.floor(cylinderStartPos.z), lookVec);
-        final TickUtilities tickU = new TickUtilities();
-        TickScheduler.scheduleWithCondition(Duration.of(50, ChronoUnit.MILLIS), () -> tickU.fillCylinderAndEmuleEffects(player, serverLevel, 1000, blockPos));
-    }
-
-    private static void clientEffects(ServerPlayer player) {
-        player.serverLevel().playSound(null, player.getOnPos(), RegisterSounds.SERIOUS_PUNCH.get(), SoundSource.PLAYERS, 1, 1);
-        NetworkRegister.sendToAllClients(new AnimationPacket(player.getStringUUID(), "punch_animation"));
-    }
-
-    private static ArrayList<BlockPos> markBlocksToClear(ServerLevel level, int radius, int height, int startX, int startY, int startZ, Vec3 direction) {
+    public static ArrayList<BlockPos> markBlocksToClear(ServerLevel level, int radius, int height, int startX, int startY, int startZ, Vec3 direction) {
         ArrayList<BlockPos> blocksPos = new ArrayList<>();
         Vec3 normalizedDirection = direction.normalize();
         double absX = Math.abs(normalizedDirection.x);

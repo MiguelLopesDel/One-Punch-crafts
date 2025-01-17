@@ -49,6 +49,11 @@ public class NetworkRegister {
                 .decoder(TeleportPacket::new)
                 .consumerMainThread(TeleportPacket::handle)
                 .add();
+        INSTANCE.messageBuilder(CheckAndDestructionBlockInAroundPacket.class, ++id, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(CheckAndDestructionBlockInAroundPacket::encode)
+                .decoder(CheckAndDestructionBlockInAroundPacket::new)
+                .consumerMainThread(CheckAndDestructionBlockInAroundPacket::handle)
+                .add();
     }
 
     public static void sendToServer(Object msg) {
@@ -61,5 +66,12 @@ public class NetworkRegister {
 
     public static void sendToAllClients(Object msg) {
         INSTANCE.send(PacketDistributor.ALL.noArg(), msg);
+    }
+
+    public static void sendToAllClientsExcept(ServerPlayer player, Object msg) {
+        for (ServerPlayer player1 : player.getServer().getPlayerList().getPlayers()) {
+            if (!player.equals(player1))
+                sendToPlayer(player1, msg);
+        }
     }
 }

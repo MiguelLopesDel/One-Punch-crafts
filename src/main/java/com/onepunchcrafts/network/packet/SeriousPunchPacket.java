@@ -1,20 +1,14 @@
 package com.onepunchcrafts.network.packet;
 
-import com.onepunchcrafts.common.capability.OnePunchPlayer;
-import com.onepunchcrafts.common.skills.SaitamaPack;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.nbt.CompoundTag;
+import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkEvent;
 
-import java.util.ArrayList;
 import java.util.Optional;
 import java.util.function.Supplier;
 

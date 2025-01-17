@@ -1,5 +1,6 @@
 package com.onepunchcrafts.common.event;
 
+import com.onepunchcrafts.common.skills.saitama.SeriousPunch;
 import com.onepunchcrafts.util.HelpUtility;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -15,7 +16,7 @@ public class LivingAttackEventHandler {
     public static void saitamaAttack(LivingAttackEvent event) {
         if (event.getSource().getEntity() instanceof ServerPlayer player) {
             HelpUtility.verifyIsSaitamaAndGetCapability(player).ifPresent(cap -> {
-                if (cap.getCurrentSkill() == 2) {
+                if (cap.getCurrentSkill() instanceof SeriousPunch) {
                     event.setCanceled(false);
                 }
             });

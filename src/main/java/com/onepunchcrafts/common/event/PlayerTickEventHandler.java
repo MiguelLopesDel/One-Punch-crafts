@@ -1,8 +1,8 @@
 package com.onepunchcrafts.common.event;
 
-import com.onepunchcrafts.common.capability.OnePunchPlayer;
-import com.onepunchcrafts.common.skills.SaitamaPack;
+import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
 import com.onepunchcrafts.util.HelpUtility;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -11,10 +11,12 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.BlockCollisions;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -29,19 +31,27 @@ public class PlayerTickEventHandler {
 
     @SubscribeEvent
     public static void tickPlayer(TickEvent.PlayerTickEvent event) {
-        if (event.player instanceof ServerPlayer player) {
-            player.getCapability(ONE_PLAYER_CAPABILITY).ifPresent(cap -> {
-                if (cap.getSkillPack() instanceof SaitamaPack saitamaPack) {
-                    modifyAttributes(player, saitamaPack);
-                    if (player.isOnFire())
-                        player.clearFire();
-                    removeNegativeEffectsOfSaitama(player);
-                    HelpUtility.applySaitamaEffectsSet(player);
-                    handlerJumpPower(player);
-                }
-            });
-            explodeNormalMobs(player);
+        Player player = event.player;
+        HelpUtility.getSkillData(player).getSkillPack().tick(event);
+        if (event.player instanceof ServerPlayer serverPlayer) {
+            manageEffectsAndAttributes(event);
+            explodeNormalMobs(serverPlayer);
         }
+    }
+
+    private static void manageEffectsAndAttributes(TickEvent.PlayerTickEvent event) {
+        ServerPlayer player = (ServerPlayer) event.player;
+        player.getCapability(ONE_PLAYER_CAPABILITY).ifPresent(cap -> {
+            if (cap.getSkillPack() instanceof SaitamaPack saitamaPack) {
+                modifyAttributes(player, saitamaPack);
+                if (player.isOnFire())
+                    player.clearFire();
+                removeNegativeEffectsOfSaitama(player);
+                HelpUtility.applySaitamaEffectsSet(player);
+                if (event.phase == TickEvent.Phase.END)
+                    handlerJumpPower(player);
+            }
+        });
     }
 
     private static void handlerJumpPower(ServerPlayer player) {

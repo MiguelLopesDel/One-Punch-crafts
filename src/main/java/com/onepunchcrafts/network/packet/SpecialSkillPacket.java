@@ -34,11 +34,9 @@ public class SpecialSkillPacket {
     public void handle(Supplier<NetworkEvent.Context> ctx) {
         NetworkEvent.Context context = ctx.get();
         ServerPlayer sender = context.getSender();
-        if (sender == null) {
-            context.setPacketHandled(true);
-        } else {
+        if (sender != null) {
             sender.getCapability(OnePunchCrafts.ONE_PLAYER_CAPABILITY).ifPresent(cap -> cap.getSkillPack().execute(sender));
-            context.setPacketHandled(true);
         }
+        context.setPacketHandled(true);
     }
 }

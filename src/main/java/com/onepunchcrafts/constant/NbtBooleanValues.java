@@ -1,12 +1,13 @@
 package com.onepunchcrafts.constant;
 
 public enum NbtBooleanValues {
-    isSaitama("issaitama"), seriousFartActive("seriousfart"), superSpeed("superspeedsaitama"), breakBlocksQuickly("breakblocksquickly"), specialSkillActive("seriousPunchSkillActive");
+    seriousFartActive("seriousfart"), superSpeed("superspeedsaitama"), breakBlocksQuickly("breakblocksquickly"),
+    specialSkillActive("seriousPunchSkillActive"), extremeSpeed("extremeSpeed");
 
     private String value;
 
-    NbtBooleanValues(String isSaitama) {
-        this.value = isSaitama;
+    NbtBooleanValues(String string) {
+        this.value = string;
     }
 
     public String getValue() {

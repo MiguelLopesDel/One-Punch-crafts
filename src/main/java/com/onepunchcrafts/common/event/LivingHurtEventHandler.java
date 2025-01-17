@@ -1,15 +1,11 @@
 package com.onepunchcrafts.common.event;
 
-import com.onepunchcrafts.common.capability.OnePunchPlayer;
-import com.onepunchcrafts.common.skills.SaitamaPack;
-import net.minecraft.network.chat.ChatType;
-import net.minecraft.network.chat.Component;
+import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
+import com.onepunchcrafts.common.skills.saitama.SeriousPunch;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.item.AirItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
@@ -18,7 +14,6 @@ import net.minecraftforge.fml.common.Mod;
 
 import java.util.Optional;
 
-import static com.mojang.text2speech.Narrator.LOGGER;
 import static com.onepunchcrafts.util.HelpUtility.verifyIsSaitamaAndGetCapability;
 
 @Mod.EventBusSubscriber
@@ -29,9 +24,9 @@ public class LivingHurtEventHandler {
         if (event.getSource().getEntity() instanceof ServerPlayer player) {
             Optional<SaitamaPack> onePunchPlayer = verifyIsSaitamaAndGetCapability(player);
             onePunchPlayer.ifPresent(cap -> {
-                if (cap.getCurrentSkill() == 2) {
-                    event.setCanceled(false);
-                } else if (cap.getCurrentSkill() == 4) {
+                if (cap.getCurrentSkill() instanceof SeriousPunch) {
+                    event.setCanceled(false); //TODO REVEJA ESTA MERDA
+                } else if (cap.getCurrentGroupIndex() == 0 && cap.getCurrentSkillIndex() == 4) {
                     LivingEntity target = event.getEntity();
                     target.spawnAtLocation(target.getMainHandItem());
                     target.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);

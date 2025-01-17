@@ -2,9 +2,7 @@ package com.onepunchcrafts.common.event;
 
 import com.onepunchcrafts.OnePunchCrafts;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
-import com.onepunchcrafts.common.skills.SaitamaPack;
-import com.onepunchcrafts.network.NetworkRegister;
-import com.onepunchcrafts.network.packet.PlayerSyncPacket;
+import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
 import com.onepunchcrafts.util.HelpUtility;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.entity.player.PlayerEvent;
