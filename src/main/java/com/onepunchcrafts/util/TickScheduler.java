@@ -27,9 +27,14 @@ public class TickScheduler {
             ticksElapsed++;
             for (Map.Entry<Integer, TickTask> task : tasks.entrySet()) {
                 TickTask tickTask = task.getValue();
-                tickTask.executeTask(ticksElapsed);
-                if (tickTask.isDone())
+                try {
+                    tickTask.executeTask(ticksElapsed);
+                    if (tickTask.isDone())
+                        tasksToCancel.add(task.getKey());
+                } catch (Exception e) {
                     tasksToCancel.add(task.getKey());
+                    System.out.println("stranger err " + e);
+                }
             }
         }
         while (!tasksToCancel.isEmpty()) {

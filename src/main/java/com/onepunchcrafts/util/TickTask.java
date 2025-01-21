@@ -68,10 +68,14 @@ public class TickTask {
         return executionsLeft != hasNoPredeterminedExecutionsLeft;
     }
 
-    public void executeLastTask() throws Exception {
-        if (lastTask instanceof Runnable runnable) {
-            runnable.run();
-        } else if (lastTask instanceof Callable<?> callable)
-            callable.call();
+    public void executeLastTask() {
+        try {
+            if (lastTask instanceof Runnable runnable) {
+                runnable.run();
+            } else if (lastTask instanceof Callable<?> callable)
+                callable.call();
+        } catch (Exception e) {
+            System.out.println("Stranger error " + e);
+        }
     }
 }
