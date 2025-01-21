@@ -333,11 +333,10 @@ public class SaitamaPack implements SkillPack {
     }
 
     private static void updateCurrentSkill(SaitamaPack serverData, SaitamaPack clientData) {
-        if (Math.abs(serverData.getCurrentSkillIndex() - clientData.getCurrentSkillIndex()) == 1)
-            serverData.setCurrentSkill(clientData.getCurrentSkillIndex());
-        else if ((serverData.getCurrentSkillIndex() == serverData.getMaxNumSkill() && clientData.getCurrentSkillIndex() == 0) || (
-                serverData.getCurrentSkillIndex() == 0 && clientData.getCurrentSkillIndex() == serverData.getMaxNumSkill()))
-            serverData.setCurrentSkill(clientData.getCurrentSkillIndex());
+        int diff = Math.abs(serverData.currentSkill - clientData.currentSkill);
+        boolean b = diff == 1 || diff == serverData.getLastSkill();
+        if (b || serverData.getCurrentGroupIndex() != clientData.getCurrentGroupIndex())
+            serverData.currentSkill = clientData.currentSkill;
     }
 
     public void adjustAbility(ShortConsumer setter, short currentValue, double scrollDelta) {
