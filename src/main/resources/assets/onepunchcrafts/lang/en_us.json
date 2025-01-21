@@ -17,6 +17,8 @@
   "skill.saitama.knockback_resistance": "Knockback Resistance %1$s",
   "skill.saitama.attack_knockback": "Attack Knockback %1$s",
   "skill.saitama.swim_speed": "Swim Speed %1$s",
+  "skill.saitama.normalpuncharmy" : "Weak Punches Delivered",
+  "skill.saitama.extreme_speed" : "Extreme Speed",
 
   "death.attack.serious_punch_damage": "Don't anger Saitama.",
   "death.attack.serious_punch_second_damage": "Maybe it was unintentional."

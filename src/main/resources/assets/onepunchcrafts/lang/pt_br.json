@@ -17,6 +17,8 @@
   "skill.saitama.knockback_resistance": "Resistancia a Empurrão %1$s",
   "skill.saitama.attack_knockback": "Força De Empurrão %1$s",
   "skill.saitama.swim_speed": "Velocidade de nado %1$s",
+  "skill.saitama.normalpuncharmy" : "Socos Fracos Distribuidos",
+  "skill.saitama.extreme_speed" : "Velocidade Extrema",
 
   "death.attack.serious_punch_damage" : "Não irrite Saitama.",
   "death.attack.serious_punch_second_damage": "Talvez tenha sido sem querer"
