@@ -3,7 +3,8 @@
   "package": "com.onepunchcrafts.common.mixin",
   "refmap": "mixins.onepunchcrafts.refmap.json",
   "mixins": [
-    "MixinBlockBehaviour"
+    "MixinBlockBehaviour",
+    "MixinServerGamePacketListenerImpl"
   ],
   "priority": 2147483647
 }

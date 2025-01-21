@@ -41,7 +41,7 @@ public class CheckAndDestructionBlockInAroundPacket {
             final Level level = player.level();
             blocksPos.stream().filter(b -> b.distSqr(player.getOnPos()) <= 5).forEach(pos -> {
                 if (level.isLoaded(pos) && !level.getBlockState(pos).isAir()) {
-                    everyDrop(level.getBlockState(pos), level, pos);
+                    everyDrop(level.getBlockState(pos), level, pos, player);
                     level.destroyBlock(pos, false);
                 }
             });
