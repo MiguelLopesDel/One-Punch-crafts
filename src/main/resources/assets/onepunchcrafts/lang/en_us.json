@@ -4,6 +4,7 @@
   "key.onepunchcrafts.use_special_skill" : "Key to use/active skill",
   "key.onepunchcrafts.use_fart" : "Key to use serious fart (serious fart needs to be enabled)",
   "key.onepunchcrafts.use_teleport" : "key to use teleport (be saitama)",
+  "key.onepunchcrafts.special_change_skill" : "Key to switch between skill groups",
 
   "skill.saitama.weak_punch": "Weak Punch",
   "skill.saitama.normal_punch": "Normal Punch",
