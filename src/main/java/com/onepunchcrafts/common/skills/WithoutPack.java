@@ -8,6 +8,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.living.LivingEvent;
 
 import java.util.ArrayList;
 
@@ -80,6 +81,11 @@ public class WithoutPack implements SkillPack {
 
     @Override
     public void nextOrPrevious(int i) {
+
+    }
+
+    @Override
+    public void manageFlux(LivingEvent event) {
 
     }
 }

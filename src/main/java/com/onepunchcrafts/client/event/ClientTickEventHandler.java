@@ -81,9 +81,7 @@ public class ClientTickEventHandler {
     }
 
     private static void stopAnimation(LocalPlayer player) {
-        HelpUtility.getOneCraftAnimationLayer(player).ifPresent(animation -> {
-            animation.setAnimation(null);
-        });
+        HelpUtility.getOneCraftAnimationLayer(player).ifPresent(animation -> animation.setAnimation(null));
     }
 
     private static void startAnimation(LocalPlayer player, String idAnimation) {
