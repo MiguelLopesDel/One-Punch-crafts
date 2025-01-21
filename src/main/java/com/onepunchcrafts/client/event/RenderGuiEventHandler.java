@@ -1,6 +1,7 @@
 package com.onepunchcrafts.client.event;
 
 import com.onepunchcrafts.common.skills.SkillPack;
+import com.onepunchcrafts.util.HelpUtility;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -19,16 +20,10 @@ public class RenderGuiEventHandler {
     public static void onRender(RenderGuiEvent.Pre event) {
         Minecraft instance = Minecraft.getInstance();
         LocalPlayer player = instance.player;
-        player.getCapability(ONE_PLAYER_CAPABILITY).ifPresent(cap -> {
-            GuiGraphics guiGraphics = event.getGuiGraphics();
-            renderSaitamaOptions(cap.getSkillPack(), event, instance, guiGraphics);
-        });
-    }
-
-    private static void renderSaitamaOptions(SkillPack skillPack, RenderGuiEvent.Pre event, Minecraft instance, GuiGraphics guiGraphics) {
         final int width = event.getWindow().getGuiScaledWidth();
         final int height = event.getWindow().getGuiScaledHeight();
+        GuiGraphics guiGraphics = event.getGuiGraphics();
         Font font = instance.font;
-        skillPack.renderSkills(width, height, font, guiGraphics);
+        HelpUtility.getSkillData(player).getSkillPack().renderSkills(width, height, font, guiGraphics);
     }
 }

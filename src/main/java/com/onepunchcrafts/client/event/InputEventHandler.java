@@ -1,9 +1,5 @@
 package com.onepunchcrafts.client.event;
 
-import com.onepunchcrafts.common.capability.OnePunchPlayer;
-import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
-import com.onepunchcrafts.network.NetworkRegister;
-import com.onepunchcrafts.network.packet.SeriousPunchPacket;
 import com.onepunchcrafts.util.HelpUtility;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -16,15 +12,6 @@ import net.minecraftforge.fml.common.Mod;
 public class InputEventHandler {
 
     @SubscribeEvent
-    public static void playerAttack(InputEvent.InteractionKeyMappingTriggered event) {
-        LocalPlayer player = Minecraft.getInstance().player;
-        if (player == null || !event.isAttack()) return;
-        OnePunchPlayer data = HelpUtility.getSkillData(player);
-        if (data.getActualAbility() == 2 && data.getSkillPack() instanceof SaitamaPack)
-            NetworkRegister.sendToServer(new SeriousPunchPacket());
-    }
-
-    @SubscribeEvent
     public static void playerScroll(InputEvent.MouseScrollingEvent event) {
         LocalPlayer player = Minecraft.getInstance().player;
         double scrollDelta = event.getScrollDelta();
@@ -33,8 +20,10 @@ public class InputEventHandler {
             switch (cap.getActualAbility()) {
                 case 6 -> cap.adjustAbilityAndSyncWithServer(sai::setSpeed, sai.getSpeed(), scrollDelta);
                 case 8 -> cap.adjustAbilityAndSyncWithServer(sai::setWeight, sai.getWeight(), scrollDelta);
-                case 9 -> cap.adjustAbilityAndSyncWithServer(sai::setKnockbackResistance, sai.getKnockbackResistance(), scrollDelta);
-                case 10 -> cap.adjustAbilityAndSyncWithServer(sai::setAttackKnockback, sai.getAttackKnockback(), scrollDelta);
+                case 9 ->
+                        cap.adjustAbilityAndSyncWithServer(sai::setKnockbackResistance, sai.getKnockbackResistance(), scrollDelta);
+                case 10 ->
+                        cap.adjustAbilityAndSyncWithServer(sai::setAttackKnockback, sai.getAttackKnockback(), scrollDelta);
                 case 11 -> cap.adjustAbilityAndSyncWithServer(sai::setSwimSpeed, sai.getSwimSpeed(), scrollDelta);
             }
         });

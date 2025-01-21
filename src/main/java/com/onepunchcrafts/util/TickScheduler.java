@@ -34,7 +34,7 @@ public class TickScheduler {
         }
         while (!tasksToCancel.isEmpty()) {
             Integer task = tasksToCancel.poll();
-            tasks.remove(task);
+            tasks.remove(task).executeLastTask();
         }
     }
 
@@ -44,6 +44,10 @@ public class TickScheduler {
 
     public static int scheduleWithCondition(Duration interval, Callable<Boolean> task) {
         return schedule(checkAndConvertToTickTask(null, interval, task));
+    }
+
+    public static int scheduleFromHereWithLastExecution(Duration timeUnit, Runnable task, Runnable lastTask) {
+        return schedule(checkAndConvertToTickTask(null, timeUnit, task, lastTask));
     }
 
     public static int scheduleFromHere(Duration timeUnit, Runnable task) {
@@ -60,6 +64,10 @@ public class TickScheduler {
     }
 
     private static TickTask checkAndConvertToTickTask(Duration duration, Duration interval, Object task) {
+        return checkAndConvertToTickTask(duration, interval, task, null);
+    }
+
+    private static TickTask checkAndConvertToTickTask(Duration duration, Duration interval, Object task, Object lastTask) {
         if (interval.isNegative() || interval.isZero())
             throw new DateTimeException("Duration is negative or zero");
         long millisInterval = interval.toMillis();
@@ -67,9 +75,9 @@ public class TickScheduler {
             throw new DateTimeException("Duration less than 50 milliseconds");
         int ticksInterval = Math.round((float) millisInterval / 50);
         if (duration == null)
-            return new TickTask(ticksInterval, ticksElapsed, task);
+            return new TickTask(ticksInterval, ticksElapsed, task, lastTask);
         long millisDuration = duration.toMillis();
-        return new TickTask(ticksInterval, Math.round((float) millisDuration / 50) / ticksInterval, ticksElapsed, task);
+        return new TickTask(ticksInterval, Math.round((float) millisDuration / 50) / ticksInterval, ticksElapsed, task, lastTask);
     }
 }
 

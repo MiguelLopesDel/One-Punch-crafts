@@ -17,13 +17,24 @@ public class TickTask {
     private final int tickInterval;
     @Getter
     private final Object task;
+    @Getter
+    private final Object lastTask;
 
     public TickTask(int tickInterval, int executions, long creationTick, Object task) {
+        this(tickInterval, executions, creationTick, task, null);
+    }
+
+    public TickTask(int tickInterval, int executions, long creationTick, Object task, Object lastTask) {
         this.initialDelay = 0;
         this.tickInterval = tickInterval;
         this.executionsLeft = executions;
         this.creationTick = creationTick;
         this.task = task;
+        this.lastTask = lastTask;
+    }
+
+    public TickTask(int tickInterval, long tickCreation, Object task, Object lastTask) {
+        this(tickInterval, hasNoPredeterminedExecutionsLeft, tickCreation, task, lastTask);
     }
 
     public TickTask(int tickInterval, long tickCreation, Object task) {
@@ -55,5 +66,12 @@ public class TickTask {
 
     private boolean hasPredeterminedExecutionsLeft() {
         return executionsLeft != hasNoPredeterminedExecutionsLeft;
+    }
+
+    public void executeLastTask() throws Exception {
+        if (lastTask instanceof Runnable runnable) {
+            runnable.run();
+        } else if (lastTask instanceof Callable<?> callable)
+            callable.call();
     }
 }

@@ -1,12 +1,15 @@
 package com.onepunchcrafts.util;
 
+import com.onepunchcrafts.common.damage.DamageSourceMod;
 import com.onepunchcrafts.common.damage.DamagesRegistry;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageSources;
+import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
@@ -35,38 +38,36 @@ public class TickUtilities {
         int i = 15;
         AABB pArea = new AABB(new BlockPos(pStart.getX() - i, pStart.getY() - i, pStart.getZ() - i),
                 new BlockPos(pStart.getX() + i, pStart.getY() + i, pStart.getZ() + i));
-        final DamageSource damageSource = new DamageSource(level.registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(DamagesRegistry.SERIOUS_PUNCH_SECOND), null, player);
+        Holder.Reference<DamageType> holder = level.registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(DamagesRegistry.SERIOUS_PUNCH_SECOND);
+        final DamageSourceMod damageSource = new DamageSourceMod(holder, null, player);
+        final float amount = 10_000_000_000_000_000f;
         level.getEntitiesOfClass(EndCrystal.class, pArea).forEach(entity -> {
             entity.setInvulnerable(false);
             entity.setSecondsOnFire(60);
-            entity.hurt(damageSource, 10_000_000_000_000_000f);
+            entity.hurt(damageSource, amount);
         });
         if (DRACONIC_MOD.isPresent())
             HelpUtility.hurtDraconicCrystals(level, pArea, damageSource);
         List<LivingEntity> entitiesOfClass = level.getEntitiesOfClass(LivingEntity.class, pArea);
+
         entitiesOfClass.forEach(entity -> {
             if (player.equals(entity))
                 return;
-            if (DRACONIC_MOD.isPresent()) {
-                if (HelpUtility.handleIfDraconicGuardian(entity, damageSource)) return;
-            }
+            if (DRACONIC_MOD.isPresent() && HelpUtility.handleIfDraconicGuardian(entity, damageSource)) return;
+
             entity.setInvulnerable(false);
             entity.setSecondsOnFire(60);
-            boolean hurt = entity.hurt(damageSource, 10_000_000_000_000_000f);
+            boolean hurt = entity.hurt(damageSource, amount);
 //            entity.hurt(player.damageSources().fellOutOfWorld(), 1f);
             if (!hurt) {
                 entity.setLastHurtByPlayer(player);
-                entity.hurt(new DamageSource(level.registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(DamagesRegistry.SERIOUS_PUNCH_SECOND), player, null), 10_000_000_000_000_000f);
+                entity.hurt(new DamageSource(holder, player, null), amount);
             }
         });
 
         for (int c = startIndex; c < blocksPos.size(); c++) {
             BlockPos pPos = blocksPos.get(c);
             level.setBlock(pPos, Blocks.AIR.defaultBlockState(), 3);
-//            level.sendParticles(ParticleTypes.FLAME, pPos.getX(), pPos.getY(), pPos.getZ(), 1, 0, 0, 0, 0);
-//            level.sendParticles(ParticleTypes.FLASH, pPos.getX(), pPos.getY(), pPos.getZ(), 1, 0, 0, 0, 0);
-//            level.sendParticles(ParticleTypes.FIREWORK, pPos.getX(), pPos.getY(), pPos.getZ(), 1, 0, 0, 0, 0);
-//            level.sendParticles(ParticleTypes.FIREWORK, pPos.getX(), pPos.getY(), pPos.getZ(), 1, 0, 0, 0, 0);
             currentIteration++;
             startIndex++;
             if (currentIteration % breakBlocksPerTick == 0)

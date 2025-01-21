@@ -29,11 +29,6 @@ public class NetworkRegister {
                 .decoder(SpecialSkillPacket::new)
                 .consumerMainThread(SpecialSkillPacket::handle)
                 .add();
-        INSTANCE.messageBuilder(SeriousPunchPacket.class, ++id, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(SeriousPunchPacket::encode)
-                .decoder(SeriousPunchPacket::new)
-                .consumerMainThread(SeriousPunchPacket::handle)
-                .add();
         INSTANCE.messageBuilder(AnimationPacket.class, ++id, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(AnimationPacket::encode)
                 .decoder(AnimationPacket::new)
