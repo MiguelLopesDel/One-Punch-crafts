@@ -2,6 +2,7 @@ package com.onepunchcrafts.common.event;
 
 import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
 import com.onepunchcrafts.common.skills.saitama.SeriousPunch;
+import com.onepunchcrafts.util.HelpUtility;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -21,31 +22,6 @@ public class LivingHurtEventHandler {
 
     @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
     public static void saitamaOnAttack(LivingHurtEvent event) {
-        if (event.getSource().getEntity() instanceof ServerPlayer player) {
-            Optional<SaitamaPack> onePunchPlayer = verifyIsSaitamaAndGetCapability(player);
-            onePunchPlayer.ifPresent(cap -> {
-                if (cap.getCurrentSkill() instanceof SeriousPunch) {
-                    event.setCanceled(false); //TODO REVEJA ESTA MERDA
-                } else if (cap.getCurrentGroupIndex() == 0 && cap.getCurrentSkillIndex() == 4) {
-                    LivingEntity target = event.getEntity();
-                    target.spawnAtLocation(target.getMainHandItem());
-                    target.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
-                    target.spawnAtLocation(target.getOffhandItem());
-                    target.setItemInHand(InteractionHand.OFF_HAND, ItemStack.EMPTY);
-
-                    target.spawnAtLocation(target.getItemBySlot(EquipmentSlot.HEAD));
-                    target.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
-                    target.spawnAtLocation(target.getItemBySlot(EquipmentSlot.CHEST));
-                    target.setItemSlot(EquipmentSlot.CHEST, ItemStack.EMPTY);
-                    target.spawnAtLocation(target.getItemBySlot(EquipmentSlot.FEET));
-                    target.setItemSlot(EquipmentSlot.FEET, ItemStack.EMPTY);
-                    target.spawnAtLocation(target.getItemBySlot(EquipmentSlot.LEGS));
-                    target.setItemSlot(EquipmentSlot.LEGS, ItemStack.EMPTY);
-                    float amount = target.getHealth() - 0.0001F;
-                    event.setAmount(Math.min(amount, 100_000));
-                }
-            });
-        }
-
+        HelpUtility.isServerPlayer(event).ifPresent(p -> HelpUtility.getSkillData(p).manageFlux(event));
     }
 }

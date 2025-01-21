@@ -9,6 +9,7 @@ import lombok.Setter;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
+import net.minecraftforge.event.entity.living.LivingEvent;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -77,5 +78,13 @@ public class OnePunchPlayer {
 
     public int getActualAbility() {
         return this.skillPack.getCurrentSkillIndex();
+    }
+
+    /**
+     * Não é garantido que o evento recebido esteja no lado do servidor, faça as verificações necessarias para seu caso.
+     * @param event
+     */
+    public void manageFlux(LivingEvent event) {
+        getSkillPack().manageFlux(event);
     }
 }

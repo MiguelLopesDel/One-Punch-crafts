@@ -7,6 +7,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.living.LivingEvent;
 
 import java.util.ArrayList;
 
@@ -45,4 +46,5 @@ public interface SkillPack {
 
     void nextOrPrevious(int i);
 
+    void manageFlux(LivingEvent event);
 }

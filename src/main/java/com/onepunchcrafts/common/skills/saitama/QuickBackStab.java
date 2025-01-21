@@ -52,6 +52,7 @@ public class QuickBackStab implements Skill {
             saitamaPack.setCurrentSkill(1);
             sender.attack(closestEntity);
             saitamaPack.setCurrentSkill(5);
+            HelpUtility.syncWithPlayer(sender, HelpUtility.getSkillData(sender));
 //            if (closestEntity instanceof ServerPlayer target)
 //                NetworkRegister.sendToPlayer(target, new SettingRenderPacket("quick_backstab"));
         }

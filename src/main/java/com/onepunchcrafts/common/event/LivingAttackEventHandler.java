@@ -15,11 +15,7 @@ public class LivingAttackEventHandler {
     @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
     public static void saitamaAttack(LivingAttackEvent event) {
         if (event.getSource().getEntity() instanceof ServerPlayer player) {
-            HelpUtility.verifyIsSaitamaAndGetCapability(player).ifPresent(cap -> {
-                if (cap.getCurrentSkill() instanceof SeriousPunch) {
-                    event.setCanceled(false);
-                }
-            });
+            HelpUtility.getSkillData(player).manageFlux(event);
         }
     }
 }

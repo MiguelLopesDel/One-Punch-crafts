@@ -1,19 +1,17 @@
 package com.onepunchcrafts.common.event;
 
 import com.onepunchcrafts.OnePunchCrafts;
-import com.onepunchcrafts.common.RegisterSounds;
 import com.onepunchcrafts.common.damage.DamagesRegistry;
 import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
-import com.onepunchcrafts.network.NetworkRegister;
-import com.onepunchcrafts.network.packet.AnimationPacket;
 import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.util.TickScheduler;
 import com.onepunchcrafts.util.TickUtilities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
@@ -32,75 +30,9 @@ public class LivingDamageEventHandler {
 
     @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
     public static void saitamaAttack(LivingDamageEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) {
-            player.getCapability(OnePunchCrafts.ONE_PLAYER_CAPABILITY).ifPresent(cap -> {
-                if (cap.getSkillPack() instanceof SaitamaPack) {
-                    event.setCanceled(true);
-                }
-            });
-        }
-        if (event.getSource().getEntity() instanceof ServerPlayer player) {
-            saitamaOnAttackEntity(event, player);
-        }
-    }
-
-    private static void saitamaOnAttackEntity(LivingDamageEvent event, ServerPlayer player) {
-        HelpUtility.getSaitamaPack(player).ifPresent(cap -> {
-            switch (cap.getActualAbility()) {
-                case 0:
-                    event.setAmount(event.getAmount() * 100_000);
-                    break;
-                case 1:
-                    normalPunch(event, player);
-                    break;
-                case 2:
-                    if (event.getSource().is(DamagesRegistry.SERIOUS_PUNCH_SECOND))
-                        applyDamageAndReactiveEvent(event, event.getEntity());
-                    else
-                        PerformSeriousPunch(event, player);
-                    break;
-            }
-        });
-    }
-
-    private static void normalPunch(LivingDamageEvent event, ServerPlayer player) {
-        LivingEntity target = event.getEntity();
-        double d1;
-        double d0 = player.getX() - target.getX();
-        for (d1 = player.getZ() - target.getZ(); d0 * d0 + d1 * d1 < 1.0E-4D; d1 = (Math.random() - Math.random()) * 0.01D) {
-            d0 = (Math.random() - Math.random()) * 0.01D;
-        }
-        knockback(target, 5, d0, d1);
-        event.setAmount(event.getAmount() * 10_000_000);
-        event.getEntity().addTag("targetnormalpunch");
-        TickScheduler.scheduleFromHere(Duration.of(5, ChronoUnit.SECONDS), () -> event.getEntity().removeTag("targetnormalpunch"));
-    }
-
-    private static void PerformSeriousPunch(LivingDamageEvent event, ServerPlayer player) {
-        clientEffects(player);
-        ServerLevel serverLevel = player.serverLevel();
-        LivingEntity target = event.getEntity();
-        applyDamageAndReactiveEvent(event, target);
-        seriousPunchWithSpecificTargetAndClientEffects(player, serverLevel);
-    }
-
-    private static void applyDamageAndReactiveEvent(LivingDamageEvent event, LivingEntity target) {
-        target.setInvulnerable(false);
-        target.setSecondsOnFire(60);
-        target.invulnerableTime = 0;
-        event.setAmount(event.getAmount() * 10_000_000_000_000_000f);
-        event.setCanceled(false);
-    }
-
-    public static void seriousPunchWithSpecificTargetAndClientEffects(ServerPlayer player, ServerLevel serverLevel) {
-        Vec3 lookVec = player.getLookAngle();
-        Vec3 playerPos = player.position();
-        Vec3 cylinderStartPos = playerPos.add(lookVec.scale(3));
-
-
-        ArrayList<BlockPos> blockPos = markBlocksToClear(serverLevel, 15, 1000, (int) Math.floor(cylinderStartPos.x), (int) Math.floor(cylinderStartPos.y), (int) Math.floor(cylinderStartPos.z), lookVec);
-        final TickUtilities tickU = new TickUtilities();
-        TickScheduler.scheduleWithCondition(Duration.of(50, ChronoUnit.MILLIS), () -> tickU.fillCylinderAndEmuleEffects(player, serverLevel, 1000, blockPos));
+        Entity pPlayer = event.getEntity() instanceof Player player ? player : event.getSource().getEntity();
+        if (pPlayer instanceof Player player)
+            HelpUtility.getSkillData(player).manageFlux(event);
     }
 
     public static ArrayList<BlockPos> markBlocksToClear(ServerLevel level, int radius, int height, int startX, int startY, int startZ, Vec3 direction) {
@@ -133,14 +65,5 @@ public class LivingDamageEventHandler {
             }
         }
         return blocksPos;
-    }
-
-    private static void knockback(LivingEntity target, double strength, double pX, double pZ) {
-        if (!(strength <= 0.0D)) {
-            target.hasImpulse = true;
-            Vec3 vec3 = target.getDeltaMovement();
-            Vec3 vec31 = (new Vec3(pX, 0.0D, pZ)).normalize().scale(strength);
-            target.setDeltaMovement(vec3.x / 2.0D - vec31.x, target.onGround() ? Math.min(0.4D, vec3.y / 2.0D + strength) : vec3.y, vec3.z / 2.0D - vec31.z);
-        }
     }
 }

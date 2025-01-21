@@ -18,32 +18,6 @@ public class LivingDeathEventHandler {
 
     @SubscribeEvent(receiveCanceled = true, priority = EventPriority.LOWEST)
     public static void onPlayerDeath(LivingDeathEvent event) {
-        boolean saitamaIsTarget = false;
-        if (event.getEntity() instanceof ServerPlayer player) {
-            saitamaIsTarget = cancelDeathSaitama(event, player);
-        }
-        if (!saitamaIsTarget) {
-            DamageSource source = event.getSource();
-            if (source.is(DamagesRegistry.SERIOUS_PUNCH_SECOND)) {
-                if (source.getEntity() instanceof ServerPlayer player && HelpUtility.verifyIsSaitamaAndGetCapability(player).isPresent()) {
-                    event.setCanceled(false);
-                }
-            } else if (source.getDirectEntity() instanceof ServerPlayer player) {
-                Optional<SaitamaPack> saitamaPack = HelpUtility.verifyIsSaitamaAndGetCapability(player);
-                saitamaPack.ifPresent(cap -> {
-                    if (cap.getCurrentSkill() instanceof SeriousPunch)
-                        event.setCanceled(false);
-                });
-            }
-        }
-    }
-
-    private static boolean cancelDeathSaitama(LivingDeathEvent event, ServerPlayer player) {
-        Optional<SaitamaPack> onePunchPlayer = HelpUtility.verifyIsSaitamaAndGetCapability(player);
-        onePunchPlayer.ifPresent(cap -> {
-            event.setCanceled(true);
-            player.setHealth(player.getMaxHealth());
-        });
-        return onePunchPlayer.isPresent();
+        HelpUtility.isServerPlayer(event).ifPresent(player -> HelpUtility.getSkillData(player).manageFlux(event));
     }
 }

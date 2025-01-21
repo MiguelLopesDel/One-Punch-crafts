@@ -29,6 +29,7 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
@@ -45,6 +46,10 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.event.entity.living.LivingDamageEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.living.LivingEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.jetbrains.annotations.NotNull;
 
@@ -216,6 +221,22 @@ public class HelpUtility {
             return true;
         }
         return fluid.is(FluidTags.LAVA);
+    }
+
+    public static Optional<ServerPlayer> isServerPlayer(LivingEvent ev) {
+        if (ev.getEntity() instanceof ServerPlayer player)
+            return Optional.of(player);
+        else if (ev instanceof LivingDeathEvent event && event.getSource().getEntity() instanceof ServerPlayer player)
+            return Optional.of(player);
+        else if (ev instanceof LivingDamageEvent event && event.getSource().getEntity() instanceof ServerPlayer player)
+            return Optional.of(player);
+        else if (ev instanceof LivingHurtEvent event && event.getSource().getEntity() instanceof ServerPlayer player)
+            return Optional.of(player);
+        return Optional.empty();
+    }
+
+    public static boolean isServer(Entity entity) {
+        return entity != null && !entity.level().isClientSide();
     }
 
     public static void clientEffects(ServerPlayer player) {

@@ -15,12 +15,12 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.tags.FluidTags;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.material.FluidState;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.living.LivingDamageEvent;
+import net.minecraftforge.event.entity.living.LivingEvent;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
@@ -62,9 +62,8 @@ public class SaitamaPack implements SkillPack {
     private @NotNull List<List<Skill>> getSkills() {
         List<List<Skill>> groupList = new ArrayList<>();
         List<Skill> list = new ArrayList<>();
-        list.add(a -> {
-        });
-        list.add(1, new consecutiveNormalPunches());
+        list.add(0, new WeakPunch());
+        list.add(1, new NormalPunche());
         list.add(2, new SeriousPunch());
         list.add(3, p -> {
             if (p instanceof ServerPlayer player) {
@@ -72,8 +71,7 @@ public class SaitamaPack implements SkillPack {
                 NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(this));
             }
         });
-        list.add(a -> {
-        });
+        list.add(new WeakeningPunch());
         list.add(5, new QuickBackStab());
         list.add(a -> {
         });
@@ -108,6 +106,17 @@ public class SaitamaPack implements SkillPack {
             currentSkill1.execute(player);
     }
 
+    @Override
+    public void manageFlux(LivingEvent event) {
+        packFlux(event);
+        getCurrentSkill().flux(event);
+    }
+
+    private void packFlux(LivingEvent event) {
+        if (event instanceof LivingDamageEvent damageEvent && damageEvent.getEntity() instanceof ServerPlayer) {
+            event.setCanceled(true);
+        }
+    }
 
     @Override
     public void nextOrPrevious(int i) {
@@ -154,7 +163,7 @@ public class SaitamaPack implements SkillPack {
     }
 
     private int getLastSkill() {
-        return skills.get(getCurrentGroupIndex()).size()-1;
+        return skills.get(getCurrentGroupIndex()).size() - 1;
     }
 
     @Override

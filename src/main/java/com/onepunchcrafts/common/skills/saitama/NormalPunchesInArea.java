@@ -1,5 +1,6 @@
 package com.onepunchcrafts.common.skills.saitama;
 
+import com.onepunchcrafts.OnePunchCrafts;
 import com.onepunchcrafts.common.skills.Skill;
 import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.util.TickScheduler;
@@ -20,7 +21,7 @@ public class NormalPunchesInArea implements Skill {
 
     @Override
     public void execute(Player p) {
-        if(!(p instanceof ServerPlayer player))
+        if (!(p instanceof ServerPlayer player))
             return;
         Level level = player.level();
         final int i = 50;
@@ -38,12 +39,12 @@ public class NormalPunchesInArea implements Skill {
             return;
         }
         Entity entity = stack.pop();
-        TickScheduler.scheduleFromHere(Duration.of(250, ChronoUnit.MILLIS), () -> {
+        TickScheduler.scheduleFromHereWithLastExecution(Duration.of(250, ChronoUnit.MILLIS), () -> {
             player.teleportTo(entity.getX(), entity.getY(), entity.getZ());
             sai.setCurrentSkill(0);
             player.attack(entity);
             sai.setCurrentSkill(12);
             processEntities(stack, player, HelpUtility.verifyIsSaitamaAndGetCapability(player).get());
-        });
+        }, () -> HelpUtility.syncWithPlayer(player, HelpUtility.getSkillData(player)));
     }
 }
