@@ -16,7 +16,7 @@ public class WeakPunch implements Skill {
 
     @Override
     public void flux(LivingEvent event) {
-        if (event instanceof LivingDamageEvent damageEvent && damageEvent.getSource().getEntity() instanceof ServerPlayer) {
+        if (event instanceof LivingDamageEvent damageEvent && HelpUtility.isSaitamaServerSide(damageEvent.getSource().getEntity())) {
             damageEvent.setAmount(damageEvent.getAmount() * 100_000);
         }
     }

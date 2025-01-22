@@ -8,12 +8,9 @@ import com.onepunchcrafts.util.TickUtilities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.living.*;
 
@@ -43,12 +40,12 @@ public class SeriousPunch implements Skill {
 
     @Override
     public void flux(LivingEvent ev) {
-        if (ev instanceof LivingDamageEvent damageEvent && damageEvent.getSource().getEntity() instanceof ServerPlayer player) {
+        if (ev instanceof LivingDamageEvent damageEvent && HelpUtility.isSaitamaServerSide(damageEvent.getSource().getEntity())) {
             if (damageEvent.getSource().is(DamagesRegistry.SERIOUS_PUNCH_SECOND))
                 applyDamageAndReactiveEvent(damageEvent, damageEvent.getEntity());
             else
-                performSeriousPunch(damageEvent, player);
-        } else if (ev instanceof LivingAttackEvent event && event.getSource().getEntity() instanceof ServerPlayer) {
+                performSeriousPunch(damageEvent, (ServerPlayer) damageEvent.getSource().getEntity());
+        } else if (ev instanceof LivingAttackEvent event && HelpUtility.isSaitamaServerSide(event.getSource().getEntity())) {
             event.setCanceled(false);
         } else if (ev instanceof LivingDeathEvent event) {
             boolean saitamaIsTarget = false;
@@ -69,7 +66,7 @@ public class SeriousPunch implements Skill {
                     });
                 }
             }
-        } else if (ev instanceof LivingHurtEvent event && event.getSource().getEntity() instanceof ServerPlayer) {
+        } else if (ev instanceof LivingHurtEvent event && HelpUtility.isSaitamaServerSide(event.getSource().getEntity())) {
             event.setCanceled(false);
         }
     }

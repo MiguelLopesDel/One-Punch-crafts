@@ -6,6 +6,7 @@ import com.onepunchcrafts.common.skills.SkillPassive;
 import com.onepunchcrafts.constant.NbtBooleanValues;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.PlayerSyncPacket;
+import com.onepunchcrafts.util.HelpUtility;
 import it.unimi.dsi.fastutil.shorts.ShortConsumer;
 import lombok.Getter;
 import lombok.Setter;
@@ -108,12 +109,12 @@ public class SaitamaPack implements SkillPack {
 
     @Override
     public void manageFlux(LivingEvent event) {
-        packFlux(event);
         getCurrentSkill().flux(event);
+        packFlux(event);
     }
 
     private void packFlux(LivingEvent event) {
-        if (event instanceof LivingDamageEvent damageEvent && damageEvent.getEntity() instanceof ServerPlayer) {
+        if (event instanceof LivingDamageEvent damageEvent && HelpUtility.isSaitamaServerSide(damageEvent.getEntity())) {
             event.setCanceled(true);
         }
     }

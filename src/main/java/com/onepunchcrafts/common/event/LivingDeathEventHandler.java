@@ -18,6 +18,6 @@ public class LivingDeathEventHandler {
 
     @SubscribeEvent(receiveCanceled = true, priority = EventPriority.LOWEST)
     public static void onPlayerDeath(LivingDeathEvent event) {
-        HelpUtility.isServerPlayer(event).ifPresent(player -> HelpUtility.getSkillData(player).manageFlux(event));
+        HelpUtility.passServerFluxToAllPlayers(event);
     }
 }

@@ -16,7 +16,7 @@ public class InputEventHandler {
         LocalPlayer player = Minecraft.getInstance().player;
         double scrollDelta = event.getScrollDelta();
         if (player == null || scrollDelta == 0) return;
-        HelpUtility.isSaitama(player).ifBothPresent((cap, sai) -> {
+        HelpUtility.getCapAndSaitamaSkillData(player).ifBothPresent((cap, sai) -> {
             switch (cap.getActualAbility()) {
                 case 6 -> cap.adjustAbilityAndSyncWithServer(sai::setSpeed, sai.getSpeed(), scrollDelta);
                 case 8 -> cap.adjustAbilityAndSyncWithServer(sai::setWeight, sai.getWeight(), scrollDelta);

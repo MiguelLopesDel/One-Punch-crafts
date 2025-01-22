@@ -4,7 +4,6 @@ import com.brandon3055.draconicevolution.DEConfig;
 import com.brandon3055.draconicevolution.entity.GuardianCrystalEntity;
 import com.brandon3055.draconicevolution.entity.guardian.DraconicGuardianEntity;
 import com.brandon3055.draconicevolution.entity.guardian.GuardianFightManager;
-import com.onepunchcrafts.OnePunchCrafts;
 import com.onepunchcrafts.common.RegisterSounds;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
 import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
@@ -16,16 +15,12 @@ import dev.kosmx.playerAnim.api.layered.IAnimation;
 import dev.kosmx.playerAnim.api.layered.ModifierLayer;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess;
 import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.FluidTags;
-import net.minecraft.tags.TagKey;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -36,7 +31,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
@@ -177,7 +171,7 @@ public class HelpUtility {
     }
 
     public static @NotNull OnePunchPlayer getSkillData(Player player) {
-        return player.getCapability(ONE_PLAYER_CAPABILITY, null).orElse(new OnePunchPlayer(WITHOUT_PACK));
+        return player.getCapability(ONE_PLAYER_CAPABILITY).orElse(new OnePunchPlayer(WITHOUT_PACK));
     }
 
     public static void syncDataWithServer(OnePunchPlayer data) {
@@ -196,7 +190,7 @@ public class HelpUtility {
         return player.getCapability(ONE_PLAYER_CAPABILITY).filter(cap -> cap.getSkillPack() instanceof SaitamaPack);
     }
 
-    public static BiOptional<OnePunchPlayer, SaitamaPack> isSaitama(Player player) {
+    public static BiOptional<OnePunchPlayer, SaitamaPack> getCapAndSaitamaSkillData(Player player) {
         return player.getCapability(ONE_PLAYER_CAPABILITY).filter(cap -> cap.getSkillPack() instanceof SaitamaPack)
                 .map(cap -> BiOptional.of(cap, (SaitamaPack) cap.getSkillPack())).orElse(BiOptional.empty());
     }
@@ -223,16 +217,17 @@ public class HelpUtility {
         return fluid.is(FluidTags.LAVA);
     }
 
-    public static Optional<ServerPlayer> isServerPlayer(LivingEvent ev) {
+    public static void passServerFluxToAllPlayers(LivingEvent ev) {
         if (ev.getEntity() instanceof ServerPlayer player)
-            return Optional.of(player);
-        else if (ev instanceof LivingDeathEvent event && event.getSource().getEntity() instanceof ServerPlayer player)
-            return Optional.of(player);
-        else if (ev instanceof LivingDamageEvent event && event.getSource().getEntity() instanceof ServerPlayer player)
-            return Optional.of(player);
-        else if (ev instanceof LivingHurtEvent event && event.getSource().getEntity() instanceof ServerPlayer player)
-            return Optional.of(player);
-        return Optional.empty();
+            HelpUtility.getSkillData(player).manageFlux(ev);
+
+        if (ev instanceof LivingDeathEvent event && event.getSource().getEntity() instanceof ServerPlayer player) {
+            HelpUtility.getSkillData(player).manageFlux(ev);
+        } else if (ev instanceof LivingDamageEvent event && event.getSource().getEntity() instanceof ServerPlayer player) {
+            HelpUtility.getSkillData(player).manageFlux(ev);
+        } else if (ev instanceof LivingHurtEvent event && event.getSource().getEntity() instanceof ServerPlayer player) {
+            HelpUtility.getSkillData(player).manageFlux(ev);
+        }
     }
 
     public static boolean isServer(Entity entity) {
@@ -243,8 +238,8 @@ public class HelpUtility {
         player.serverLevel().playSound(null, player.getOnPos(), RegisterSounds.SERIOUS_PUNCH.get(), SoundSource.PLAYERS, 1, 1);
         NetworkRegister.sendToAllClients(new AnimationPacket(player.getStringUUID(), "punch_animation"));
     }
-//
-//    public static boolean isSaitama(Player player) {
-//        return getSkillData(player).getSkillPack() instanceof SaitamaPack;
-//    }
+
+    public static boolean isSaitamaServerSide(Entity entity) {
+        return entity instanceof ServerPlayer player && getSkillData(player).getSkillPack() instanceof SaitamaPack;
+    }
 }

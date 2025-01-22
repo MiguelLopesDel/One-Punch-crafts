@@ -1,6 +1,7 @@
 package com.onepunchcrafts.common.skills.saitama;
 
 import com.onepunchcrafts.common.skills.Skill;
+import com.onepunchcrafts.util.HelpUtility;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -18,7 +19,7 @@ public class WeakeningPunch implements Skill {
 
     @Override
     public void flux(LivingEvent ev) {
-        if (ev instanceof LivingHurtEvent event && event.getSource().getEntity() instanceof ServerPlayer) {
+        if (ev instanceof LivingHurtEvent event && HelpUtility.isSaitamaServerSide(event.getSource().getEntity())) {
             LivingEntity target = event.getEntity();
             target.spawnAtLocation(target.getMainHandItem());
             target.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);

@@ -30,9 +30,7 @@ public class LivingDamageEventHandler {
 
     @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
     public static void saitamaAttack(LivingDamageEvent event) {
-        Entity pPlayer = event.getEntity() instanceof Player player ? player : event.getSource().getEntity();
-        if (pPlayer instanceof Player player)
-            HelpUtility.getSkillData(player).manageFlux(event);
+        HelpUtility.passServerFluxToAllPlayers(event);
     }
 
     public static ArrayList<BlockPos> markBlocksToClear(ServerLevel level, int radius, int height, int startX, int startY, int startZ, Vec3 direction) {

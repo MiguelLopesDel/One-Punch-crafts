@@ -3,6 +3,7 @@ package com.onepunchcrafts.common.skills.saitama;
 import com.onepunchcrafts.common.skills.Skill;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.AnimationPacket;
+import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.util.TickScheduler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -26,8 +27,8 @@ public class NormalPunche implements Skill {
 
     @Override
     public void flux(LivingEvent event) {
-        if (event instanceof LivingDamageEvent damageEvent && damageEvent.getSource().getEntity() instanceof ServerPlayer player) {
-            normalPunch(damageEvent, player);
+        if (event instanceof LivingDamageEvent damageEvent && HelpUtility.isSaitamaServerSide(damageEvent.getSource().getEntity())) {
+            normalPunch(damageEvent, (ServerPlayer) damageEvent.getSource().getEntity());
         }
     }
 
