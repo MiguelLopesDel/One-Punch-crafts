@@ -16,11 +16,13 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import org.jetbrains.annotations.NotNull;
 
@@ -115,6 +117,10 @@ public class SaitamaPack implements SkillPack {
 
     private void packFlux(LivingEvent event) {
         if (event instanceof LivingDamageEvent damageEvent && HelpUtility.isSaitamaServerSide(damageEvent.getEntity())) {
+            event.setCanceled(true);
+        } else if (event instanceof LivingDeathEvent deathEvent && HelpUtility.isSaitamaServerSide(deathEvent.getEntity())) {
+            LivingEntity player = deathEvent.getEntity();
+            player.setHealth(player.getMaxHealth());
             event.setCanceled(true);
         }
     }
