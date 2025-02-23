@@ -30,6 +30,8 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Explosion;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.AABB;
@@ -53,6 +55,7 @@ import java.util.Optional;
 
 import static com.brandon3055.draconicevolution.entity.guardian.DraconicGuardianEntity.SHIELD_POWER;
 import static com.onepunchcrafts.OnePunchCrafts.*;
+import static net.minecraft.world.level.GameRules.RULE_MOB_EXPLOSION_DROP_DECAY;
 
 public class HelpUtility {
 
@@ -241,5 +244,20 @@ public class HelpUtility {
 
     public static boolean isSaitamaServerSide(Entity entity) {
         return entity instanceof ServerPlayer player && getSkillData(player).getSkillPack() instanceof SaitamaPack;
+    }
+
+    public static Explosion explodeWithoutKnockBackFor(@NotNull Entity entity, double x1, double v, double z1, float v1) {
+        Level level = entity.level();
+        Explosion.BlockInteraction explosion$blockinteraction1 = net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(level, entity) ?
+                level.getGameRules().getBoolean(RULE_MOB_EXPLOSION_DROP_DECAY) ? Explosion.BlockInteraction.DESTROY_WITH_DECAY : Explosion.BlockInteraction.DESTROY
+                : Explosion.BlockInteraction.KEEP;
+        Explosion.BlockInteraction explosion$blockinteraction = explosion$blockinteraction1;
+        ExplosionWithoutKnockBack explosion = new ExplosionWithoutKnockBack(level, entity, null, null, x1, v, z1, v1, false, explosion$blockinteraction);
+        if (net.minecraftforge.event.ForgeEventFactory.onExplosionStart(level, explosion))
+            return explosion;
+        explosion.addEntityWithoutKnockBack(entity);
+        explosion.explode();
+        explosion.finalizeExplosion(true);
+        return explosion;
     }
 }

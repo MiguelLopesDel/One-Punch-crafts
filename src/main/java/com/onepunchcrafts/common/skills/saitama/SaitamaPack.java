@@ -12,14 +12,21 @@ import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.AABB;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
@@ -351,11 +358,119 @@ public class SaitamaPack implements SkillPack {
         setter.accept(newValue < 0 ? 0 : newValue);
     }
 
+    private static final Map<Player, Integer> shiftHoldTime = new HashMap<>();
+
     @Override
     public void tick(TickEvent.PlayerTickEvent event) {
+        if (event.player instanceof ServerPlayer serverPlayer) {
+            manageEffectsAndAttributes(event);
+            explodeNormalMobs(serverPlayer);
+        }
         skills.forEach(p -> p.forEach(sk -> {
             if (sk instanceof SkillPassive currentSkill1)
                 currentSkill1.tick(event.player);
         }));
+    }
+
+    private void manageEffectsAndAttributes(TickEvent.PlayerTickEvent event) {
+        ServerPlayer player = (ServerPlayer) event.player;
+        modifyAttributes(player);
+        if (player.isOnFire())
+            player.clearFire();
+        removeNegativeEffectsOfSaitama(player);
+        HelpUtility.applySaitamaEffectsSet(player);
+        if (event.phase == TickEvent.Phase.END)
+            handlerJumpPower(player);
+
+    }
+
+    private static void handlerJumpPower(ServerPlayer player) {
+        int value = shiftHoldTime.getOrDefault(player, 0);
+        if (player.isShiftKeyDown()) {
+            shiftHoldTime.put(player, ++value);
+        } else {
+            shiftHoldTime.remove(player);
+        }
+        if (shiftHoldTime.containsKey(player)) {
+            player.addEffect(new MobEffectInstance(MobEffects.JUMP, 1, Math.min(value, 127)));
+        }
+    }
+
+    private void modifyAttributes(ServerPlayer player) {
+        if (player.isSpectator())
+            return;
+        //0.08
+        if (this.getWeight() != 0)
+            player.getAttribute(ForgeMod.ENTITY_GRAVITY.get()).setBaseValue((double) this.getWeight() / 10);
+        else
+            player.getAttribute(ForgeMod.ENTITY_GRAVITY.get()).setBaseValue(0.08);
+        if (this.getSpeed() != 0)
+            player.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue((double) this.getSpeed() / 9);
+        else
+            player.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.1F);
+
+        if (this.getAttackKnockback() != 0)
+            player.getAttribute(Attributes.ATTACK_KNOCKBACK).setBaseValue(this.getAttackKnockback());
+        else
+            player.getAttribute(Attributes.ATTACK_KNOCKBACK).setBaseValue(0);
+
+        if (this.getKnockbackResistance() != 0)
+            player.getAttribute(Attributes.KNOCKBACK_RESISTANCE).setBaseValue(this.getKnockbackResistance());
+        else
+            player.getAttribute(Attributes.KNOCKBACK_RESISTANCE).setBaseValue(0);
+
+        if (this.getSwimSpeed() != 0)
+            player.getAttribute(ForgeMod.SWIM_SPEED.get()).setBaseValue(this.getSwimSpeed());
+        else
+            player.getAttribute(ForgeMod.SWIM_SPEED.get()).setBaseValue(1.0D);
+
+        player.getAttribute(Attributes.ATTACK_SPEED).setBaseValue(500F);
+    }
+
+    private static void removeNegativeEffectsOfSaitama(ServerPlayer player) {
+        if (player.getEffect(MobEffects.DARKNESS) != null) {
+            player.removeEffect(MobEffects.DARKNESS);
+        }
+        if (player.getEffect(MobEffects.MOVEMENT_SLOWDOWN) != null) {
+            player.removeEffect(MobEffects.MOVEMENT_SLOWDOWN);
+        }
+        if (player.getEffect(MobEffects.BLINDNESS) != null) {
+            player.removeEffect(MobEffects.BLINDNESS);
+        }
+        if (player.getEffect(MobEffects.WEAKNESS) != null) {
+            player.removeEffect(MobEffects.WEAKNESS);
+        }
+        if (player.getEffect(MobEffects.LEVITATION) != null) {
+            player.removeEffect(MobEffects.LEVITATION);
+        }
+        if (player.getEffect(MobEffects.POISON) != null) {
+            player.removeEffect(MobEffects.POISON);
+        }
+        if (player.getEffect(MobEffects.DIG_SLOWDOWN) != null) {
+            player.removeEffect(MobEffects.DIG_SLOWDOWN);
+        }
+        if (player.getEffect(MobEffects.CONFUSION) != null) {
+            player.removeEffect(MobEffects.CONFUSION);
+        }
+    }
+
+    private static void explodeNormalMobs(ServerPlayer player) {
+        double x = player.getX();
+        double y = player.getY();
+        double z = player.getZ();
+        AABB aabb = new AABB(x - 100, y - 100, z - 100, x + 100, y + 100, z + 100);
+        ServerLevel level = (ServerLevel) player.level();
+        level.getEntitiesOfClass(LivingEntity.class, aabb, e -> e.getTags().contains("targetnormalpunch")).forEach(
+                e -> {
+                    double x1 = e.getX();
+                    double y1 = e.getY();
+                    double z1 = e.getZ();
+                    HelpUtility.explodeWithoutKnockBackFor(player, x1, y1 + 0.0625D, z1, 12.0F);
+                    level.sendParticles(ParticleTypes.FLAME, x1, y1, z1, 10, 0, 0, 0, 0);
+                    level.sendParticles(ParticleTypes.FLASH, x1, y1, z1, 10, 0, 0, 0, 0);
+                    level.sendParticles(ParticleTypes.FIREWORK, x1, y1, z1, 10, 0, 0, 0, 0);
+                    level.sendParticles(ParticleTypes.FIREWORK, x1, y1, z1, 10, 0, 0, 0, 0);
+                }
+        );
     }
 }
