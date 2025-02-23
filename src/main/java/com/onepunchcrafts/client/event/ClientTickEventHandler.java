@@ -72,7 +72,7 @@ public class ClientTickEventHandler {
     private static void managerAnimation(LocalPlayer player) {
         HelpUtility.getSaitamaPack(player).ifPresent(one -> {
             switch (one.getActualAbility()) {
-                case 1 -> {
+                case 0, 1 -> {
                     startAnimation(player, "multiple_punches");
                     tasks.add(TickClientScheduler.scheduleFromHere(Duration.of(5, ChronoUnit.SECONDS), () -> stopAnimation(player)));
                 }
