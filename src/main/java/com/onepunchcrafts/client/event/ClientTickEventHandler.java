@@ -2,6 +2,8 @@ package com.onepunchcrafts.client.event;
 
 import com.onepunchcrafts.client.Keybinding;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
+import com.onepunchcrafts.common.skills.saitama.ExtremeSpeed;
+import com.onepunchcrafts.common.skills.saitama.WeakPunch;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.AnimationPacket;
 import com.onepunchcrafts.network.packet.SeriousFartPacket;
@@ -71,8 +73,12 @@ public class ClientTickEventHandler {
 
     private static void managerAnimation(LocalPlayer player) {
         HelpUtility.getSaitamaPack(player).ifPresent(one -> {
+            if (one.getSkillPack().getCurrentSkill() instanceof WeakPunch) {
+                startAnimation(player, "multiple_punches");
+                tasks.add(TickClientScheduler.scheduleFromHere(Duration.of(5, ChronoUnit.SECONDS), () -> stopAnimation(player)));
+            }
             switch (one.getActualAbility()) {
-                case 0, 1 -> {
+                case 1 -> {
                     startAnimation(player, "multiple_punches");
                     tasks.add(TickClientScheduler.scheduleFromHere(Duration.of(5, ChronoUnit.SECONDS), () -> stopAnimation(player)));
                 }
