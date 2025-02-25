@@ -1,5 +1,6 @@
 package com.onepunchcrafts.common.capability;
 
+import com.onepunchcrafts.common.skills.Skill;
 import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
 import com.onepunchcrafts.common.skills.SkillPack;
 import it.unimi.dsi.fastutil.shorts.ShortConsumer;
@@ -76,6 +77,11 @@ public class OnePunchPlayer {
         return this.skillPack.getMaxNumSkill();
     }
 
+    public Skill getCurrentSkill() {
+        return this.skillPack.getCurrentSkill();
+    }
+
+    @Deprecated
     public int getActualAbility() {
         return this.skillPack.getCurrentSkillIndex();
     }

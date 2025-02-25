@@ -4,7 +4,10 @@ import com.onepunchcrafts.OnePunchCrafts;
 import com.onepunchcrafts.common.skills.Skill;
 import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.util.TickScheduler;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -12,6 +15,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 
+import java.awt.*;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayDeque;
@@ -32,6 +36,11 @@ public class NormalPunchesInArea implements Skill {
         final ArrayDeque<Entity> deque = new ArrayDeque<>();
         entities.forEach(deque::push);
         processEntities(deque, player, HelpUtility.verifyIsSaitamaAndGetCapability(player).get());
+    }
+
+    @Override
+    public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
+        guiGraphics.drawString(font, Component.translatable("skill.saitama.normalpuncharmy"), width / 2 - defaultReduce, height / 2 + defaultAdd, Color.GREEN.getRGB(), false);
     }
 
     private void processEntities(ArrayDeque<Entity> stack, ServerPlayer player, SaitamaPack sai) {

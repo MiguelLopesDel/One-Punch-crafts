@@ -71,6 +71,7 @@ public class SaitamaPack implements SkillPack {
     private final List<List<Skill>> skills = getSkills();
     @Getter
     private int currentGroupIndex;
+    private final SaitamaPack self = this;
 
     private @NotNull List<List<Skill>> getSkills() {
         List<List<Skill>> groupList = new ArrayList<>();
@@ -78,36 +79,105 @@ public class SaitamaPack implements SkillPack {
         list.add(0, new WeakPunch());
         list.add(1, new NormalPunch());
         list.add(2, new SeriousPunch());
-        list.add(3, p -> {
-            if (p instanceof ServerPlayer player) {
-                setSeriousFartActive(!isSeriousFartActive());
-                NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(this));
+        list.add(3, new Skill() {
+            @Override
+            public void execute(Player p) {
+                if (p instanceof ServerPlayer player) {
+                    setSeriousFartActive(!isSeriousFartActive());
+                    NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(self));
+                }
+            }
+
+            @Override
+            public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
+                guiGraphics.drawString(font, Component.translatable("skill.saitama.serious_fart"), width / 2 - defaultReduce, height / 2 + defaultAdd, isSeriousFartActive() ? Color.GREEN.getRGB() : Color.RED.getRGB(), false);
             }
         });
         list.add(new WeakeningPunch());
         list.add(5, new QuickBackStab());
-        list.add(a -> {
-        });
-        list.add(7, p -> {
-            if (p instanceof ServerPlayer player) {
-                setBreakBlocksQuickly(!isBreakBlocksQuickly());
-                NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(this));
+        list.add(6, new Skill() {
+            @Override
+            public void execute(Player player) {
+            }
+
+            @Override
+            public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
+                guiGraphics.drawString(font, Component.translatable("skill.saitama.super_speed", getSpeed()), width / 2 - defaultReduce, height / 2 + defaultAdd, Color.GREEN.getRGB(), false);
             }
         });
-        list.add(a -> {
+        list.add(7, new Skill() {
+            @Override
+            public void execute(Player p) {
+                if (p instanceof ServerPlayer player) {
+                    setBreakBlocksQuickly(!isBreakBlocksQuickly());
+                    NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(self));
+                }
+            }
+
+            @Override
+            public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
+                guiGraphics.drawString(font, Component.translatable("skill.saitama.break_blocks_quickly"), width / 2 - defaultReduce, height / 2 + defaultAdd, isBreakBlocksQuickly() ? Color.GREEN.getRGB() : Color.RED.getRGB(), false);
+            }
         });
-        list.add(a -> {
+        list.add(new Skill() {
+            @Override
+            public void execute(Player player) {
+            }
+
+            @Override
+            public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
+                guiGraphics.drawString(font, Component.translatable("skill.saitama.set_weight", getWeight()), width / 2 - defaultReduce, height / 2 + defaultAdd, Color.GREEN.getRGB(), false);
+            }
         });
-        list.add(a -> {
+        list.add(new Skill() {
+            @Override
+            public void execute(Player player) {
+            }
+
+            @Override
+            public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
+                guiGraphics.drawString(font, Component.translatable("skill.saitama.knockback_resistance", getKnockbackResistance()), width / 2 - defaultReduce, height / 2 + defaultAdd, Color.GREEN.getRGB(), false);
+            }
         });
-        list.add(a -> {
+        list.add(new Skill() {
+            @Override
+            public void execute(Player player) {
+            }
+
+            @Override
+            public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
+                guiGraphics.drawString(font, Component.translatable("skill.saitama.attack_knockback", getAttackKnockback()), width / 2 - defaultReduce, height / 2 + defaultAdd, Color.GREEN.getRGB(), false);
+            }
+        });
+        list.add(new Skill() {
+            @Override
+            public void execute(Player player) {
+            }
+
+            @Override
+            public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
+                guiGraphics.drawString(font, Component.translatable("skill.saitama.swim_speed", getSwimSpeed()), width / 2 - defaultReduce, height / 2 + defaultAdd, Color.GREEN.getRGB(), false);
+            }
         });
         list.add(12, new NormalPunchesInArea());
 
         List<Skill> list2 = new ArrayList<>();
         list2.add(new ExtremeSpeed());
-        list2.add(new ExtremeJump());
-
+        list2.add(new Skill() {
+            @Override
+            public void execute(Player player) {
+                if (player instanceof ServerPlayer serverPlayer) {
+                    HelpUtility.verifyIsSaitamaAndGetCapability(serverPlayer).ifPresent(sai -> {
+                        sai.setExtremeJump(!sai.isExtremeJump());
+                        NetworkRegister.sendToPlayer(serverPlayer, new PlayerSyncPacket(sai));
+                    });
+                }
+            }
+            @Override
+            public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
+                guiGraphics.drawString(font, Component.translatable("skill.saitama.extreme_jump"), width / 2 - defaultReduce, height / 2 + defaultAdd, isExtremeJump() ? Color.GREEN.getRGB() : Color.RED.getRGB(), false);
+            }
+        });
         groupList.add(list);
         groupList.add(list2);
         return groupList;
@@ -221,46 +291,7 @@ public class SaitamaPack implements SkillPack {
     @Override
     @OnlyIn(Dist.CLIENT)
     public void renderSkills(int width, int height, Font font, GuiGraphics guiGraphics) {
-        int defaultReduce = (int) (width * 0.05);
-        int defaultAdd = (int) (height * 0.25);
-        if (getCurrentGroupIndex() == 1) {
-            switch (getCurrentSkillIndex()) {
-                case 0 ->
-                        guiGraphics.drawString(font, Component.translatable("skill.saitama.extreme_speed"), width / 2 - defaultReduce, height / 2 + defaultAdd, isExtremeSpeedActive() ? Color.GREEN.getRGB() : Color.RED.getRGB(), false);
-                case 1 ->
-                        guiGraphics.drawString(font, Component.translatable("skill.saitama.extreme_jump"), width / 2 - defaultReduce, height / 2 + defaultAdd, isExtremeJump() ? Color.GREEN.getRGB() : Color.RED.getRGB(), false);
-            }
-            return;
-        }
-
-        switch (getCurrentSkillIndex()) {
-            case 0 ->
-                    guiGraphics.drawString(font, Component.translatable("skill.saitama.weak_punch"), width / 2 - defaultReduce, height / 2 + defaultAdd, Color.GREEN.getRGB(), false);
-            case 1 ->
-                    guiGraphics.drawString(font, Component.translatable("skill.saitama.normal_punch"), width / 2 - defaultReduce, height / 2 + defaultAdd, Color.GREEN.getRGB(), false);
-            case 2 ->
-                    guiGraphics.drawString(font, Component.translatable("skill.saitama.serious_punch"), width / 2 - defaultReduce, height / 2 + defaultAdd, Color.GREEN.getRGB(), false);
-            case 3 ->
-                    guiGraphics.drawString(font, Component.translatable("skill.saitama.serious_fart"), width / 2 - defaultReduce, height / 2 + defaultAdd, isSeriousFartActive() ? Color.GREEN.getRGB() : Color.RED.getRGB(), false);
-            case 4 ->
-                    guiGraphics.drawString(font, Component.translatable("skill.saitama.weakening_punch"), width / 2 - defaultReduce, height / 2 + defaultAdd, Color.GREEN.getRGB(), false);
-            case 5 ->
-                    guiGraphics.drawString(font, Component.translatable("skill.saitama.quick_backstab"), width / 2 - defaultReduce, height / 2 + defaultAdd, Color.GREEN.getRGB(), false);
-            case 6 ->
-                    guiGraphics.drawString(font, Component.translatable("skill.saitama.super_speed", getSpeed()), width / 2 - defaultReduce, height / 2 + defaultAdd, Color.GREEN.getRGB(), false);
-            case 7 ->
-                    guiGraphics.drawString(font, Component.translatable("skill.saitama.break_blocks_quickly"), width / 2 - defaultReduce, height / 2 + defaultAdd, isBreakBlocksQuickly() ? Color.GREEN.getRGB() : Color.RED.getRGB(), false);
-            case 8 ->
-                    guiGraphics.drawString(font, Component.translatable("skill.saitama.set_weight", getWeight()), width / 2 - defaultReduce, height / 2 + defaultAdd, Color.GREEN.getRGB(), false);
-            case 9 ->
-                    guiGraphics.drawString(font, Component.translatable("skill.saitama.knockback_resistance", getKnockbackResistance()), width / 2 - defaultReduce, height / 2 + defaultAdd, Color.GREEN.getRGB(), false);
-            case 10 ->
-                    guiGraphics.drawString(font, Component.translatable("skill.saitama.attack_knockback", getAttackKnockback()), width / 2 - defaultReduce, height / 2 + defaultAdd, Color.GREEN.getRGB(), false);
-            case 11 ->
-                    guiGraphics.drawString(font, Component.translatable("skill.saitama.swim_speed", getSwimSpeed()), width / 2 - defaultReduce, height / 2 + defaultAdd, Color.GREEN.getRGB(), false);
-            case 12 ->
-                    guiGraphics.drawString(font, Component.translatable("skill.saitama.normalpuncharmy"), width / 2 - defaultReduce, height / 2 + defaultAdd, Color.GREEN.getRGB(), false);
-        }
+        getCurrentSkill().renderName(width, height, font, guiGraphics, (int) (width * 0.05), (int) (height * 0.25));
     }
 
     @Override

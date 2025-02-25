@@ -5,7 +5,10 @@ import com.onepunchcrafts.common.skills.Skill;
 import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.util.TickScheduler;
 import com.onepunchcrafts.util.TickUtilities;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -14,6 +17,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.living.*;
 
+import java.awt.*;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -69,6 +73,11 @@ public class SeriousPunch implements Skill {
         } else if (ev instanceof LivingHurtEvent event && HelpUtility.isSaitamaServerSide(event.getSource().getEntity())) {
             event.setCanceled(false);
         }
+    }
+
+    @Override
+    public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
+        guiGraphics.drawString(font, Component.translatable("skill.saitama.serious_punch"), width / 2 - defaultReduce, height / 2 + defaultAdd, Color.GREEN.getRGB(), false);
     }
 
     private static boolean cancelDeathSaitama(LivingDeathEvent event, ServerPlayer player) {

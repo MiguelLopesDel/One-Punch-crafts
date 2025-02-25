@@ -2,6 +2,9 @@ package com.onepunchcrafts.common.skills.saitama;
 
 import com.onepunchcrafts.common.skills.Skill;
 import com.onepunchcrafts.util.HelpUtility;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -14,6 +17,7 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
+import java.awt.*;
 import java.util.List;
 
 public class QuickBackStab implements Skill {
@@ -56,5 +60,10 @@ public class QuickBackStab implements Skill {
 //            if (closestEntity instanceof ServerPlayer target)
 //                NetworkRegister.sendToPlayer(target, new SettingRenderPacket("quick_backstab"));
         }
+    }
+
+    @Override
+    public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
+        guiGraphics.drawString(font, Component.translatable("skill.saitama.quick_backstab"), width / 2 - defaultReduce, height / 2 + defaultAdd, Color.GREEN.getRGB(), false);
     }
 }

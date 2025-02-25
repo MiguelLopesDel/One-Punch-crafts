@@ -2,6 +2,9 @@ package com.onepunchcrafts.common.skills.saitama;
 
 import com.onepunchcrafts.common.skills.Skill;
 import com.onepunchcrafts.util.HelpUtility;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -10,6 +13,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
+
+import java.awt.*;
 
 public class WeakeningPunch implements Skill {
     @Override
@@ -37,5 +42,10 @@ public class WeakeningPunch implements Skill {
             float amount = target.getHealth() - 0.0001F;
             event.setAmount(Math.min(amount, 100_000));
         }
+    }
+
+    @Override
+    public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
+        guiGraphics.drawString(font, Component.translatable("skill.saitama.weakening_punch"), width / 2 - defaultReduce, height / 2 + defaultAdd, Color.GREEN.getRGB(), false);
     }
 }

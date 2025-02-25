@@ -41,7 +41,12 @@ public class WithoutPack implements SkillPack {
 
     @Override
     public Skill getCurrentSkill() {
-        return player -> {};
+        return new Skill() {
+            @Override
+            public void execute(Player player) {}
+            @Override
+            public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {}
+        };
     }
 
     @Override

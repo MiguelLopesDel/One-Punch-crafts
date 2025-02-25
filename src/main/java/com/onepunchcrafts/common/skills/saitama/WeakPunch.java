@@ -8,7 +8,10 @@ import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.AnimationPacket;
 import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.util.TickScheduler;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -18,6 +21,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 
+import java.awt.*;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 
@@ -35,6 +39,11 @@ public class WeakPunch implements Skill {
         if (event instanceof LivingDamageEvent damageEvent && HelpUtility.isSaitamaServerSide(damageEvent.getSource().getEntity())) {
             damageEvent.setAmount(damageEvent.getAmount() * 100_000);
         }
+    }
+
+    @Override
+    public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
+        guiGraphics.drawString(font, Component.translatable("skill.saitama.weak_punch"), width / 2 - defaultReduce, height / 2 + defaultAdd, Color.GREEN.getRGB(), false);
     }
 
     private static void consecutivePunches(Player p) {

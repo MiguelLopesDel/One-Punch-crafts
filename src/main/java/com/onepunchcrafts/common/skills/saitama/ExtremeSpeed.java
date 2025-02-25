@@ -6,7 +6,11 @@ import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.CheckAndDestructionBlockInAroundPacket;
 import com.onepunchcrafts.network.packet.PlayerSyncPacket;
 import com.onepunchcrafts.util.HelpUtility;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -15,6 +19,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
+import java.awt.*;
 import java.util.ArrayList;
 
 public class ExtremeSpeed implements SkillPassive {
@@ -27,6 +32,11 @@ public class ExtremeSpeed implements SkillPassive {
                 NetworkRegister.sendToPlayer(serverPlayer, new PlayerSyncPacket(sai));
             });
         }
+    }
+
+    @Override
+    public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
+        HelpUtility.verifyIsSaitamaAndGetCapability(Minecraft.getInstance().player).ifPresent(sai -> guiGraphics.drawString(font, Component.translatable("skill.saitama.extreme_speed"), width / 2 - defaultReduce, height / 2 + defaultAdd, sai.isExtremeSpeedActive() ? Color.GREEN.getRGB() : Color.RED.getRGB(), false));
     }
 
     @Override
