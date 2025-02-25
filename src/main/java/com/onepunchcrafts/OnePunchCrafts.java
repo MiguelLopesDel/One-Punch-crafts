@@ -2,16 +2,18 @@ package com.onepunchcrafts;
 
 import com.mojang.logging.LogUtils;
 import com.onepunchcrafts.common.RegisterSounds;
-import com.onepunchcrafts.common.capability.OnePunchCraftsProvider;
+import com.onepunchcrafts.common.capability.OnePunchCraftsLevelProvider;
+import com.onepunchcrafts.common.capability.OnePunchCraftsPlayerProvider;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
+import com.onepunchcrafts.common.capability.WorldRules;
 import com.onepunchcrafts.common.skills.WithoutPack;
 import com.onepunchcrafts.network.NetworkRegister;
-import com.onepunchcrafts.network.packet.PlayerSyncPacket;
 import com.onepunchcrafts.util.HelpUtility;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityManager;
@@ -40,6 +42,8 @@ public class OnePunchCrafts {
     public static final WithoutPack WITHOUT_PACK = new WithoutPack();
 
     public static final Capability<OnePunchPlayer> ONE_PLAYER_CAPABILITY = CapabilityManager.get(new CapabilityToken<>() {
+    });
+    public static final Capability<WorldRules> WORLD_RULES_CAPABILITY = CapabilityManager.get(new CapabilityToken<>() {
     });
 
     public static final OptionalMod<?> DRACONIC_MOD = OptionalMod.of("draconicevolution");
@@ -113,13 +117,21 @@ public class OnePunchCrafts {
 
     @SubscribeEvent
     public static void register(RegisterCapabilitiesEvent event) {
-        event.register(OnePunchCraftsProvider.class);
+        event.register(OnePunchCraftsPlayerProvider.class);
+        event.register(OnePunchCraftsLevelProvider.class);
     }
 
     @SubscribeEvent
     public void onAttachCapabilities(AttachCapabilitiesEvent<Entity> event) {
         if (event.getObject() instanceof Player && !(event.getObject() instanceof FakePlayer)) {
-            event.addCapability(new ResourceLocation(MODID, "oneplayerdata"), new OnePunchCraftsProvider());
+            event.addCapability(new ResourceLocation(MODID, "oneplayerdata"), new OnePunchCraftsPlayerProvider());
+        }
+    }
+
+    @SubscribeEvent
+    public void onAttachLevelCapabilities(AttachCapabilitiesEvent<Level> event) {
+        if (event.getObject() instanceof Level) {
+            event.addCapability(new ResourceLocation(MODID, "oneleveldata"), new OnePunchCraftsLevelProvider());
         }
     }
 

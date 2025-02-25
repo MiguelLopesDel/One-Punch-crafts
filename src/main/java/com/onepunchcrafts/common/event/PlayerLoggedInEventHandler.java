@@ -3,7 +3,9 @@ package com.onepunchcrafts.common.event;
 import com.onepunchcrafts.OnePunchCrafts;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
 import com.onepunchcrafts.network.NetworkRegister;
+import com.onepunchcrafts.network.packet.LevelSyncPacket;
 import com.onepunchcrafts.network.packet.PlayerSyncPacket;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
@@ -17,6 +19,7 @@ import net.minecraftforge.fml.common.Mod;
 import java.awt.*;
 
 import static com.onepunchcrafts.OnePunchCrafts.WITHOUT_PACK;
+import static com.onepunchcrafts.OnePunchCrafts.WORLD_RULES_CAPABILITY;
 import static java.awt.PageAttributes.ColorType.COLOR;
 
 @Mod.EventBusSubscriber
@@ -36,6 +39,7 @@ public class PlayerLoggedInEventHandler {
         if (!player.level().isClientSide()) {
             OnePunchPlayer onePunchPlayer = player.getCapability(OnePunchCrafts.ONE_PLAYER_CAPABILITY).orElse(new OnePunchPlayer(WITHOUT_PACK));
             NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(onePunchPlayer.getSkillPack()));
+            player.level().getCapability(WORLD_RULES_CAPABILITY).ifPresent(cap -> NetworkRegister.sendToPlayer(player, new LevelSyncPacket((CompoundTag) cap.writeNBT())));
         }
     }
 }

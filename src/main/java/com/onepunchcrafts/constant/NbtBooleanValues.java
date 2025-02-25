@@ -2,7 +2,7 @@ package com.onepunchcrafts.constant;
 
 public enum NbtBooleanValues {
     seriousFartActive("seriousfart"), superSpeed("superspeedsaitama"), breakBlocksQuickly("breakblocksquickly"),
-    specialSkillActive("seriousPunchSkillActive"), extremeSpeed("extremeSpeed");
+    specialSkillActive("seriousPunchSkillActive"), extremeSpeed("extremeSpeed"), extremeJump("extremejump");
 
     private String value;
 

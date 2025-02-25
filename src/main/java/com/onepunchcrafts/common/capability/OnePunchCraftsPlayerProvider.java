@@ -9,12 +9,12 @@ import net.minecraftforge.common.util.LazyOptional;
 
 import static com.onepunchcrafts.OnePunchCrafts.WITHOUT_PACK;
 
-public class OnePunchCraftsProvider implements ICapabilitySerializable<Tag> {
+public class OnePunchCraftsPlayerProvider implements ICapabilitySerializable<Tag> {
 
     private final OnePunchPlayer dataPlayer;
     private final LazyOptional<OnePunchPlayer> instance;
 
-    public OnePunchCraftsProvider() {
+    public OnePunchCraftsPlayerProvider() {
         this.dataPlayer = new OnePunchPlayer(WITHOUT_PACK);
         this.instance = LazyOptional.of(() -> this.dataPlayer);
     }
