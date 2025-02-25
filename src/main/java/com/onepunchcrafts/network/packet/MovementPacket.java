@@ -15,6 +15,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkEvent;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
 import java.util.List;
@@ -22,20 +23,33 @@ import java.util.function.Supplier;
 
 public class MovementPacket {
 
+    @Nullable
     private final Vec3 deltaMovement;
 
     public MovementPacket(@NotNull Vec3 deltaMovement) {
         this.deltaMovement = deltaMovement;
     }
 
+    public MovementPacket() {
+        this.deltaMovement = null;
+    }
+
     public void encode(FriendlyByteBuf buffer) {
-        buffer.writeDouble(this.deltaMovement.x);
-        buffer.writeDouble(this.deltaMovement.y);
-        buffer.writeDouble(this.deltaMovement.z);
+        if (deltaMovement != null) {
+            buffer.writeBoolean(true);
+            buffer.writeDouble(deltaMovement.x);
+            buffer.writeDouble(deltaMovement.y);
+            buffer.writeDouble(deltaMovement.z);
+        } else {
+            buffer.writeBoolean(false);
+        }
     }
 
     public MovementPacket(FriendlyByteBuf buffer) {
-        this.deltaMovement = new Vec3(buffer.readDouble(), buffer.readDouble(), buffer.readDouble());
+        if (buffer.readBoolean())
+            this.deltaMovement = new Vec3(buffer.readDouble(), buffer.readDouble(), buffer.readDouble());
+        else
+            this.deltaMovement = null;
     }
 
 
@@ -46,7 +60,7 @@ public class MovementPacket {
             if (!sai.isExtremeJump() && effect != null && effect.getAmplifier() >= TickUtil.convertTimeInTicks(Duration.ofSeconds(3))) {
                 player.serverLevel().explode(null, player.getX(), player.getY(), player.getZ(), 10,
                         Level.ExplosionInteraction.MOB);
-            } else if (sai.isExtremeJump())
+            } else if (this.deltaMovement != null && sai.isExtremeJump())
                 extremeJump(player);
         });
         ctx.get().setPacketHandled(true);
