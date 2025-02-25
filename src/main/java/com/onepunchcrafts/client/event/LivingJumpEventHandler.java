@@ -1,4 +1,4 @@
-package com.onepunchcrafts.common.event;
+package com.onepunchcrafts.client.event;
 
 import com.onepunchcrafts.OnePunchCrafts;
 import com.onepunchcrafts.network.NetworkRegister;
