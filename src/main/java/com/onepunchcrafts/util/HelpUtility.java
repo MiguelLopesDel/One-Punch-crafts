@@ -4,6 +4,7 @@ import com.brandon3055.draconicevolution.DEConfig;
 import com.brandon3055.draconicevolution.entity.GuardianCrystalEntity;
 import com.brandon3055.draconicevolution.entity.guardian.DraconicGuardianEntity;
 import com.brandon3055.draconicevolution.entity.guardian.GuardianFightManager;
+import com.brandon3055.draconicevolution.entity.guardian.control.*;
 import com.onepunchcrafts.common.RegisterSounds;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
 import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
@@ -66,7 +67,7 @@ public class HelpUtility {
      * @return caso o jogador tenha a capacidade e seja um saitama é retorna a propria capacidade caso contrario
      * um optional empty;
      */
-    public static Optional<SaitamaPack> verifyIsSaitamaAndGetCapability(ServerPlayer player) {
+    public static Optional<SaitamaPack> verifyIsSaitamaAndGetCapability(Player player) {
         LazyOptional<OnePunchPlayer> capability = player.getCapability(ONE_PLAYER_CAPABILITY);
         return capability.resolve()
                 .map(OnePunchPlayer::getSkillPack)
@@ -106,6 +107,7 @@ public class HelpUtility {
 
             entity.setInvulnerable(false);
             entity.setSecondsOnFire(60);
+            managerPhases(draconicGuardian);
             entity.hurt(damageSource, 10_000_000_000_000_000f);
 
             fieldAliveCrystal.set(fightManager, oldCrystalNum);
@@ -114,6 +116,48 @@ public class HelpUtility {
 
         } catch (NoSuchFieldException | IllegalAccessException | ClassNotFoundException e) {
             return false;
+        }
+    }
+
+    private static void managerPhases(DraconicGuardianEntity draconicGuardian) {
+        PhaseManager manager = draconicGuardian.getPhaseManager();
+        IPhase currentPhase = manager.getCurrentPhase();
+        if (currentPhase == null)
+            return;
+        Field phase;
+        try {
+            phase = manager.getClass().getDeclaredField("phase");
+            phase.setAccessible(true);
+            if (currentPhase instanceof ArialBombardPhase)
+                phase.set(manager, new ArialBombardPhase(draconicGuardian) {
+                    @Override
+                    public boolean isInvulnerable() {
+                        return false;
+                    }
+                });
+            else if (currentPhase instanceof GroundEffectPhase)
+                phase.set(manager, new GroundEffectPhase(draconicGuardian) {
+                    @Override
+                    public boolean isInvulnerable() {
+                        return false;
+                    }
+                });
+            else if (currentPhase instanceof LaserBeamPhase)
+                phase.set(manager, new LaserBeamPhase(draconicGuardian) {
+                    @Override
+                    public boolean isInvulnerable() {
+                        return false;
+                    }
+                });
+            else if (currentPhase instanceof ShockwavePhase)
+                phase.set(manager, new ShockwavePhase(draconicGuardian) {
+                    @Override
+                    public boolean isInvulnerable() {
+                        return false;
+                    }
+                });
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            System.out.println();
         }
     }
 
@@ -137,10 +181,12 @@ public class HelpUtility {
             endVec = hitResult.getLocation();
         }
         AABB boundingBox = new AABB(startVec, endVec).inflate(1.0);
-        List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, boundingBox, entity -> entity != sender && entity.isAlive());
-        LivingEntity closestEntity = null;
+        List<Entity> entities = level.getEntitiesOfClass(Entity.class, boundingBox, entity -> entity != sender && entity.isAlive());
+        Entity closestEntity = null;
         double closestDistance = distance * distance;
-        for (LivingEntity entity : entities) {
+        for (Entity entity : entities) {
+            if (DRACONIC_MOD.isPresent() && !(entity instanceof LivingEntity) && !(entity instanceof GuardianCrystalEntity))
+                continue;
             AABB entityBox = entity.getBoundingBox().inflate(0.3);
             EntityHitResult entityHitResult = ProjectileUtil.getEntityHitResult(sender, startVec, endVec, entityBox, entity1 -> !entity1.isSpectator() && entity1.isPickable(), closestDistance);
             if (entityHitResult != null) {
@@ -248,11 +294,11 @@ public class HelpUtility {
 
     public static Explosion explodeWithoutKnockBackFor(@NotNull Entity entity, double x1, double v, double z1, float v1) {
         Level level = entity.level();
-        Explosion.BlockInteraction explosion$blockinteraction1 = net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(level, entity) ?
+        Explosion.BlockInteraction explosion$blockinteraction1 = net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(level, null) ?
                 level.getGameRules().getBoolean(RULE_MOB_EXPLOSION_DROP_DECAY) ? Explosion.BlockInteraction.DESTROY_WITH_DECAY : Explosion.BlockInteraction.DESTROY
                 : Explosion.BlockInteraction.KEEP;
         Explosion.BlockInteraction explosion$blockinteraction = explosion$blockinteraction1;
-        ExplosionWithoutKnockBack explosion = new ExplosionWithoutKnockBack(level, entity, null, null, x1, v, z1, v1, false, explosion$blockinteraction);
+        ExplosionWithoutKnockBack explosion = new ExplosionWithoutKnockBack(level, null, null, null, x1, v, z1, v1, false, explosion$blockinteraction);
         if (net.minecraftforge.event.ForgeEventFactory.onExplosionStart(level, explosion))
             return explosion;
         explosion.addEntityWithoutKnockBack(entity);

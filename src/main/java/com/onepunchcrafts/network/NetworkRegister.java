@@ -49,6 +49,16 @@ public class NetworkRegister {
                 .decoder(CheckAndDestructionBlockInAroundPacket::new)
                 .consumerMainThread(CheckAndDestructionBlockInAroundPacket::handle)
                 .add();
+        INSTANCE.messageBuilder(MovementPacket.class, ++id, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(MovementPacket::encode)
+                .decoder(MovementPacket::new)
+                .consumerMainThread(MovementPacket::handle)
+                .add();
+        INSTANCE.messageBuilder(LevelSyncPacket.class, ++id, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(LevelSyncPacket::encode)
+                .decoder(LevelSyncPacket::new)
+                .consumerMainThread(LevelSyncPacket::handle)
+                .add();
     }
 
     public static void sendToServer(Object msg) {

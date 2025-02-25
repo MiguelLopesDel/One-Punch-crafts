@@ -6,7 +6,6 @@ import net.minecraft.network.protocol.game.ServerGamePacketListener;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.server.network.ServerPlayerConnection;
-import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -23,16 +22,15 @@ public abstract class MixinServerGamePacketListenerImpl implements ServerPlayerC
     @Shadow
     private boolean clientIsFloating;
 
-    @Shadow
-    public abstract void teleport(double pX, double pY, double pZ, float pYaw, float pPitch);
-
     @Inject(method = "tick", at = @At(value = "FIELD", target = "Lnet/minecraft/server/network/ServerGamePacketListenerImpl;clientIsFloating:Z"))
     public void tick(CallbackInfo ci) {
         HelpUtility.getSaitamaPack(this.player).ifPresent(sai -> this.clientIsFloating = false);
     }
 
-    @Redirect(method = "handleMovePlayer", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerGamePacketListenerImpl;teleport(DDDFF)V", ordinal = 2))
-    public void teleport(ServerGamePacketListenerImpl instance, double pX, double pY, double pZ, float pYaw, float pPitch) {
-        HelpUtility.getSaitamaPack(this.player).ifPresentOrElse(a -> {}, () -> instance.teleport(pX, pY, pZ, pYaw, pPitch));
+    @Redirect(method = "handleMovePlayer", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerPlayer;isChangingDimension()Z", ordinal = 0))
+    public boolean isChangingDimension(ServerPlayer player) {
+        return HelpUtility.getSaitamaPack(this.player)
+                .map(p -> true)
+                .orElseGet(player::isChangingDimension);
     }
 }

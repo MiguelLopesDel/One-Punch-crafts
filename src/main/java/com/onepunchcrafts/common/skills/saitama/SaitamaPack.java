@@ -48,6 +48,9 @@ public class SaitamaPack implements SkillPack {
     private boolean extremeSpeedActive;
     @Setter
     @Getter
+    private boolean extremeJump;
+    @Setter
+    @Getter
     private short speed;
     @Setter
     @Getter
@@ -73,7 +76,7 @@ public class SaitamaPack implements SkillPack {
         List<List<Skill>> groupList = new ArrayList<>();
         List<Skill> list = new ArrayList<>();
         list.add(0, new WeakPunch());
-        list.add(1, new NormalPunche());
+        list.add(1, new NormalPunch());
         list.add(2, new SeriousPunch());
         list.add(3, p -> {
             if (p instanceof ServerPlayer player) {
@@ -103,6 +106,7 @@ public class SaitamaPack implements SkillPack {
 
         List<Skill> list2 = new ArrayList<>();
         list2.add(new ExtremeSpeed());
+        list2.add(new ExtremeJump());
 
         groupList.add(list);
         groupList.add(list2);
@@ -153,6 +157,7 @@ public class SaitamaPack implements SkillPack {
         nbt.putShort("saitamaattackknockback", this.attackKnockback);
         nbt.putShort("saitamaswimspeed", this.swimSpeed);
         nbt.putInt("currentgroup", this.currentGroupIndex);
+        nbt.putBoolean("extremejump", this.extremeJump);
         return nbt;
     }
 
@@ -169,6 +174,7 @@ public class SaitamaPack implements SkillPack {
         this.attackKnockback = nbt.getShort("saitamaattackknockback");
         this.swimSpeed = nbt.getShort("saitamaswimspeed");
         this.currentGroupIndex = nbt.getInt("currentgroup");
+        this.extremeJump = nbt.getBoolean(NbtBooleanValues.extremeJump.getValue());
     }
 
     @Override
@@ -209,6 +215,7 @@ public class SaitamaPack implements SkillPack {
         this.setKnockbackResistance(data.getKnockbackResistance());
         this.setAttackKnockback(data.getAttackKnockback());
         this.setSwimSpeed(data.getSwimSpeed());
+        this.extremeJump = data.extremeJump;
     }
 
     @Override
@@ -220,6 +227,8 @@ public class SaitamaPack implements SkillPack {
             switch (getCurrentSkillIndex()) {
                 case 0 ->
                         guiGraphics.drawString(font, Component.translatable("skill.saitama.extreme_speed"), width / 2 - defaultReduce, height / 2 + defaultAdd, isExtremeSpeedActive() ? Color.GREEN.getRGB() : Color.RED.getRGB(), false);
+                case 1 ->
+                        guiGraphics.drawString(font, Component.translatable("skill.saitama.extreme_jump"), width / 2 - defaultReduce, height / 2 + defaultAdd, isExtremeJump() ? Color.GREEN.getRGB() : Color.RED.getRGB(), false);
             }
             return;
         }
@@ -379,12 +388,12 @@ public class SaitamaPack implements SkillPack {
             player.clearFire();
         removeNegativeEffectsOfSaitama(player);
         HelpUtility.applySaitamaEffectsSet(player);
-        if (event.phase == TickEvent.Phase.END)
+        if (event.phase == TickEvent.Phase.END && !this.isExtremeJump())
             handlerJumpPower(player);
 
     }
 
-    private static void handlerJumpPower(ServerPlayer player) {
+    private void handlerJumpPower(ServerPlayer player) {
         int value = shiftHoldTime.getOrDefault(player, 0);
         if (player.isShiftKeyDown()) {
             shiftHoldTime.put(player, ++value);
