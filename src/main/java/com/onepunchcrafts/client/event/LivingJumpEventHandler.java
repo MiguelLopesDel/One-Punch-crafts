@@ -28,6 +28,8 @@ public class LivingJumpEventHandler {
             HelpUtility.verifyIsSaitamaAndGetCapability(player).ifPresent(sai -> {
                 if (sai.isExtremeJump())
                     extremeJumpCalc(player);
+                else
+                    NetworkRegister.sendToServer(new MovementPacket());
             });
         }
     }
