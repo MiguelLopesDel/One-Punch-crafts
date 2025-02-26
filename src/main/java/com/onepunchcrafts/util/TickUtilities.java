@@ -8,9 +8,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.damagesource.DamageSources;
 import net.minecraft.world.damagesource.DamageType;
-import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
 import net.minecraft.world.level.block.Blocks;
@@ -47,13 +45,13 @@ public class TickUtilities {
             entity.hurt(damageSource, amount);
         });
         if (DRACONIC_MOD.isPresent())
-            HelpUtility.hurtDraconicCrystals(level, pArea, damageSource);
+            HelpUtilityMod.hurtDraconicCrystals(level, pArea, damageSource);
         List<LivingEntity> entitiesOfClass = level.getEntitiesOfClass(LivingEntity.class, pArea);
 
         entitiesOfClass.forEach(entity -> {
             if (player.equals(entity))
                 return;
-            if (DRACONIC_MOD.isPresent() && HelpUtility.handleIfDraconicGuardian(entity, damageSource)) return;
+            if (DRACONIC_MOD.isPresent() && HelpUtilityMod.handleIfDraconicGuardian(entity, damageSource)) return;
 
             entity.setInvulnerable(false);
             entity.setSecondsOnFire(60);

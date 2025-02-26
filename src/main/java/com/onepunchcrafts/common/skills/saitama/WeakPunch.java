@@ -1,8 +1,5 @@
 package com.onepunchcrafts.common.skills.saitama;
 
-import com.brandon3055.draconicevolution.entity.GuardianCrystalEntity;
-import com.brandon3055.draconicevolution.entity.guardian.DraconicGuardianEntity;
-import com.onepunchcrafts.common.damage.DamageSourceMod;
 import com.onepunchcrafts.common.skills.Skill;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.AnimationPacket;
@@ -15,7 +12,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
@@ -26,6 +22,8 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 
 import static com.onepunchcrafts.OnePunchCrafts.DRACONIC_MOD;
+import static com.onepunchcrafts.util.HelpUtilityMod.attackCrystals;
+import static com.onepunchcrafts.util.HelpUtilityMod.attackGuardian;
 
 public class WeakPunch implements Skill {
 
@@ -59,28 +57,14 @@ public class WeakPunch implements Skill {
                 if (player.equals(entity))
                     return;
                 entity.setInvulnerable(false);
-                if (DRACONIC_MOD.isPresent() && entity instanceof DraconicGuardianEntity guardian) {
-                    attackGuardian(player, guardian);
+                if (DRACONIC_MOD.isPresent() && attackGuardian(player, entity, true))
                     return;
-                }
                 player.attack(entity);
             });
             if (DRACONIC_MOD.isPresent())
-                attackCrystals(player, serverLevel, pArea);
+                attackCrystals(player, serverLevel, pArea, true);
         });
         NetworkRegister.sendToAllClientsExcept(player, new AnimationPacket(player.getStringUUID(), "multiple_punches"));
         TickScheduler.scheduleFromHere(Duration.of(5, ChronoUnit.SECONDS), () -> NetworkRegister.sendToAllClientsExcept(player, new AnimationPacket(player.getStringUUID(), "stop")));
-    }
-
-    private static void attackGuardian(ServerPlayer player, DraconicGuardianEntity guardian) {
-        guardian.hurt(player.damageSources().playerAttack(player), (float) (player.getAttributeValue(Attributes.ATTACK_DAMAGE) * 100_000));
-    }
-
-    private static void attackCrystals(ServerPlayer player, ServerLevel serverLevel, AABB pArea) {
-        serverLevel.getEntitiesOfClass(GuardianCrystalEntity.class, pArea).forEach(crystal -> {
-            crystal.setInvulnerable(false);
-            crystal.setUnstableTime(1);
-            player.attack(crystal);
-        });
     }
 }
