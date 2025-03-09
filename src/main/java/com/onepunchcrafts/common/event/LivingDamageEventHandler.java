@@ -32,7 +32,7 @@ public class LivingDamageEventHandler {
     public static void saitamaAttack(LivingDamageEvent event) {
         HelpUtility.passServerFluxToAllPlayers(event);
     }
-
+    //contem logica de ray cast
     public static ArrayList<BlockPos> markBlocksToClear(ServerLevel level, int radius, int height, int startX, int startY, int startZ, Vec3 direction) {
         ArrayList<BlockPos> blocksPos = new ArrayList<>();
         Vec3 normalizedDirection = direction.normalize();

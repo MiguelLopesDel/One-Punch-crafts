@@ -28,7 +28,7 @@ import static com.onepunchcrafts.util.HelpUtility.*;
 
 public class SeriousPunch implements Skill {
 
-    @Override
+    @Override //contem logica de ray cast
     public void execute(Player p) {
         if (!(p.level() instanceof ServerLevel serverLevel) || !(p instanceof ServerPlayer player))
             return;

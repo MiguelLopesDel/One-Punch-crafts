@@ -22,7 +22,7 @@ import java.util.List;
 
 public class QuickBackStab implements Skill {
 
-    @Override
+    @Override //contem logica de ray cast
     public void execute(Player player) {
         if (!(player.level() instanceof ServerLevel) || !(player instanceof ServerPlayer sender))
             return;

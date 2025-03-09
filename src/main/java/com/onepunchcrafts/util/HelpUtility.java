@@ -193,6 +193,10 @@ public class HelpUtility {
         return entity instanceof ServerPlayer player && getSkillData(player).getSkillPack() instanceof SaitamaPack;
     }
 
+//    public static Optional<SaitamaPack> isSaitamaServerSide(Entity entity) {
+//        return entity instanceof ServerPlayer player ? verifyIsSaitamaAndGetCapability(player) : Optional.empty();
+//    }
+
     public static Explosion explodeWithoutKnockBackFor(@NotNull Entity entity, double x1, double v, double z1, float v1) {
         Level level = entity.level();
         Explosion.BlockInteraction explosion$blockinteraction1 = net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(level, null) ?

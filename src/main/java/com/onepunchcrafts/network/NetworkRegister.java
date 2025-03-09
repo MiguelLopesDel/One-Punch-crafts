@@ -59,6 +59,11 @@ public class NetworkRegister {
                 .decoder(LevelSyncPacket::new)
                 .consumerMainThread(LevelSyncPacket::handle)
                 .add();
+        INSTANCE.messageBuilder(DimensionsPacket.class, ++id, null)
+                .encoder(DimensionsPacket::encode)
+                .decoder(DimensionsPacket::new)
+                .consumerMainThread(DimensionsPacket::handle)
+                .add();
     }
 
     public static void sendToServer(Object msg) {
