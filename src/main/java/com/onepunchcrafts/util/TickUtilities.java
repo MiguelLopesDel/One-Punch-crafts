@@ -17,6 +17,7 @@ import net.minecraft.world.phys.AABB;
 import java.util.List;
 
 import static com.onepunchcrafts.OnePunchCrafts.DRACONIC_MOD;
+import static com.onepunchcrafts.OnePunchCrafts.IMMERSIVE_PORTALS_MOD;
 
 public class TickUtilities {
 
@@ -46,6 +47,8 @@ public class TickUtilities {
         });
         if (DRACONIC_MOD.isPresent())
             DraconicCompat.hurtDraconicCrystals(level, pArea, damageSource);
+        if(IMMERSIVE_PORTALS_MOD.isPresent())
+            ImmersivePortalsCompat.destroyPortals(level, pArea);
         List<LivingEntity> entitiesOfClass = level.getEntitiesOfClass(LivingEntity.class, pArea);
 
         entitiesOfClass.forEach(entity -> {

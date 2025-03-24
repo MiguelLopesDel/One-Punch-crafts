@@ -12,6 +12,7 @@ import dev.kosmx.playerAnim.api.layered.IAnimation;
 import dev.kosmx.playerAnim.api.layered.ModifierLayer;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess;
 import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
@@ -231,5 +232,24 @@ public class HelpUtility {
         if (event instanceof LivingHurtEvent event1)
             return event1.getSource().getEntity();
         return null;
+    }
+
+    private static Vec3 getFrontPosition(ServerPlayer player, double distance, double yOffset) {
+        Vec3 eyePos = player.getEyePosition();
+        Vec3 lookVec = player.getLookAngle();
+        Vec3 targetPos = eyePos.add(lookVec.scale(distance));
+        if (yOffset != 0) {
+            targetPos = new Vec3(targetPos.x, targetPos.y + yOffset, targetPos.z);
+        }
+        return targetPos;
+    }
+
+    static Vec3 getFrontPosition(ServerPlayer player, double distance) {
+        return getFrontPosition(player, distance, 0);
+    }
+
+    public static BlockPos getFrontBlockPosition(ServerPlayer player, double distance) {
+        Vec3 frontPosition = getFrontPosition(player, distance);
+        return new BlockPos((int) frontPosition.x, (int) frontPosition.y, (int) frontPosition.z);
     }
 }
