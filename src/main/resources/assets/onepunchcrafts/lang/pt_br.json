@@ -5,6 +5,7 @@
   "key.onepunchcrafts.use_fart" : "Tecla para usar peido sério (Peido sério precisa ser ativado)",
   "key.onepunchcrafts.use_teleport" : "Tecla para se teletransporta (caso seja o saitama)",
   "key.onepunchcrafts.special_change_skill" : "Tecla para trocar entre grupos de habilidade",
+  "key.onepunchcrafts.use_dimensions_gui" : "Tecla para teletransporte entre dimensões",
 
   "skill.saitama.weak_punch" : "Soco Fraco",
   "skill.saitama.normal_punch": "Soco Normal",

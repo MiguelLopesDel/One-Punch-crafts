@@ -1,6 +1,6 @@
 package com.onepunchcrafts.network.packet;
 
-import com.onepunchcrafts.client.packet.HandlerPlayerSyncPacket;
+import com.onepunchcrafts.client.packet.HandlerClientPacket;
 import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
 import com.onepunchcrafts.common.skills.SkillPack;
 import net.minecraft.nbt.CompoundTag;
@@ -46,7 +46,7 @@ public class PlayerSyncPacket {
         if (ctx.get().getDirection().getReceptionSide().isServer()) {
             serverLogic(ctx);
         } else {
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> HandlerPlayerSyncPacket.clientLogic(data));
+            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> HandlerClientPacket.playerSyncLogic(data));
         }
         ctx.get().setPacketHandled(true);
     }

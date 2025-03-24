@@ -33,7 +33,7 @@ public class LivingJumpEventHandler {
             });
         }
     }
-
+    //contem logica de ray cast
     private static void extremeJumpCalc(Player player) {
         double reachDistance = 600.0;
         HitResult result = player.pick(reachDistance, 1.0F, false);

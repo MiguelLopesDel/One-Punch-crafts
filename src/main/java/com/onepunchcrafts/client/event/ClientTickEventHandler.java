@@ -1,6 +1,7 @@
 package com.onepunchcrafts.client.event;
 
 import com.onepunchcrafts.client.Keybinding;
+import com.onepunchcrafts.client.gui.GuiDimension;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
 import com.onepunchcrafts.common.skills.saitama.ExtremeSpeed;
 import com.onepunchcrafts.common.skills.saitama.NormalPunch;
@@ -21,6 +22,8 @@ import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.contents.LiteralContents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
@@ -64,6 +67,12 @@ public class ClientTickEventHandler {
             NetworkRegister.sendToServer(new SeriousFartPacket());
         }
         if (Keybinding.INSTANCE.USE_TELEPORT.consumeClick() && playerExist) {
+            NetworkRegister.sendToServer(new TeleportPacket());
+        }
+        if (Keybinding.INSTANCE.OPEN_DIMENSIONS_GUI.consumeClick() && playerExist) {
+            HelpUtility.verifyIsSaitamaAndGetCapability(player).ifPresent(cap ->
+                    Minecraft.getInstance().setScreen(new GuiDimension(MutableComponent.create(new LiteralContents("Select Dimension"))))
+            );
             NetworkRegister.sendToServer(new TeleportPacket());
         }
     }

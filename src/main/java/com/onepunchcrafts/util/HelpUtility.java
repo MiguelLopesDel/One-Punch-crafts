@@ -2,6 +2,7 @@ package com.onepunchcrafts.util;
 
 import com.onepunchcrafts.common.RegisterSounds;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
+import com.onepunchcrafts.common.skills.Skill;
 import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
 import com.onepunchcrafts.common.skills.SkillPack;
 import com.onepunchcrafts.network.NetworkRegister;
@@ -32,12 +33,11 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.ForgeMod;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.event.entity.living.LivingDamageEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.living.*;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Optional;
@@ -59,6 +59,14 @@ public class HelpUtility {
         return capability.resolve()
                 .map(OnePunchPlayer::getSkillPack)
                 .filter(SaitamaPack.class::isInstance)
+                .map(SaitamaPack.class::cast);
+    }
+
+    public static Optional<SaitamaPack> verifyIsSaitamaAndSkill(Player player, Class<? extends Skill> skill) {
+        LazyOptional<OnePunchPlayer> capability = player.getCapability(ONE_PLAYER_CAPABILITY);
+        return capability.resolve()
+                .map(OnePunchPlayer::getSkillPack)
+                .filter(pack -> pack instanceof SaitamaPack && skill.isInstance(pack.getCurrentSkill()))
                 .map(SaitamaPack.class::cast);
     }
 
@@ -86,7 +94,7 @@ public class HelpUtility {
         Entity closestEntity = null;
         double closestDistance = distance * distance;
         for (Entity entity : entities) {
-            if (DRACONIC_MOD.isPresent() && HelpUtilityMod.noIsLivingEntityAndChaosCrystalEntity(entity))
+            if (DRACONIC_MOD.isPresent() && DraconicCompat.noIsLivingEntityAndChaosCrystalEntity(entity))
                 continue;
             AABB entityBox = entity.getBoundingBox().inflate(0.3);
             EntityHitResult entityHitResult = ProjectileUtil.getEntityHitResult(sender, startVec, endVec, entityBox, entity1 -> !entity1.isSpectator() && entity1.isPickable(), closestDistance);
@@ -193,6 +201,10 @@ public class HelpUtility {
         return entity instanceof ServerPlayer player && getSkillData(player).getSkillPack() instanceof SaitamaPack;
     }
 
+//    public static Optional<SaitamaPack> isSaitamaServerSide(Entity entity) {
+//        return entity instanceof ServerPlayer player ? verifyIsSaitamaAndGetCapability(player) : Optional.empty();
+//    }
+
     public static Explosion explodeWithoutKnockBackFor(@NotNull Entity entity, double x1, double v, double z1, float v1) {
         Level level = entity.level();
         Explosion.BlockInteraction explosion$blockinteraction1 = net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(level, null) ?
@@ -206,5 +218,18 @@ public class HelpUtility {
         explosion.explode();
         explosion.finalizeExplosion(true);
         return explosion;
+    }
+
+    @Nullable
+    public static Entity getAttackerEntity(LivingEvent event) {
+        if (event instanceof LivingDamageEvent event1)
+            return event1.getSource().getEntity();
+        if (event instanceof LivingAttackEvent event1)
+            return event1.getSource().getEntity();
+        if (event instanceof LivingDeathEvent event1)
+            return event1.getSource().getEntity();
+        if (event instanceof LivingHurtEvent event1)
+            return event1.getSource().getEntity();
+        return null;
     }
 }

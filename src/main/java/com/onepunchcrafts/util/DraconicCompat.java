@@ -19,7 +19,7 @@ import java.lang.reflect.Field;
 
 import static com.brandon3055.draconicevolution.entity.guardian.DraconicGuardianEntity.SHIELD_POWER;
 
-public class HelpUtilityMod {
+public class DraconicCompat {
 
     static void hurtDraconicCrystals(ServerLevel level, AABB pArea, DamageSource damageSource) {
         level.getEntitiesOfClass(GuardianCrystalEntity.class, pArea).forEach(entity -> {

@@ -192,7 +192,6 @@ public class SaitamaPack implements SkillPack {
 
     @Override
     public void manageFlux(LivingEvent event) {
-        getCurrentSkill().flux(event);
         packFlux(event);
     }
 

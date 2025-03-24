@@ -8,12 +8,17 @@ import com.onepunchcrafts.common.capability.OnePunchPlayer;
 import com.onepunchcrafts.common.capability.WorldRules;
 import com.onepunchcrafts.common.skills.WithoutPack;
 import com.onepunchcrafts.network.NetworkRegister;
+import com.onepunchcrafts.common.block.PortalBlock;
+import com.onepunchcrafts.common.block.entity.PortalBlockEntity;
 import com.onepunchcrafts.util.HelpUtility;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityManager;
@@ -30,6 +35,9 @@ import net.minecraftforge.fml.OptionalMod;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
 import org.slf4j.Logger;
 
 @Mod(OnePunchCrafts.MODID)
@@ -47,6 +55,7 @@ public class OnePunchCrafts {
     });
 
     public static final OptionalMod<?> DRACONIC_MOD = OptionalMod.of("draconicevolution");
+    public static final OptionalMod<?> IMMERSIVE_PORTALS_MOD = OptionalMod.of("immersive_portals");
     // Create a Deferred Register to hold Blocks which will all be registered under the "examplemod" namespace
 //    public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, MODID);
 //    // Create a Deferred Register to hold Items which will all be registered under the "examplemod" namespace
@@ -64,12 +73,29 @@ public class OnePunchCrafts {
 //            .alwaysEat().nutrition(1).saturationMod(2f).build())));
 
     // Creates a creative tab with the id "examplemod:example_tab" for the example item, that is placed after the combat tab
+    public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, MODID);
+
+    public static final RegistryObject<PortalBlock> PORTAL_BLOCK = BLOCKS.register("portal_block", () ->
+            new PortalBlock(BlockBehaviour.Properties.of()
+                    .noCollission()
+                    .strength(-1.0F)
+    ));
+
+    public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
+            DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, MODID);
+
+    public static final RegistryObject<BlockEntityType<PortalBlockEntity>> PORTAL_BLOCK_ENTITY =
+            BLOCK_ENTITIES.register("portal_block_entity", () ->
+                    BlockEntityType.Builder.of(PortalBlockEntity::new, PORTAL_BLOCK.get()).build(null)
+            );
 
     public OnePunchCrafts() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);
+        BLOCKS.register(modEventBus);
+        BLOCK_ENTITIES.register(FMLJavaModLoadingContext.get().getModEventBus());
 
         // Register the Deferred Register to the mod event bus so blocks get registered
 //        BLOCKS.register(modEventBus);

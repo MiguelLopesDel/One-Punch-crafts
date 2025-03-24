@@ -45,4 +45,10 @@ public class Keybinding {
             InputConstants.getKey(InputConstants.KEY_J, -1),
             CATEGORY
     );
+    public final KeyMapping OPEN_DIMENSIONS_GUI = new KeyMapping(
+            defaultKeyCode + "use_dimensions_gui",
+            KeyConflictContext.IN_GAME,
+            InputConstants.getKey(InputConstants.KEY_O, -1),
+            CATEGORY
+    );
 }
