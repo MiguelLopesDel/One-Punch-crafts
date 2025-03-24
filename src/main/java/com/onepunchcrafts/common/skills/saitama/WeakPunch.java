@@ -15,16 +15,18 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
-import net.minecraftforge.event.entity.living.LivingEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 
 import java.awt.*;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 
 import static com.onepunchcrafts.OnePunchCrafts.DRACONIC_MOD;
-import static com.onepunchcrafts.util.HelpUtilityMod.attackCrystals;
-import static com.onepunchcrafts.util.HelpUtilityMod.attackGuardian;
+import static com.onepunchcrafts.util.DraconicCompat.attackCrystals;
+import static com.onepunchcrafts.util.DraconicCompat.attackGuardian;
 
+@Mod.EventBusSubscriber
 public class WeakPunch implements Skill {
 
     @Override
@@ -32,10 +34,11 @@ public class WeakPunch implements Skill {
         consecutivePunches(player);
     }
 
-    @Override
-    public void flux(LivingEvent event) {
-        if (event instanceof LivingDamageEvent damageEvent && HelpUtility.isSaitamaServerSide(damageEvent.getSource().getEntity())) {
-            damageEvent.setAmount(damageEvent.getAmount() * 100_000);
+    @SubscribeEvent
+    public static void flux(LivingDamageEvent event) {
+        if (event.getSource().getEntity() instanceof ServerPlayer player) {
+            HelpUtility.verifyIsSaitamaAndSkill(player, WeakPunch.class).ifPresent(p ->
+                    event.setAmount(event.getAmount() * 100_000));
         }
     }
 

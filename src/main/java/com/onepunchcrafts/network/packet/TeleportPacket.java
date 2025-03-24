@@ -2,6 +2,7 @@ package com.onepunchcrafts.network.packet;
 
 import com.onepunchcrafts.common.block.entity.PortalBlockEntity;
 import com.onepunchcrafts.util.HelpUtility;
+import com.onepunchcrafts.util.ImmersivePortalsCompat;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.FriendlyByteBuf;
@@ -16,7 +17,6 @@ import java.util.function.Supplier;
 
 import static com.onepunchcrafts.OnePunchCrafts.IMMERSIVE_PORTALS_MOD;
 import static com.onepunchcrafts.OnePunchCrafts.PORTAL_BLOCK;
-import static com.onepunchcrafts.util.HelpUtilityMod.*;
 
 public class TeleportPacket {
 
@@ -50,10 +50,10 @@ public class TeleportPacket {
             if (dimension == null) {
                 HelpUtility.teleportPlayerToTarget(player);
             } else if (IMMERSIVE_PORTALS_MOD.isPresent() && isValidDimension(player, dimension)) {
-                placeByWayBiFacedPortal(player, dimension);
+                ImmersivePortalsCompat.placeByWayBiFacedPortal(player, dimension);
             } else if (isValidDimension(player, dimension)) {
                 ServerLevel serverLevel = player.serverLevel();
-                BlockPos pos = getFrontBlockPosition(player, 2);
+                BlockPos pos = ImmersivePortalsCompat.getFrontBlockPosition(player, 2);
                 if (serverLevel.getBlockEntity(pos) instanceof PortalBlockEntity)
                     serverLevel.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
                 else {

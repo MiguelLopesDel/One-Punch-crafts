@@ -16,6 +16,8 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.living.*;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 
 import java.awt.*;
 import java.time.Duration;
@@ -26,6 +28,7 @@ import java.util.Optional;
 import static com.onepunchcrafts.common.event.LivingDamageEventHandler.markBlocksToClear;
 import static com.onepunchcrafts.util.HelpUtility.*;
 
+@Mod.EventBusSubscriber
 public class SeriousPunch implements Skill {
 
     @Override //contem logica de ray cast
@@ -42,36 +45,45 @@ public class SeriousPunch implements Skill {
         TickScheduler.scheduleWithCondition(Duration.of(50, ChronoUnit.MILLIS), () -> tickU.fillCylinderAndEmuleEffects(player, serverLevel, 1000, blockPos));
     }
 
-    @Override
-    public void flux(LivingEvent ev) {
-        if (ev instanceof LivingDamageEvent damageEvent && HelpUtility.isSaitamaServerSide(damageEvent.getSource().getEntity())) {
+    @SubscribeEvent
+    public static void combatEvents(LivingEvent event) {
+        if (HelpUtility.getAttackerEntity(event) instanceof ServerPlayer player) {
+            verifyIsSaitamaAndSkill(player, SeriousPunch.class).ifPresent(p -> seriosPunch(event));
+        }
+    }
+
+    public static void seriosPunch(LivingEvent ev) {
+        if (ev instanceof LivingDamageEvent damageEvent) {
             if (damageEvent.getSource().is(DamagesRegistry.SERIOUS_PUNCH_SECOND))
                 applyDamageAndReactiveEvent(damageEvent, damageEvent.getEntity());
             else
                 performSeriousPunch(damageEvent, (ServerPlayer) damageEvent.getSource().getEntity());
-        } else if (ev instanceof LivingAttackEvent event && HelpUtility.isSaitamaServerSide(event.getSource().getEntity())) {
+        } else if (ev instanceof LivingAttackEvent event) {
             event.setCanceled(false);
-        } else if (ev instanceof LivingDeathEvent event) {
-            boolean saitamaIsTarget = false;
-            if (event.getEntity() instanceof ServerPlayer player) {
-                saitamaIsTarget = cancelDeathSaitama(event, player);
-            }
-            if (!saitamaIsTarget) {
-                DamageSource source = event.getSource();
-                if (source.is(DamagesRegistry.SERIOUS_PUNCH_SECOND)) {
-                    if (source.getEntity() instanceof ServerPlayer player && HelpUtility.verifyIsSaitamaAndGetCapability(player).isPresent()) {
-                        event.setCanceled(false);
-                    }
-                } else if (source.getDirectEntity() instanceof ServerPlayer player) {
-                    Optional<SaitamaPack> saitamaPack = HelpUtility.verifyIsSaitamaAndGetCapability(player);
-                    saitamaPack.ifPresent(cap -> {
-                        if (cap.getCurrentSkill() instanceof SeriousPunch)
-                            event.setCanceled(false);
-                    });
+        } else if (ev instanceof LivingHurtEvent event) {
+            event.setCanceled(false);
+        }
+    }
+
+    @SubscribeEvent
+    public static void deathEvent(LivingDeathEvent event) {
+        boolean saitamaIsTarget = false;
+        if (event.getEntity() instanceof ServerPlayer player) {
+            saitamaIsTarget = cancelDeathSaitama(event, player);
+        }
+        if (!saitamaIsTarget) {
+            DamageSource source = event.getSource();
+            if (source.is(DamagesRegistry.SERIOUS_PUNCH_SECOND)) {
+                if (source.getEntity() instanceof ServerPlayer player && HelpUtility.verifyIsSaitamaAndGetCapability(player).isPresent()) {
+                    event.setCanceled(false);
                 }
+            } else if (source.getDirectEntity() instanceof ServerPlayer player) {
+                Optional<SaitamaPack> saitamaPack = HelpUtility.verifyIsSaitamaAndGetCapability(player);
+                saitamaPack.ifPresent(cap -> {
+                    if (cap.getCurrentSkill() instanceof SeriousPunch)
+                        event.setCanceled(false);
+                });
             }
-        } else if (ev instanceof LivingHurtEvent event && HelpUtility.isSaitamaServerSide(event.getSource().getEntity())) {
-            event.setCanceled(false);
         }
     }
 

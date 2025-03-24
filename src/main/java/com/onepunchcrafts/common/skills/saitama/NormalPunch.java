@@ -4,7 +4,7 @@ import com.onepunchcrafts.common.skills.Skill;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.AnimationPacket;
 import com.onepunchcrafts.util.HelpUtility;
-import com.onepunchcrafts.util.HelpUtilityMod;
+import com.onepunchcrafts.util.DraconicCompat;
 import com.onepunchcrafts.util.TickScheduler;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -17,7 +17,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
-import net.minecraftforge.event.entity.living.LivingEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 
 import java.awt.*;
 import java.time.Duration;
@@ -25,6 +26,7 @@ import java.time.temporal.ChronoUnit;
 
 import static com.onepunchcrafts.OnePunchCrafts.DRACONIC_MOD;
 
+@Mod.EventBusSubscriber
 public class NormalPunch implements Skill {
 
     @Override
@@ -33,15 +35,15 @@ public class NormalPunch implements Skill {
     }
 
     @Override
-    public void flux(LivingEvent event) {
-        if (event instanceof LivingDamageEvent damageEvent && HelpUtility.isSaitamaServerSide(damageEvent.getSource().getEntity())) {
-            normalPunch(damageEvent, (ServerPlayer) damageEvent.getSource().getEntity());
-        }
-    }
-
-    @Override
     public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
         guiGraphics.drawString(font, Component.translatable("skill.saitama.normal_punch"), width / 2 - defaultReduce, height / 2 + defaultAdd, Color.GREEN.getRGB(), false);
+    }
+
+    @SubscribeEvent
+    public static void flux(LivingDamageEvent event) {
+        if (event.getSource().getEntity() instanceof ServerPlayer player) {
+            HelpUtility.verifyIsSaitamaAndSkill(player, NormalPunch.class).ifPresent(p -> normalPunch(event, player));
+        }
     }
 
     private static void normalPunch(LivingDamageEvent event, ServerPlayer player) {
@@ -78,12 +80,12 @@ public class NormalPunch implements Skill {
                 if (player.equals(entity))
                     return;
                 entity.setInvulnerable(false);
-                if (DRACONIC_MOD.isPresent() && HelpUtilityMod.attackGuardian(player, entity, false))
+                if (DRACONIC_MOD.isPresent() && DraconicCompat.attackGuardian(player, entity, false))
                     return;
                 player.attack(entity);
             });
             if (DRACONIC_MOD.isPresent())
-                HelpUtilityMod.attackCrystals(player, serverLevel, pArea, false);
+                DraconicCompat.attackCrystals(player, serverLevel, pArea, false);
         });
         NetworkRegister.sendToAllClientsExcept(player, new AnimationPacket(player.getStringUUID(), "multiple_punches"));
         TickScheduler.scheduleFromHere(Duration.of(5, ChronoUnit.SECONDS), () -> NetworkRegister.sendToAllClientsExcept(player, new AnimationPacket(player.getStringUUID(), "stop")));

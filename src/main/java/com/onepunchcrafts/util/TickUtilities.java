@@ -45,13 +45,13 @@ public class TickUtilities {
             entity.hurt(damageSource, amount);
         });
         if (DRACONIC_MOD.isPresent())
-            HelpUtilityMod.hurtDraconicCrystals(level, pArea, damageSource);
+            DraconicCompat.hurtDraconicCrystals(level, pArea, damageSource);
         List<LivingEntity> entitiesOfClass = level.getEntitiesOfClass(LivingEntity.class, pArea);
 
         entitiesOfClass.forEach(entity -> {
             if (player.equals(entity))
                 return;
-            if (DRACONIC_MOD.isPresent() && HelpUtilityMod.handleIfDraconicGuardian(entity, damageSource)) return;
+            if (DRACONIC_MOD.isPresent() && DraconicCompat.handleIfDraconicGuardian(entity, damageSource)) return;
 
             entity.setInvulnerable(false);
             entity.setSecondsOnFire(60);

@@ -1,28 +1,15 @@
 package com.onepunchcrafts.common.event;
 
-import com.onepunchcrafts.OnePunchCrafts;
-import com.onepunchcrafts.common.damage.DamagesRegistry;
-import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
 import com.onepunchcrafts.util.HelpUtility;
-import com.onepunchcrafts.util.TickScheduler;
-import com.onepunchcrafts.util.TickUtilities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-
-import static com.onepunchcrafts.util.HelpUtility.clientEffects;
 
 
 @Mod.EventBusSubscriber
@@ -32,6 +19,7 @@ public class LivingDamageEventHandler {
     public static void saitamaAttack(LivingDamageEvent event) {
         HelpUtility.passServerFluxToAllPlayers(event);
     }
+
     //contem logica de ray cast
     public static ArrayList<BlockPos> markBlocksToClear(ServerLevel level, int radius, int height, int startX, int startY, int startZ, Vec3 direction) {
         ArrayList<BlockPos> blocksPos = new ArrayList<>();
