@@ -11,7 +11,7 @@ import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.contents.LiteralContents;
+import net.minecraft.network.chat.contents.PlainTextContents;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 
@@ -53,7 +53,7 @@ public class GuiDimension extends Screen {
             int textWidth = font.width("Carregando dimensões...");
             int x = (width - textWidth) / 2;
             int y = height / 2;
-            pWidget = new StringWidget(x, y, MutableComponent.create(new LiteralContents("Carregando dimensões...")), font);
+            pWidget = new StringWidget(x, y, MutableComponent.create(new PlainTextContents.LiteralContents("Carregando dimensões...")), font);
             this.addRenderableWidget(pWidget);
         }
     }

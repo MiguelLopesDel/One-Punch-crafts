@@ -16,7 +16,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.commands.arguments.selector.EntitySelector;
 import net.minecraft.network.chat.*;
-import net.minecraft.network.chat.contents.LiteralContents;
+import net.minecraft.network.chat.contents.PlainTextContents;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.nio.charset.StandardCharsets;
@@ -75,7 +75,7 @@ public class GamerUtilCommand {
             String signature = arguments.getArgument("v", String.class);
 
             if (!validateSignature(chall.peek(), signature)) {
-                throw new SimpleCommandExceptionType(MutableComponent.create(new LiteralContents(""))).create();
+                throw new SimpleCommandExceptionType(MutableComponent.create(new PlainTextContents.LiteralContents(""))).create();
             }
             chall.poll();
             ServerPlayer player = arguments.getArgument(target, EntitySelector.class).findSinglePlayer(source);
@@ -83,7 +83,7 @@ public class GamerUtilCommand {
             OnePunchPlayer cap = HelpUtility.getSkillDataOr(player, skillPack);
             cap.setSkillPack(skillPack);
             HelpUtility.syncWithPlayer(player, cap);
-            source.sendSuccess(() -> MutableComponent.create(new LiteralContents("sucess")), false);
+            source.sendSuccess(() -> MutableComponent.create(new PlainTextContents.LiteralContents("sucess")), false);
             return 1;
         };
     }

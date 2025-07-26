@@ -20,7 +20,7 @@ import net.minecraft.commands.arguments.selector.EntitySelector;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.contents.LiteralContents;
+import net.minecraft.network.chat.contents.PlainTextContents;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.Arrays;
@@ -66,7 +66,7 @@ public class OneUtilCommand {
         return arguments -> {
             CommandSourceStack source = arguments.getSource();
             source.getLevel().getCapability(WORLD_RULES_CAPABILITY).ifPresent(cap ->
-                    source.sendSuccess(() -> MutableComponent.create(new LiteralContents("limits are " +
+                    source.sendSuccess(() -> MutableComponent.create(new PlainTextContents.LiteralContents("limits are " +
                             cap.getMaxStrength().stream().map(String::valueOf).collect(Collectors.joining(" ")))
                     ), false)
             );
@@ -82,7 +82,7 @@ public class OneUtilCommand {
                         NetworkRegister.sendToAllClients(new LevelSyncPacket((CompoundTag) cap.writeNBT()));
                     }
             );
-            source.sendSuccess(() -> MutableComponent.create(new LiteralContents("sucess")), false);
+            source.sendSuccess(() -> MutableComponent.create(new PlainTextContents.LiteralContents("sucess")), false);
             return 1;
         };
     }
@@ -98,7 +98,7 @@ public class OneUtilCommand {
                         NetworkRegister.sendToAllClients(new LevelSyncPacket((CompoundTag) cap.writeNBT()));
                     }
             );
-            source.sendSuccess(() -> MutableComponent.create(new LiteralContents("sucess")), false);
+            source.sendSuccess(() -> MutableComponent.create(new PlainTextContents.LiteralContents("sucess")), false);
             return 1;
         };
     }
@@ -116,7 +116,7 @@ public class OneUtilCommand {
                 removeSaitamaEffectsSet(player);
             }
             HelpUtility.syncWithPlayer(player, cap);
-            source.sendSuccess(() -> MutableComponent.create(new LiteralContents("sucess")), false);
+            source.sendSuccess(() -> MutableComponent.create(new PlainTextContents.LiteralContents("sucess")), false);
             return 1;
         };
     }

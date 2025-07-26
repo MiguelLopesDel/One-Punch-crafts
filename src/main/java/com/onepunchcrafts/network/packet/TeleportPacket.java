@@ -12,7 +12,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.event.network.CustomPayloadEvent;
 
 import java.util.function.Supplier;
 
@@ -45,8 +45,8 @@ public class TeleportPacket {
         }
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
-        ServerPlayer player = ctx.get().getSender();
+    public void handle(CustomPayloadEvent.Context ctx) {
+        ServerPlayer player = ctx.getSender();
         HelpUtility.verifyIsSaitamaAndGetCapability(player).ifPresent(cap -> {
             if (dimension == null) {
                 HelpUtility.teleportPlayerToTarget(player);
@@ -63,7 +63,7 @@ public class TeleportPacket {
                 }
             }
         });
-        ctx.get().setPacketHandled(true);
+        ctx.setPacketHandled(true);
     }
 
     private boolean isValidDimension(ServerPlayer player, ResourceKey<Level> dimension) {

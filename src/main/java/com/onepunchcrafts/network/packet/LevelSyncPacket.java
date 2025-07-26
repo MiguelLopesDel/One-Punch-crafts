@@ -3,9 +3,7 @@ package com.onepunchcrafts.network.packet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
-
-import java.util.function.Supplier;
+import net.minecraftforge.event.network.CustomPayloadEvent;
 
 import static com.onepunchcrafts.OnePunchCrafts.WORLD_RULES_CAPABILITY;
 
@@ -26,8 +24,8 @@ public class LevelSyncPacket {
         this.data = buffer.readNbt();
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
+    public void handle(CustomPayloadEvent.Context ctx) {
         Minecraft.getInstance().player.level().getCapability(WORLD_RULES_CAPABILITY).ifPresent(cap -> cap.readNBT(data));
-        ctx.get().setPacketHandled(true);
+        ctx.setPacketHandled(true);
     }
 }

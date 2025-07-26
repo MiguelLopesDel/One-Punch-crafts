@@ -3,7 +3,7 @@ package com.onepunchcrafts.network.packet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.event.network.CustomPayloadEvent;
 
 import java.nio.charset.Charset;
 import java.util.function.Supplier;
@@ -25,7 +25,7 @@ public class SettingRenderPacket {
     }
 
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
+    public void handle(CustomPayloadEvent.Context ctx) {
 //        LocalPlayer player = Minecraft.getInstance().player;
 //        if(player!=null)
 //            Minecraft.getInstance().//renderTextureOverlay(guiGraphics, PUMPKIN_BLUR_LOCATION, 1.0F);

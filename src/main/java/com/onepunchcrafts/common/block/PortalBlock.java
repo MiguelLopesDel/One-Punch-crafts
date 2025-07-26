@@ -1,5 +1,6 @@
 package com.onepunchcrafts.common.block;
 
+import com.mojang.serialization.MapCodec;
 import com.onepunchcrafts.common.block.entity.PortalBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
@@ -16,6 +17,11 @@ import java.util.HashSet;
 public class PortalBlock extends BaseEntityBlock {
     public PortalBlock(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    protected MapCodec<? extends BaseEntityBlock> codec() {
+        return null;
     }
 
     @Override

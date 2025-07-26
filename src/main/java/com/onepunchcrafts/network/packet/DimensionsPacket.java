@@ -9,8 +9,8 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.network.CustomPayloadEvent;
 import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,9 +41,8 @@ public class DimensionsPacket {
         }
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
-        NetworkEvent.Context context = ctx.get();
-        if (ctx.get().getDirection().getReceptionSide().isServer()) {
+    public void handle(CustomPayloadEvent.Context context) {
+        if (context.isServerSide()) {
             ServerPlayer sender = context.getSender();
             HelpUtility.verifyIsSaitamaAndGetCapability(sender).ifPresent(cap -> {
                 dimensions.addAll(sender.level().getServer().levelKeys());

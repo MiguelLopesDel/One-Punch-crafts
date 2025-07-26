@@ -13,7 +13,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.event.network.CustomPayloadEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -53,8 +53,8 @@ public class MovementPacket {
     }
 
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
-        ServerPlayer player = ctx.get().getSender();
+    public void handle(CustomPayloadEvent.Context ctx) {
+        ServerPlayer player = ctx.getSender();
         HelpUtility.verifyIsSaitamaAndGetCapability(player).ifPresent(sai -> {
             MobEffectInstance effect = player.getEffect(MobEffects.JUMP);
             if (!sai.isExtremeJump() && effect != null && effect.getAmplifier() >= TickUtil.convertTimeInTicks(Duration.ofSeconds(3))) {
@@ -63,7 +63,7 @@ public class MovementPacket {
             } else if (this.deltaMovement != null && sai.isExtremeJump())
                 extremeJump(player);
         });
-        ctx.get().setPacketHandled(true);
+        ctx.setPacketHandled(true);
     }
 
     private void extremeJump(ServerPlayer player) {

@@ -10,8 +10,11 @@ import javax.annotation.Nullable;
 
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
@@ -19,12 +22,12 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.enchantment.ProtectionEnchantment;
 import net.minecraft.world.level.*;
 import net.minecraft.world.level.block.BaseFireBlock;
 import net.minecraft.world.level.block.Block;
@@ -60,21 +63,11 @@ public class ExplosionWithoutKnockBack extends Explosion {
     private final Vec3 position;
     private final List<Entity> entitiesWithoutKnockBack = new ArrayList<>();
 
-    public ExplosionWithoutKnockBack(Level pLevel, @Nullable Entity pSource, double pToBlowX, double pToBlowY, double pToBlowZ, float pRadius, List<BlockPos> pPositions) {
-        this(pLevel, pSource, pToBlowX, pToBlowY, pToBlowZ, pRadius, false, net.minecraft.world.level.Explosion.BlockInteraction.DESTROY_WITH_DECAY, pPositions);
-    }
-
-    public ExplosionWithoutKnockBack(Level pLevel, @Nullable Entity pSource, double pToBlowX, double pToBlowY, double pToBlowZ, float pRadius, boolean pFire, net.minecraft.world.level.Explosion.BlockInteraction pBlockInteraction, List<BlockPos> pPositions) {
-        this(pLevel, pSource, pToBlowX, pToBlowY, pToBlowZ, pRadius, pFire, pBlockInteraction);
-        this.toBlow.addAll(pPositions);
-    }
-
-    public ExplosionWithoutKnockBack(Level pLevel, @Nullable Entity pSource, double pToBlowX, double pToBlowY, double pToBlowZ, float pRadius, boolean pFire, net.minecraft.world.level.Explosion.BlockInteraction pBlockInteraction) {
-        this(pLevel, pSource, (DamageSource) null, (ExplosionDamageCalculator) null, pToBlowX, pToBlowY, pToBlowZ, pRadius, pFire, pBlockInteraction);
-    }
-
     public ExplosionWithoutKnockBack(Level pLevel, @Nullable Entity pSource, @Nullable DamageSource pDamageSource, @Nullable ExplosionDamageCalculator pDamageCalculator, double pToBlowX, double pToBlowY, double pToBlowZ, float pRadius, boolean pFire, net.minecraft.world.level.Explosion.BlockInteraction pBlockInteraction) {
-        super(pLevel, pSource, pDamageSource, pDamageCalculator, pToBlowX, pToBlowY, pToBlowZ, pRadius, pFire, pBlockInteraction);
+        super(pLevel, pSource, pDamageSource, pDamageCalculator, pToBlowX, pToBlowY, pToBlowZ, pRadius, pFire,
+                pBlockInteraction, ParticleTypes.EXPLOSION,
+                ParticleTypes.EXPLOSION_EMITTER,
+                SoundEvents.GENERIC_EXPLODE);
         this.level = pLevel;
         this.source = pSource;
         this.radius = pRadius;
@@ -189,7 +182,7 @@ public class ExplosionWithoutKnockBack extends Explosion {
 
         for (int k2 = 0; k2 < list.size(); ++k2) {
             Entity entity = list.get(k2);
-            if (!entity.ignoreExplosion() || !entitiesWithoutKnockBack.contains(entity)) {
+            if (!entity.ignoreExplosion(this) || !entitiesWithoutKnockBack.contains(entity)) {
                 double d12 = Math.sqrt(entity.distanceToSqr(vec3)) / (double) f2;
                 if (d12 <= 1.0D) {
                     double d5 = entity.getX() - this.x;
@@ -206,7 +199,7 @@ public class ExplosionWithoutKnockBack extends Explosion {
                         double d11;
                         if (entity instanceof LivingEntity) {
                             LivingEntity livingentity = (LivingEntity) entity;
-                            d11 = ProtectionEnchantment.getExplosionKnockbackAfterDampener(livingentity, d10);
+                            d11 = livingentity.getAttributeValue(Attributes.EXPLOSION_KNOCKBACK_RESISTANCE);
                         } else {
                             d11 = d10;
                         }
@@ -234,7 +227,7 @@ public class ExplosionWithoutKnockBack extends Explosion {
      */
     public void finalizeExplosion(boolean pSpawnParticles) {
         if (this.level.isClientSide) {
-            this.level.playLocalSound(this.x, this.y, this.z, SoundEvents.GENERIC_EXPLODE, SoundSource.BLOCKS, 4.0F, (1.0F + (this.level.random.nextFloat() - this.level.random.nextFloat()) * 0.2F) * 0.7F, false);
+            this.level.playLocalSound(this.x, this.y, this.z, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.BLOCKS, 4.0F, (1.0F + (this.level.random.nextFloat() - this.level.random.nextFloat()) * 0.2F) * 0.7F, false);
         }
 
         boolean flag = this.interactsWithBlocks();

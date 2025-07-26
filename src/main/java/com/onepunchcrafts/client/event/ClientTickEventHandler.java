@@ -15,15 +15,17 @@ import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.util.TickClientScheduler;
 import com.onepunchcrafts.util.TickScheduler;
 import com.onepunchcrafts.util.TickTask;
+import dev.kosmx.playerAnim.api.IPlayable;
 import dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration;
 import dev.kosmx.playerAnim.api.firstPerson.FirstPersonMode;
 import dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer;
+import dev.kosmx.playerAnim.core.data.KeyframeAnimation;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.contents.LiteralContents;
+import net.minecraft.network.chat.contents.PlainTextContents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
@@ -71,7 +73,7 @@ public class ClientTickEventHandler {
         }
         if (Keybinding.INSTANCE.OPEN_DIMENSIONS_GUI.consumeClick() && playerExist) {
             HelpUtility.verifyIsSaitamaAndGetCapability(player).ifPresent(cap ->
-                    Minecraft.getInstance().setScreen(new GuiDimension(MutableComponent.create(new LiteralContents("Select Dimension"))))
+                    Minecraft.getInstance().setScreen(new GuiDimension(MutableComponent.create(new PlainTextContents.LiteralContents("Select Dimension"))))
             );
             NetworkRegister.sendToServer(new TeleportPacket());
         }
@@ -96,7 +98,8 @@ public class ClientTickEventHandler {
 
     private static void startAnimation(LocalPlayer player, String idAnimation) {
         HelpUtility.getOneCraftAnimationLayer(player).ifPresent(animation -> {
-            KeyframeAnimationPlayer animation1 = new KeyframeAnimationPlayer(PlayerAnimationRegistry.getAnimation(new ResourceLocation(MODID, idAnimation))).setFirstPersonMode(FirstPersonMode.THIRD_PERSON_MODEL).setFirstPersonConfiguration(new FirstPersonConfiguration(true, true, false, false));
+            IPlayable animation2 = PlayerAnimationRegistry.getAnimation(ResourceLocation.fromNamespaceAndPath(MODID, idAnimation));
+            KeyframeAnimationPlayer animation1 = new KeyframeAnimationPlayer((KeyframeAnimation) animation2).setFirstPersonMode(FirstPersonMode.THIRD_PERSON_MODEL).setFirstPersonConfiguration(new FirstPersonConfiguration(true, true, false, false));
             if (!tasks.isEmpty())
                 TickClientScheduler.cancelTask(tasks.get(0));
             tasks.clear();

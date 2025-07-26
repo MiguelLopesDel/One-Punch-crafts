@@ -14,7 +14,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.event.network.CustomPayloadEvent;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -31,8 +31,7 @@ public class SpecialSkillPacket {
 
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
-        NetworkEvent.Context context = ctx.get();
+    public void handle(CustomPayloadEvent.Context context) {
         ServerPlayer sender = context.getSender();
         if (sender != null) {
             sender.getCapability(OnePunchCrafts.ONE_PLAYER_CAPABILITY).ifPresent(cap -> cap.getSkillPack().execute(sender));

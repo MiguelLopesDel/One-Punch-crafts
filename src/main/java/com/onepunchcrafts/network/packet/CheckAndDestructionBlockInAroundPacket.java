@@ -5,7 +5,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.event.network.CustomPayloadEvent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,8 +35,8 @@ public class CheckAndDestructionBlockInAroundPacket {
     }
 
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
-        ServerPlayer player = ctx.get().getSender();
+    public void handle(CustomPayloadEvent.Context ctx) {
+        ServerPlayer player = ctx.getSender();
         HelpUtility.verifyIsSaitamaAndGetCapability(player).ifPresent(cap -> {
             final Level level = player.level();
             blocksPos.stream().filter(b -> b.distSqr(player.getOnPos()) <= 5).forEach(pos -> {
@@ -46,6 +46,6 @@ public class CheckAndDestructionBlockInAroundPacket {
                 }
             });
         });
-        ctx.get().setPacketHandled(true);
+        ctx.setPacketHandled(true);
     }
 }

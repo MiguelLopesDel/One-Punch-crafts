@@ -7,8 +7,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.network.CustomPayloadEvent;
 import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -42,17 +42,17 @@ public class PlayerSyncPacket {
         (this.data = skillPack).readNBT(buffer.readNbt());
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctx) {
-        if (ctx.get().getDirection().getReceptionSide().isServer()) {
+    public void handle(CustomPayloadEvent.Context ctx) {
+        if (ctx.isServerSide()) {
             serverLogic(ctx);
         } else {
             DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> HandlerClientPacket.playerSyncLogic(data));
         }
-        ctx.get().setPacketHandled(true);
+        ctx.setPacketHandled(true);
     }
 
-    private void serverLogic(Supplier<NetworkEvent.Context> ctx) {
-        ServerPlayer player = ctx.get().getSender();
+    private void serverLogic(CustomPayloadEvent.Context ctx) {
+        ServerPlayer player = ctx.getSender();
         if (player == null)
             return;
         player.getCapability(ONE_PLAYER_CAPABILITY).ifPresent(cap -> {

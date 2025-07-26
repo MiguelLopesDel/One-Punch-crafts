@@ -13,7 +13,7 @@ import static com.onepunchcrafts.OnePunchCrafts.MODID;
 public class SetupPlayerAnimation {
 
     public static void setup() {
-        PlayerAnimationFactory.ANIMATION_DATA_FACTORY.registerFactory(new ResourceLocation(MODID, "onecraftsanimation"), 10, SetupPlayerAnimation::registerPlayerAnimations);
+        PlayerAnimationFactory.ANIMATION_DATA_FACTORY.registerFactory(ResourceLocation.fromNamespaceAndPath(MODID, "onecraftsanimation"), 10, SetupPlayerAnimation::registerPlayerAnimations);
     }
 
     private static IAnimation registerPlayerAnimations(final AbstractClientPlayer player) {

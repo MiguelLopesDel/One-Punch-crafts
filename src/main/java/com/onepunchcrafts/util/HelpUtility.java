@@ -72,8 +72,8 @@ public class HelpUtility {
     }
 
     public static void setAttributesToDefault(ServerPlayer player) {
-        player.getAttribute(ForgeMod.ENTITY_GRAVITY.get()).setBaseValue(0.08);
-        player.getAttribute(ForgeMod.SWIM_SPEED.get()).setBaseValue(1.0D);
+//        player.getAttribute(ForgeMod.ENTITY_GRAVITY.get()).setBaseValue(0.08);
+        player.getAttribute(ForgeMod.SWIM_SPEED.getHolder().get()).setBaseValue(1.0D);
         player.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.1F);
         player.getAttribute(Attributes.ATTACK_KNOCKBACK).setBaseValue(0);
         player.getAttribute(Attributes.KNOCKBACK_RESISTANCE).setBaseValue(0);
@@ -156,7 +156,7 @@ public class HelpUtility {
 
     @OnlyIn(Dist.CLIENT)
     public static Optional<ModifierLayer<IAnimation>> getOneCraftAnimationLayer(AbstractClientPlayer playerByUUID) {
-        return Optional.ofNullable((ModifierLayer<IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData(playerByUUID).get(new ResourceLocation(MODID, "onecraftsanimation")));
+        return Optional.ofNullable((ModifierLayer<IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData(playerByUUID).get( ResourceLocation.fromNamespaceAndPath(MODID, "onecraftsanimation")));
     }
 
     public static boolean extremeSpeedActivated(Player player) {

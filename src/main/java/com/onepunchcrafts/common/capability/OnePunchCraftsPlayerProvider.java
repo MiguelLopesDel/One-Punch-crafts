@@ -3,12 +3,14 @@ package com.onepunchcrafts.common.capability;
 import com.onepunchcrafts.OnePunchCrafts;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.Tag;
+import net.minecraftforge.common.capabilities.AutoRegisterCapability;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilitySerializable;
 import net.minecraftforge.common.util.LazyOptional;
 
 import static com.onepunchcrafts.OnePunchCrafts.WITHOUT_PACK;
 
+@AutoRegisterCapability
 public class OnePunchCraftsPlayerProvider implements ICapabilitySerializable<Tag> {
 
     private final OnePunchPlayer dataPlayer;

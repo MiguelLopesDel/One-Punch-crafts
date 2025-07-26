@@ -23,8 +23,6 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.common.capabilities.CapabilityToken;
-import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
-import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
@@ -89,13 +87,13 @@ public class OnePunchCrafts {
                     BlockEntityType.Builder.of(PortalBlockEntity::new, PORTAL_BLOCK.get()).build(null)
             );
 
-    public OnePunchCrafts() {
-        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
+    public OnePunchCrafts(FMLJavaModLoadingContext context) {
+        IEventBus modEventBus = context.getModEventBus();
 
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);
         BLOCKS.register(modEventBus);
-        BLOCK_ENTITIES.register(FMLJavaModLoadingContext.get().getModEventBus());
+        BLOCK_ENTITIES.register(context.getModEventBus());
 
         // Register the Deferred Register to the mod event bus so blocks get registered
 //        BLOCKS.register(modEventBus);
@@ -141,23 +139,24 @@ public class OnePunchCrafts {
         playerCap.setCurrentSkill(oldOnePunchPlayer.getActualAbility());
     }
 
-    @SubscribeEvent
-    public static void register(RegisterCapabilitiesEvent event) {
-        event.register(OnePunchCraftsPlayerProvider.class);
-        event.register(OnePunchCraftsLevelProvider.class);
-    }
+    //TODO REMOVAL
+//    @SubscribeEvent
+//    public static void register(RegisterCapabilitiesEvent event) {
+//        event.register(OnePunchCraftsPlayerProvider.class);
+//        event.register(OnePunchCraftsLevelProvider.class);
+//    }
 
     @SubscribeEvent
     public void onAttachCapabilities(AttachCapabilitiesEvent<Entity> event) {
-        if (event.getObject() instanceof Player && !(event.getObject() instanceof FakePlayer)) {
-            event.addCapability(new ResourceLocation(MODID, "oneplayerdata"), new OnePunchCraftsPlayerProvider());
+        if (event.getObject() instanceof Player) {
+            event.addCapability(ResourceLocation.fromNamespaceAndPath(MODID, "oneplayerdata"), new OnePunchCraftsPlayerProvider());
         }
     }
 
     @SubscribeEvent
     public void onAttachLevelCapabilities(AttachCapabilitiesEvent<Level> event) {
         if (event.getObject() instanceof Level) {
-            event.addCapability(new ResourceLocation(MODID, "oneleveldata"), new OnePunchCraftsLevelProvider());
+            event.addCapability(ResourceLocation.fromNamespaceAndPath(MODID, "oneleveldata"), new OnePunchCraftsLevelProvider());
         }
     }
 
