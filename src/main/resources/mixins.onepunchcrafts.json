@@ -4,7 +4,11 @@
   "refmap": "mixins.onepunchcrafts.refmap.json",
   "mixins": [
     "MixinBlockBehaviour",
+    "MixinPlayer",
     "MixinServerGamePacketListenerImpl"
   ],
-  "priority": 2147483647
+  "priority": 2147483647,
+  "client": [
+    "MixinGui"
+  ]
 }

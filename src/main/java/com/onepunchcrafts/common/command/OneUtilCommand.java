@@ -7,11 +7,13 @@ import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
+import com.onepunchcrafts.common.skills.boros.BorosPack;
 import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
 import com.onepunchcrafts.common.skills.SkillPack;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.LevelSyncPacket;
 import com.onepunchcrafts.util.HelpUtility;
+import com.onepunchcrafts.util.TickScheduler;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
@@ -22,12 +24,16 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.contents.LiteralContents;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.onepunchcrafts.OnePunchCrafts.*;
+import static com.onepunchcrafts.util.HelpUtility.removeGodLevelEffectSet;
 import static com.onepunchcrafts.util.HelpUtility.removeSaitamaEffectsSet;
 
 public class OneUtilCommand {
@@ -43,6 +49,9 @@ public class OneUtilCommand {
                 .then(target
                         .then(Commands.literal("setissaitama").then(
                                 Commands.argument("isSaitama", BoolArgumentType.bool()).executes(setSaitama())
+                        ))
+                        .then(Commands.literal("setisboros").then(
+                                Commands.argument("isBoros", BoolArgumentType.bool()).executes(setBoros())
                         ))
                 )
                 .then(Commands.literal("extremejump")
@@ -116,6 +125,27 @@ public class OneUtilCommand {
                 removeSaitamaEffectsSet(player);
             }
             HelpUtility.syncWithPlayer(player, cap);
+            source.sendSuccess(() -> MutableComponent.create(new LiteralContents("sucess")), false);
+            return 1;
+        };
+    }
+
+    private static Command<CommandSourceStack> setBoros() {
+        return arguments -> {
+            CommandSourceStack source = arguments.getSource();
+            boolean isBoros = arguments.getArgument("isBoros", Boolean.class);
+            ServerPlayer player = arguments.getArgument(target, EntitySelector.class).findSinglePlayer(source);
+            SkillPack skillPack = isBoros ? new BorosPack() : WITHOUT_PACK;
+            OnePunchPlayer cap = HelpUtility.getSkillData(player);
+            cap.setSkillPack(skillPack);
+            if (!isBoros) {
+                HelpUtility.setAttributesToDefault(player);
+                player.getAttribute(Attributes.MAX_HEALTH).setBaseValue(20);
+                removeGodLevelEffectSet(player);
+                player.removeEffect(MobEffects.REGENERATION);
+            }
+            HelpUtility.syncWithPlayer(player, cap);
+            TickScheduler.scheduleFromHere(Duration.ofMillis(300), () -> player.setHealth(new BorosPack().getMAX_HEALTH()));
             source.sendSuccess(() -> MutableComponent.create(new LiteralContents("sucess")), false);
             return 1;
         };

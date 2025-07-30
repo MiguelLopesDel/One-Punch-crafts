@@ -1,6 +1,7 @@
 package com.onepunchcrafts.network.packet;
 
 import com.onepunchcrafts.client.packet.HandlerClientPacket;
+import com.onepunchcrafts.common.skills.boros.BorosPack;
 import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
 import com.onepunchcrafts.common.skills.SkillPack;
 import net.minecraft.nbt.CompoundTag;
@@ -37,6 +38,7 @@ public class PlayerSyncPacket {
         CharSequence charSequence = buffer.readCharSequence(i, Charset.defaultCharset());
         SkillPack skillPack = switch (charSequence.toString()) {
             case "SaitamaPack" -> new SaitamaPack();
+            case "BorosPack" -> new BorosPack();
             default -> WITHOUT_PACK;
         };
         (this.data = skillPack).readNBT(buffer.readNbt());

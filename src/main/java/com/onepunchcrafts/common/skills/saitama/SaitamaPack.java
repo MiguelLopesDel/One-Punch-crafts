@@ -1,5 +1,6 @@
 package com.onepunchcrafts.common.skills.saitama;
 
+import com.onepunchcrafts.common.skills.AbstractSkillPack;
 import com.onepunchcrafts.common.skills.Skill;
 import com.onepunchcrafts.common.skills.SkillPack;
 import com.onepunchcrafts.common.skills.SkillPassive;
@@ -31,6 +32,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
@@ -38,7 +40,7 @@ import java.util.*;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class SaitamaPack implements SkillPack {
+public class SaitamaPack extends AbstractSkillPack {
 
     @Setter
     @Getter
@@ -67,13 +69,10 @@ public class SaitamaPack implements SkillPack {
     @Setter
     @Getter
     private short swimSpeed;
-    private int currentSkill;
-    private final List<List<Skill>> skills = getSkills();
-    @Getter
-    private int currentGroupIndex;
     private final SaitamaPack self = this;
 
-    private @NotNull List<List<Skill>> getSkills() {
+    @Override
+    protected @NotNull List<List<Skill>> initializeSkills() {
         List<List<Skill>> groupList = new ArrayList<>();
         List<Skill> list = new ArrayList<>();
         list.add(0, new WeakPunch());
@@ -184,15 +183,13 @@ public class SaitamaPack implements SkillPack {
     }
 
     @Override
-    public void execute(Player player) {
-        Skill currentSkill1 = getCurrentSkill();
-        if (currentSkill1 != null)
-            currentSkill1.execute(player);
+    public void manageFlux(LivingEvent event) {
+        packFlux(event);
     }
 
     @Override
-    public void manageFlux(LivingEvent event) {
-        packFlux(event);
+    public void playerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+
     }
 
     private void packFlux(LivingEvent event) {
@@ -206,65 +203,37 @@ public class SaitamaPack implements SkillPack {
     }
 
     @Override
-    public void nextOrPrevious(int i) {
-        int size = skills.size();
-        currentGroupIndex = (currentGroupIndex + i % size + size) % size;
-        setCurrentSkill(0);
-    }
-
-    @Override
     public Tag writeNBT() {
-        CompoundTag nbt = new CompoundTag();
-        nbt.putString("skillPack", this.getClass().getSimpleName());
+        CompoundTag nbt = (CompoundTag) super.writeNBT();
         nbt.putBoolean(NbtBooleanValues.seriousFartActive.getValue(), this.seriousFartActive);
         nbt.putBoolean(NbtBooleanValues.breakBlocksQuickly.getValue(), this.isBreakBlocksQuickly());
         nbt.putBoolean(NbtBooleanValues.extremeSpeed.getValue(), this.isExtremeSpeedActive());
-        nbt.putInt("actualability", this.currentSkill);
         nbt.putShort("weight", this.weight);
         nbt.putShort(NbtBooleanValues.superSpeed.getValue(), this.speed);
         nbt.putShort("saitamaknockbackresistance", this.knockbackResistance);
         nbt.putShort("saitamaattackknockback", this.attackKnockback);
         nbt.putShort("saitamaswimspeed", this.swimSpeed);
-        nbt.putInt("currentgroup", this.currentGroupIndex);
         nbt.putBoolean("extremejump", this.extremeJump);
         return nbt;
     }
 
     @Override
     public void readNBT(Tag tag) {
+        super.readNBT(tag);
         CompoundTag nbt = (CompoundTag) tag;
         this.seriousFartActive = nbt.getBoolean(NbtBooleanValues.seriousFartActive.getValue());
         this.breakBlocksQuickly = nbt.getBoolean(NbtBooleanValues.breakBlocksQuickly.getValue());
         this.extremeSpeedActive = nbt.getBoolean(NbtBooleanValues.extremeSpeed.getValue());
-        this.currentSkill = nbt.getInt("actualability");
         this.weight = nbt.getShort("weight");
         this.speed = nbt.getShort(NbtBooleanValues.superSpeed.getValue());
         this.knockbackResistance = nbt.getShort("saitamaknockbackresistance");
         this.attackKnockback = nbt.getShort("saitamaattackknockback");
         this.swimSpeed = nbt.getShort("saitamaswimspeed");
-        this.currentGroupIndex = nbt.getInt("currentgroup");
         this.extremeJump = nbt.getBoolean(NbtBooleanValues.extremeJump.getValue());
-    }
-
-    @Override
-    public void setCurrentSkill(int currentSkill) {
-        this.currentSkill = (currentSkill > getLastSkill()) ? 0 : (currentSkill < 0) ? getLastSkill() : currentSkill;
     }
 
     private int getLastSkill() {
         return skills.get(getCurrentGroupIndex()).size() - 1;
-    }
-
-    @Override
-    public Skill getCurrentSkill() {
-        int index = getCurrentSkillIndex() < skills.get(getCurrentGroupIndex()).size() ? getCurrentSkillIndex() : 0;
-        this.currentSkill = index;
-        return skills.get(this.currentGroupIndex).get(index);
-    }
-
-    @Override
-    public int getCurrentSkillIndex() {
-        return currentSkill;
     }
 
     @Override
@@ -298,8 +267,8 @@ public class SaitamaPack implements SkillPack {
         if (!(otherData instanceof SaitamaPack saitamaPack))
             return new ArrayList<>();
         ArrayList<String> changed = new ArrayList<>();
-        if (this.currentSkill != saitamaPack.currentSkill) {
-            changed.add("actualability");
+        if (this.currentSkillIndex != saitamaPack.currentSkillIndex) {
+            changed.add("currentSkillIndex");
         }
         if (this.speed != saitamaPack.speed) {
             changed.add(NbtBooleanValues.superSpeed.getValue());
@@ -320,7 +289,7 @@ public class SaitamaPack implements SkillPack {
             changed.add("saitamaswimspeed");
         }
         if (this.currentGroupIndex != saitamaPack.currentGroupIndex) {
-            changed.add("currentgroup");
+            changed.add("currentGroupIndex");
         }
         return changed;
     }
@@ -331,7 +300,7 @@ public class SaitamaPack implements SkillPack {
             return;
         differences.forEach(item -> {
             switch (item) {
-                case "actualability":
+                case "currentSkillIndex":
                     updateCurrentSkill(serverData, clientData);
                     break;
                 case "seriousfart":
@@ -355,7 +324,7 @@ public class SaitamaPack implements SkillPack {
                 case "saitamaswimspeed":
                     updateFieldWithValidation(serverData::setSwimSpeed, clientData.getSwimSpeed(), player, serverData);
                     break;
-                case "currentgroup":
+                case "currentGroupIndex":
                     updateCurrentGroup(serverData, clientData);
                     break;
             }
@@ -386,10 +355,10 @@ public class SaitamaPack implements SkillPack {
     }
 
     private static void updateCurrentSkill(SaitamaPack serverData, SaitamaPack clientData) {
-        int diff = Math.abs(serverData.currentSkill - clientData.currentSkill);
+        int diff = Math.abs(serverData.currentSkillIndex - clientData.currentSkillIndex);
         boolean b = diff == 1 || diff == serverData.getLastSkill();
         if (b || serverData.getCurrentGroupIndex() != clientData.getCurrentGroupIndex())
-            serverData.currentSkill = clientData.currentSkill;
+            serverData.currentSkillIndex = clientData.currentSkillIndex;
     }
 
     public void adjustAbility(ShortConsumer setter, short currentValue, double scrollDelta) {
@@ -405,10 +374,7 @@ public class SaitamaPack implements SkillPack {
             manageEffectsAndAttributes(event);
             explodeNormalMobs(serverPlayer);
         }
-        skills.forEach(p -> p.forEach(sk -> {
-            if (sk instanceof SkillPassive currentSkill1)
-                currentSkill1.tick(event.player);
-        }));
+        super.tick(event);
     }
 
     private void manageEffectsAndAttributes(TickEvent.PlayerTickEvent event) {

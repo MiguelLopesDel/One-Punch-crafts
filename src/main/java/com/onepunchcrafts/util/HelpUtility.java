@@ -111,6 +111,14 @@ public class HelpUtility {
             sender.teleportTo(closestEntity.getX(), closestEntity.getY(), closestEntity.getZ());
     }
 
+    public static void applyGodLevelEffectSet(ServerPlayer player){
+        applySaitamaEffectsSet(player);
+    }
+
+    public static void removeGodLevelEffectSet(ServerPlayer player){
+        removeSaitamaEffectsSet(player);
+    }
+
     public static void applySaitamaEffectsSet(ServerPlayer player) {
         if (player.getEffect(MobEffects.NIGHT_VISION) == null) {
             player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, -1, 255));
@@ -131,6 +139,10 @@ public class HelpUtility {
 
     public static @NotNull OnePunchPlayer getSkillData(Player player) {
         return player.getCapability(ONE_PLAYER_CAPABILITY).orElse(new OnePunchPlayer(WITHOUT_PACK));
+    }
+
+    public static @NotNull <T extends SkillPack> T getSkillData(Player player, Class<T> clazz) {
+        return (T) HelpUtility.getSkillData(player).getSkillPack();
     }
 
     public static void syncDataWithServer(OnePunchPlayer data) {

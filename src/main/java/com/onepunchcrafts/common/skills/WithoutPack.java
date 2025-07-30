@@ -9,6 +9,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 
 import java.util.ArrayList;
 
@@ -91,6 +92,11 @@ public class WithoutPack implements SkillPack {
 
     @Override
     public void manageFlux(LivingEvent event) {
+
+    }
+
+    @Override
+    public void playerRespawn(PlayerEvent.PlayerRespawnEvent event) {
 
     }
 }

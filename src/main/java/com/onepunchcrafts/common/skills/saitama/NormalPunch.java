@@ -56,7 +56,7 @@ public class NormalPunch implements Skill {
         knockback(target, 5, d0, d1);
         event.setAmount(event.getAmount() * 10_000_000);
         event.getEntity().addTag("targetnormalpunch");
-        TickScheduler.scheduleFromHere(Duration.of(5, ChronoUnit.SECONDS), () -> event.getEntity().removeTag("targetnormalpunch"));
+        TickScheduler.scheduleFromHere(Duration.of(200, ChronoUnit.MILLIS), () -> event.getEntity().removeTag("targetnormalpunch"));
     }
 
     private static void knockback(LivingEntity target, double strength, double pX, double pZ) {

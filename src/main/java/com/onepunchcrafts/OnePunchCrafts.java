@@ -120,6 +120,7 @@ public class OnePunchCrafts {
         Player player = event.getEntity();
         if (!player.level().isClientSide()) {
             OnePunchPlayer onePunchPlayer = player.getCapability(ONE_PLAYER_CAPABILITY).orElse(new OnePunchPlayer(WITHOUT_PACK));
+            onePunchPlayer.playerRespawn(event);
             HelpUtility.syncWithPlayer((ServerPlayer) player, onePunchPlayer);
         }
     }

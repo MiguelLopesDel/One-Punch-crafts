@@ -63,41 +63,60 @@ public class ExtremeSpeed implements SkillPassive {
         Vec3 movementDirection = new Vec3(mx, 0, mz).normalize();
 
         AABB playerBox = player.getBoundingBox();
-//        Vec3 velocity = player.getDeltaMovement();
-//        int minY = (int) Math.floor(playerBox.minY) - 1; // Considera 1 bloco abaixo para colisões no chão
-//        int maxY = (int) Math.ceil(playerBox.maxY) + 1; // Considera 1 bloco acima para colisões no teto
-//        Vec3 predictedPosition = player.position().add(velocity);
-//        AABB nextBox = playerBox.move(predictedPosition.subtract(player.position()));
+        Vec3 velocity = player.getDeltaMovement();
 
+        double predictionMultiplier = Math.max(2.0, velocity.horizontalDistance() * 2);
+        Vec3 predictedMovement = movementDirection.scale(predictionMultiplier);
 
-        AABB nextBox = playerBox.move(movementDirection);
-        AABB checkBox = nextBox.inflate(0.2, 0, 0.2);
+        AABB nextBox = playerBox.move(predictedMovement);
+        double expansionFactor = Math.max(0.5, velocity.horizontalDistance() * 0.5);
+        AABB checkBox = nextBox.inflate(expansionFactor, 0, expansionFactor);
 
         BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
         int minX = (int) Math.floor(checkBox.minX);
         int maxX = (int) Math.ceil(checkBox.maxX);
+
         int minY = (int) Math.floor(playerBox.minY);
         int maxY = (int) Math.ceil(playerBox.maxY) + 1;
+
+        if (velocity.y > 0.1) {
+            maxY = (int) Math.ceil(playerBox.maxY) + 2;
+        }
+
         int minZ = (int) Math.floor(checkBox.minZ);
         int maxZ = (int) Math.ceil(checkBox.maxZ);
+
         ArrayList<BlockPos> positions = new ArrayList<>();
+        Vec3 playerPos = player.position();
+        Vec3 playerFeet = new Vec3(playerPos.x, playerBox.minY, playerPos.z);
+
         for (int x = minX; x < maxX; x++) {
             for (int y = minY; y < maxY; y++) {
                 for (int z = minZ; z < maxZ; z++) {
                     mutablePos.set(x, y, z);
                     if (!world.getBlockState(mutablePos).isAir()) {
                         Vec3 blockCenter = new Vec3(x + 0.5, y + 0.5, z + 0.5);
-                        Vec3 toBlock = blockCenter.subtract(player.position());
-                        if (toBlock.dot(movementDirection) > 0) {
+                        Vec3 toBlock = blockCenter.subtract(playerPos);
+
+                        Vec3 horizontalToBlock = new Vec3(toBlock.x, 0, toBlock.z);
+                        double dot = horizontalToBlock.normalize().dot(movementDirection);
+
+                        if (dot > -0.3) {
                             AABB blockBox = new AABB(x, y, z, x + 1, y + 1, z + 1);
-                            if (nextBox.intersects(blockBox)) {
-                                positions.add(mutablePos.immutable());
+
+                            if (checkBox.intersects(blockBox)) {
+                                if (y >= playerBox.minY - 0.1) {
+                                    positions.add(mutablePos.immutable());
+                                }
                             }
                         }
                     }
                 }
             }
         }
-        NetworkRegister.sendToServer(new CheckAndDestructionBlockInAroundPacket(positions));
+
+        if (!positions.isEmpty()) {
+            NetworkRegister.sendToServer(new CheckAndDestructionBlockInAroundPacket(positions));
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.onepunchcrafts.common.capability;
 
 import com.onepunchcrafts.common.skills.Skill;
+import com.onepunchcrafts.common.skills.boros.BorosPack;
 import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
 import com.onepunchcrafts.common.skills.SkillPack;
 import it.unimi.dsi.fastutil.shorts.ShortConsumer;
@@ -11,6 +12,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraftforge.event.entity.living.LivingEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -37,6 +39,7 @@ public class OnePunchPlayer {
         CompoundTag nbt = (CompoundTag) tag;
         skillPack = switch (nbt.getString("skillPack")) {
             case "SaitamaPack" -> new SaitamaPack();
+            case "BorosPack" -> new BorosPack();
             default -> WITHOUT_PACK;
         };
         readNBT(nbt);
@@ -92,5 +95,9 @@ public class OnePunchPlayer {
      */
     public void manageFlux(LivingEvent event) {
         getSkillPack().manageFlux(event);
+    }
+
+    public void playerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        getSkillPack().playerRespawn(event);
     }
 }
