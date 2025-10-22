@@ -1,7 +1,7 @@
 package com.onepunchcrafts.common.skills.saitama;
 
-import com.onepunchcrafts.OnePunchCrafts;
 import com.onepunchcrafts.common.skills.Skill;
+import com.onepunchcrafts.common.skills.SkillExecutionResult;
 import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.util.TickScheduler;
 import net.minecraft.client.gui.Font;
@@ -24,9 +24,9 @@ import java.util.List;
 public class NormalPunchesInArea implements Skill {
 
     @Override
-    public void execute(Player p) {
+    public SkillExecutionResult execute(Player p) {
         if (!(p instanceof ServerPlayer player))
-            return;
+            return null;
         Level level = player.level();
         final int i = 50;
         BlockPos pos = player.blockPosition();
@@ -36,6 +36,7 @@ public class NormalPunchesInArea implements Skill {
         final ArrayDeque<Entity> deque = new ArrayDeque<>();
         entities.forEach(deque::push);
         processEntities(deque, player, HelpUtility.verifyIsSaitamaAndGetCapability(player).get());
+        return null;
     }
 
     @Override

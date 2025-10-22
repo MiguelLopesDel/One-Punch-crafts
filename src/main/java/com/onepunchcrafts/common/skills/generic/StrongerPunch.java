@@ -1,6 +1,7 @@
 package com.onepunchcrafts.common.skills.generic;
 
 import com.onepunchcrafts.common.skills.Skill;
+import com.onepunchcrafts.common.skills.SkillExecutionResult;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -13,8 +14,9 @@ import java.awt.*;
 public class StrongerPunch implements Skill {
 
     @Override
-    public void execute(Player player) {
+    public SkillExecutionResult execute(Player player) {
 
+        return null;
     }
 
     @Override

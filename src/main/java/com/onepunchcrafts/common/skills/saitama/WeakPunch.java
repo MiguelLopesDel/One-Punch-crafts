@@ -1,6 +1,7 @@
 package com.onepunchcrafts.common.skills.saitama;
 
 import com.onepunchcrafts.common.skills.Skill;
+import com.onepunchcrafts.common.skills.SkillExecutionResult;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.AnimationPacket;
 import com.onepunchcrafts.util.HelpUtility;
@@ -30,8 +31,9 @@ import static com.onepunchcrafts.util.DraconicCompat.attackGuardian;
 public class WeakPunch implements Skill {
 
     @Override
-    public void execute(Player player) {
+    public SkillExecutionResult execute(Player player) {
         consecutivePunches(player);
+        return null;
     }
 
     @SubscribeEvent

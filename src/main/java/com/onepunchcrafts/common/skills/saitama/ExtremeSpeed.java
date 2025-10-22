@@ -1,6 +1,6 @@
 package com.onepunchcrafts.common.skills.saitama;
 
-import com.onepunchcrafts.common.skills.Skill;
+import com.onepunchcrafts.common.skills.SkillExecutionResult;
 import com.onepunchcrafts.common.skills.SkillPassive;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.CheckAndDestructionBlockInAroundPacket;
@@ -25,13 +25,14 @@ import java.util.ArrayList;
 public class ExtremeSpeed implements SkillPassive {
 
     @Override
-    public void execute(Player player) {
+    public SkillExecutionResult execute(Player player) {
         if (player instanceof ServerPlayer serverPlayer) {
             HelpUtility.verifyIsSaitamaAndGetCapability(serverPlayer).ifPresent(sai -> {
                 sai.setExtremeSpeedActive(!sai.isExtremeSpeedActive());
                 NetworkRegister.sendToPlayer(serverPlayer, new PlayerSyncPacket(sai));
             });
         }
+        return null;
     }
 
     @Override

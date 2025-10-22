@@ -1,9 +1,15 @@
 package com.onepunchcrafts.common.skills;
 
+import com.onepunchcrafts.common.skills.sync.SyncStrategy;
+import com.onepunchcrafts.common.skills.sync.Syncable;
 import lombok.Getter;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.event.TickEvent;
 import org.jetbrains.annotations.NotNull;
 
@@ -11,8 +17,10 @@ import java.util.List;
 
 public abstract class AbstractSkillPack implements SkillPack {
     @Getter
+    @Syncable(key = "currentSkillIndex", strategy = SyncStrategy.SKILL_INDEX)
     protected int currentSkillIndex;
     @Getter
+    @Syncable(key = "currentGroupIndex", strategy = SyncStrategy.GROUP_INDEX)
     protected int currentGroupIndex;
     protected final List<List<Skill>> skills;
 
@@ -29,6 +37,11 @@ public abstract class AbstractSkillPack implements SkillPack {
         if (skill != null) {
             skill.execute(player);
         }
+    }
+
+    @Override
+    public void renderSkills(int width, int height, Font font, GuiGraphics guiGraphics) {
+        getCurrentSkill().renderName(width, height, font, guiGraphics, (int) (width * 0.05), (int) (height * 0.25));
     }
 
     @Override

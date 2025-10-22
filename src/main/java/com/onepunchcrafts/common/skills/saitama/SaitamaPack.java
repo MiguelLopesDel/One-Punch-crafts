@@ -1,9 +1,10 @@
 package com.onepunchcrafts.common.skills.saitama;
 
-import com.onepunchcrafts.common.skills.AbstractSkillPack;
-import com.onepunchcrafts.common.skills.Skill;
-import com.onepunchcrafts.common.skills.SkillPack;
-import com.onepunchcrafts.common.skills.SkillPassive;
+import com.onepunchcrafts.common.skills.*;
+import com.onepunchcrafts.common.skills.sync.FieldRegistry;
+import com.onepunchcrafts.common.skills.sync.SyncStrategy;
+import com.onepunchcrafts.common.skills.sync.Syncable;
+import com.onepunchcrafts.common.skills.sync.SyncableSkillPack;
 import com.onepunchcrafts.constant.NbtBooleanValues;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.PlayerSyncPacket;
@@ -40,34 +41,43 @@ import java.util.*;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class SaitamaPack extends AbstractSkillPack {
+public class SaitamaPack extends SyncableSkillPack {
 
     @Setter
     @Getter
+    @Syncable(key = "seriousfart", strategy = SyncStrategy.TOGGLE)
     private boolean seriousFartActive;
     @Setter
     @Getter
+    @Syncable(key = "extremespeedactive", strategy = SyncStrategy.TOGGLE)
     private boolean extremeSpeedActive;
     @Setter
     @Getter
+    @Syncable(key = "extremejump", strategy = SyncStrategy.TOGGLE)
     private boolean extremeJump;
     @Setter
     @Getter
+    @Syncable(key = "superspeedsaitama", strategy = SyncStrategy.VALIDATED)
     private short speed;
     @Setter
     @Getter
+    @Syncable(key = "breakblocksquickly", strategy = SyncStrategy.TOGGLE)
     private boolean breakBlocksQuickly;
     @Setter
     @Getter
+    @Syncable(key = "weight", strategy = SyncStrategy.VALIDATED)
     private short weight;
     @Setter
     @Getter
+    @Syncable(key = "saitamaknockbackresistance", strategy = SyncStrategy.VALIDATED)
     private short knockbackResistance;
     @Setter
     @Getter
+    @Syncable(key = "saitamaattackknockback", strategy = SyncStrategy.VALIDATED)
     private short attackKnockback;
     @Setter
     @Getter
+    @Syncable(key = "saitamaswimspeed", strategy = SyncStrategy.VALIDATED)
     private short swimSpeed;
     private final SaitamaPack self = this;
 
@@ -80,11 +90,12 @@ public class SaitamaPack extends AbstractSkillPack {
         list.add(2, new SeriousPunch());
         list.add(3, new Skill() {
             @Override
-            public void execute(Player p) {
+            public SkillExecutionResult execute(Player p) {
                 if (p instanceof ServerPlayer player) {
                     setSeriousFartActive(!isSeriousFartActive());
                     NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(self));
                 }
+                return null;
             }
 
             @Override
@@ -96,7 +107,8 @@ public class SaitamaPack extends AbstractSkillPack {
         list.add(5, new QuickBackStab());
         list.add(6, new Skill() {
             @Override
-            public void execute(Player player) {
+            public SkillExecutionResult execute(Player player) {
+                return null;
             }
 
             @Override
@@ -106,11 +118,12 @@ public class SaitamaPack extends AbstractSkillPack {
         });
         list.add(7, new Skill() {
             @Override
-            public void execute(Player p) {
+            public SkillExecutionResult execute(Player p) {
                 if (p instanceof ServerPlayer player) {
                     setBreakBlocksQuickly(!isBreakBlocksQuickly());
                     NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(self));
                 }
+                return null;
             }
 
             @Override
@@ -120,7 +133,8 @@ public class SaitamaPack extends AbstractSkillPack {
         });
         list.add(new Skill() {
             @Override
-            public void execute(Player player) {
+            public SkillExecutionResult execute(Player player) {
+                return null;
             }
 
             @Override
@@ -130,7 +144,8 @@ public class SaitamaPack extends AbstractSkillPack {
         });
         list.add(new Skill() {
             @Override
-            public void execute(Player player) {
+            public SkillExecutionResult execute(Player player) {
+                return null;
             }
 
             @Override
@@ -140,7 +155,8 @@ public class SaitamaPack extends AbstractSkillPack {
         });
         list.add(new Skill() {
             @Override
-            public void execute(Player player) {
+            public SkillExecutionResult execute(Player player) {
+                return null;
             }
 
             @Override
@@ -150,7 +166,8 @@ public class SaitamaPack extends AbstractSkillPack {
         });
         list.add(new Skill() {
             @Override
-            public void execute(Player player) {
+            public SkillExecutionResult execute(Player player) {
+                return null;
             }
 
             @Override
@@ -159,19 +176,22 @@ public class SaitamaPack extends AbstractSkillPack {
             }
         });
         list.add(12, new NormalPunchesInArea());
+        list.add(13, new SaitamaDash());
 
         List<Skill> list2 = new ArrayList<>();
         list2.add(new ExtremeSpeed());
         list2.add(new Skill() {
             @Override
-            public void execute(Player player) {
+            public SkillExecutionResult execute(Player player) {
                 if (player instanceof ServerPlayer serverPlayer) {
                     HelpUtility.verifyIsSaitamaAndGetCapability(serverPlayer).ifPresent(sai -> {
                         sai.setExtremeJump(!sai.isExtremeJump());
                         NetworkRegister.sendToPlayer(serverPlayer, new PlayerSyncPacket(sai));
                     });
                 }
+                return null;
             }
+
             @Override
             public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
                 guiGraphics.drawString(font, Component.translatable("skill.saitama.extreme_jump"), width / 2 - defaultReduce, height / 2 + defaultAdd, isExtremeJump() ? Color.GREEN.getRGB() : Color.RED.getRGB(), false);
@@ -238,7 +258,7 @@ public class SaitamaPack extends AbstractSkillPack {
 
     @Override
     public int getMaxNumSkill() {
-        return 12;
+        return 13;
     }
 
     @Override
@@ -256,80 +276,74 @@ public class SaitamaPack extends AbstractSkillPack {
         this.extremeJump = data.extremeJump;
     }
 
-    @Override
-    @OnlyIn(Dist.CLIENT)
-    public void renderSkills(int width, int height, Font font, GuiGraphics guiGraphics) {
-        getCurrentSkill().renderName(width, height, font, guiGraphics, (int) (width * 0.05), (int) (height * 0.25));
-    }
-
-    @Override
-    public ArrayList<String> compareTo(SkillPack otherData) {
-        if (!(otherData instanceof SaitamaPack saitamaPack))
-            return new ArrayList<>();
-        ArrayList<String> changed = new ArrayList<>();
-        if (this.currentSkillIndex != saitamaPack.currentSkillIndex) {
-            changed.add("currentSkillIndex");
-        }
-        if (this.speed != saitamaPack.speed) {
-            changed.add(NbtBooleanValues.superSpeed.getValue());
-        }
-        if (this.breakBlocksQuickly != saitamaPack.breakBlocksQuickly) {
-            changed.add(NbtBooleanValues.breakBlocksQuickly.getValue());
-        }
-        if (this.getWeight() != saitamaPack.getWeight()) {
-            changed.add("weight");
-        }
-        if (this.getKnockbackResistance() != saitamaPack.getKnockbackResistance()) {
-            changed.add("saitamaknockbackresistance");
-        }
-        if (this.getAttackKnockback() != saitamaPack.getAttackKnockback()) {
-            changed.add("saitamaattackknockback");
-        }
-        if (this.getSwimSpeed() != saitamaPack.getSwimSpeed()) {
-            changed.add("saitamaswimspeed");
-        }
-        if (this.currentGroupIndex != saitamaPack.currentGroupIndex) {
-            changed.add("currentGroupIndex");
-        }
-        return changed;
-    }
-
-    @Override
-    public void handleTheDifferences(ServerPlayer player, ArrayList<String> differences, SkillPack serverLayer, SkillPack clientLayer) {
-        if (!(serverLayer instanceof SaitamaPack serverData) || !(clientLayer instanceof SaitamaPack clientData))
-            return;
-        differences.forEach(item -> {
-            switch (item) {
-                case "currentSkillIndex":
-                    updateCurrentSkill(serverData, clientData);
-                    break;
-                case "seriousfart":
-                    updateSeriousFart(player, serverData, clientData);
-                    break;
-                case "superspeedsaitama":
-                    updateFieldWithValidation(serverData::setSpeed, clientData.getSpeed(), player, serverData);
-                    break;
-                case "breakblocksquickly":
-                    updateBreakBlocksQuickly(player, serverData, clientData);
-                    break;
-                case "weight":
-                    updateFieldWithValidation(serverData::setWeight, clientData.getWeight(), player, serverData);
-                    break;
-                case "saitamaknockbackresistance":
-                    updateFieldWithValidation(serverData::setKnockbackResistance, clientData.getKnockbackResistance(), player, serverData);
-                    break;
-                case "saitamaattackknockback":
-                    updateFieldWithValidation(serverData::setAttackKnockback, clientData.getAttackKnockback(), player, serverData);
-                    break;
-                case "saitamaswimspeed":
-                    updateFieldWithValidation(serverData::setSwimSpeed, clientData.getSwimSpeed(), player, serverData);
-                    break;
-                case "currentGroupIndex":
-                    updateCurrentGroup(serverData, clientData);
-                    break;
-            }
-        });
-    }
+//    @Override
+//    public ArrayList<String> compareTo(SkillPack otherData) {
+//        if (!(otherData instanceof SaitamaPack saitamaPack))
+//            return new ArrayList<>();
+//        ArrayList<String> changed = new ArrayList<>();
+//        if (this.currentSkillIndex != saitamaPack.currentSkillIndex) {
+//            changed.add("currentSkillIndex");
+//        }
+//        if (this.speed != saitamaPack.speed) {
+//            changed.add(NbtBooleanValues.superSpeed.getValue());
+//        }
+//        if (this.breakBlocksQuickly != saitamaPack.breakBlocksQuickly) {
+//            changed.add(NbtBooleanValues.breakBlocksQuickly.getValue());
+//        }
+//        if (this.getWeight() != saitamaPack.getWeight()) {
+//            changed.add("weight");
+//        }
+//        if (this.getKnockbackResistance() != saitamaPack.getKnockbackResistance()) {
+//            changed.add("saitamaknockbackresistance");
+//        }
+//        if (this.getAttackKnockback() != saitamaPack.getAttackKnockback()) {
+//            changed.add("saitamaattackknockback");
+//        }
+//        if (this.getSwimSpeed() != saitamaPack.getSwimSpeed()) {
+//            changed.add("saitamaswimspeed");
+//        }
+//        if (this.currentGroupIndex != saitamaPack.currentGroupIndex) {
+//            changed.add("currentGroupIndex");
+//        }
+//        return changed;
+//    }
+//
+//    @Override
+//    public void handleTheDifferences(ServerPlayer player, ArrayList<String> differences, SkillPack serverLayer, SkillPack clientLayer) {
+//        if (!(serverLayer instanceof SaitamaPack serverData) || !(clientLayer instanceof SaitamaPack clientData))
+//            return;
+//        differences.forEach(item -> {
+//            switch (item) {
+//                case "currentSkillIndex":
+//                    updateCurrentSkill(serverData, clientData);
+//                    break;
+//                case "seriousfart":
+//                    updateSeriousFart(player, serverData, clientData);
+//                    break;
+//                case "superspeedsaitama":
+//                    updateFieldWithValidation(serverData::setSpeed, clientData.getSpeed(), player, serverData);
+//                    break;
+//                case "breakblocksquickly":
+//                    updateBreakBlocksQuickly(player, serverData, clientData);
+//                    break;
+//                case "weight":
+//                    updateFieldWithValidation(serverData::setWeight, clientData.getWeight(), player, serverData);
+//                    break;
+//                case "saitamaknockbackresistance":
+//                    updateFieldWithValidation(serverData::setKnockbackResistance, clientData.getKnockbackResistance(), player, serverData);
+//                    break;
+//                case "saitamaattackknockback":
+//                    updateFieldWithValidation(serverData::setAttackKnockback, clientData.getAttackKnockback(), player, serverData);
+//                    break;
+//                case "saitamaswimspeed":
+//                    updateFieldWithValidation(serverData::setSwimSpeed, clientData.getSwimSpeed(), player, serverData);
+//                    break;
+//                case "currentGroupIndex":
+//                    updateCurrentGroup(serverData, clientData);
+//                    break;
+//            }
+//        });
+//    }
 
     private void updateCurrentGroup(SaitamaPack serverData, SaitamaPack clientData) {
         int diff = Math.abs(serverData.currentGroupIndex - clientData.currentGroupIndex);
@@ -361,9 +375,17 @@ public class SaitamaPack extends AbstractSkillPack {
             serverData.currentSkillIndex = clientData.currentSkillIndex;
     }
 
-    public void adjustAbility(ShortConsumer setter, short currentValue, double scrollDelta) {
-        short newValue = (short) (currentValue + scrollDelta);
-        setter.accept(newValue < 0 ? 0 : newValue);
+    @Override
+    public void adjustAbility(double scrollDelta) {
+        switch (getCurrentSkillIndex()) {
+            case 6 -> setSpeed(getSpeed() + scrollDelta < 0 ? 0 : (short) (getSpeed() + scrollDelta));
+            case 8 -> setWeight(getWeight() + scrollDelta < 0 ? 0 : (short) (getWeight() + scrollDelta));
+            case 9 ->
+                    setKnockbackResistance(getKnockbackResistance() + scrollDelta < 0 ? 0 : (short) (getKnockbackResistance() + scrollDelta));
+            case 10 ->
+                    setAttackKnockback(getAttackKnockback() + scrollDelta < 0 ? 0 : (short) (getAttackKnockback() + scrollDelta));
+            case 11 -> setSwimSpeed(getSwimSpeed() + scrollDelta < 0 ? 0 : (short) (getSwimSpeed() + scrollDelta));
+        }
     }
 
     private static final Map<Player, Integer> shiftHoldTime = new HashMap<>();

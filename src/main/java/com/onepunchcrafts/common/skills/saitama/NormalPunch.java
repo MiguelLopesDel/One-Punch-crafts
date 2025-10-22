@@ -1,6 +1,7 @@
 package com.onepunchcrafts.common.skills.saitama;
 
 import com.onepunchcrafts.common.skills.Skill;
+import com.onepunchcrafts.common.skills.SkillExecutionResult;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.AnimationPacket;
 import com.onepunchcrafts.util.HelpUtility;
@@ -12,6 +13,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
@@ -30,8 +33,9 @@ import static com.onepunchcrafts.OnePunchCrafts.DRACONIC_MOD;
 public class NormalPunch implements Skill {
 
     @Override
-    public void execute(Player p) {
+    public SkillExecutionResult execute(Player p) {
         consecutiveNormalPunches(p);
+        return null;
     }
 
     @Override
@@ -71,23 +75,54 @@ public class NormalPunch implements Skill {
     private static void consecutiveNormalPunches(Player p) {
         if (!(p.level() instanceof ServerLevel serverLevel) || !(p instanceof ServerPlayer player))
             return;
-        TickScheduler.scheduleDuringAndWithInterval(Duration.of(5, ChronoUnit.SECONDS), Duration.of(50, ChronoUnit.MILLIS), () -> {
-            BlockPos pStart = player.blockPosition();
-            int i = 2;
-            AABB pArea = new AABB(new BlockPos(pStart.getX(), pStart.getY(), pStart.getZ()),
-                    new BlockPos(pStart.getX() + i, pStart.getY() + i, pStart.getZ() + i));
-            serverLevel.getEntitiesOfClass(LivingEntity.class, pArea).forEach(entity -> {
-                if (player.equals(entity))
-                    return;
-                entity.setInvulnerable(false);
-                if (DRACONIC_MOD.isPresent() && DraconicCompat.attackGuardian(player, entity, false))
-                    return;
-                player.attack(entity);
-            });
-            if (DRACONIC_MOD.isPresent())
-                DraconicCompat.attackCrystals(player, serverLevel, pArea, false);
-        });
+
         NetworkRegister.sendToAllClientsExcept(player, new AnimationPacket(player.getStringUUID(), "multiple_punches"));
         TickScheduler.scheduleFromHere(Duration.of(5, ChronoUnit.SECONDS), () -> NetworkRegister.sendToAllClientsExcept(player, new AnimationPacket(player.getStringUUID(), "stop")));
+
+        int durationTicks = 100;
+        int intervalTicks = 2;
+        int range = 15;
+
+        TickScheduler.scheduleDuringAndWithInterval(Duration.of(5, ChronoUnit.SECONDS), Duration.of(50, ChronoUnit.MILLIS), () -> {
+            Vec3 lookVec = player.getLookAngle();
+            Vec3 startPos = player.getEyePosition();
+
+            AABB searchArea = new AABB(startPos, startPos.add(lookVec.scale(range))).inflate(4);
+            serverLevel.getEntitiesOfClass(LivingEntity.class, searchArea, entity -> entity != player && isEntityInCone(player, entity, range)).forEach(target -> {
+
+                serverLevel.playSound(null, target.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 0.5f, 2.0f);
+                player.attack(target);
+            });
+        });
     }
+
+    private static boolean isEntityInCone(Player player, LivingEntity target, double range) {
+        Vec3 playerLook = player.getLookAngle().normalize();
+        Vec3 directionToTarget = target.getEyePosition().subtract(player.getEyePosition()).normalize();
+        double angle = Math.toDegrees(Math.acos(playerLook.dot(directionToTarget)));
+        double distance = player.distanceTo(target);
+        return angle < 45.0 && distance <= range;
+    }
+//    private static void consecutiveNormalPunches(Player p) {
+//        if (!(p.level() instanceof ServerLevel serverLevel) || !(p instanceof ServerPlayer player))
+//            return;
+//        TickScheduler.scheduleDuringAndWithInterval(Duration.of(5, ChronoUnit.SECONDS), Duration.of(50, ChronoUnit.MILLIS), () -> {
+//            BlockPos pStart = player.blockPosition();
+//            int i = 2;
+//            AABB pArea = new AABB(new BlockPos(pStart.getX(), pStart.getY(), pStart.getZ()),
+//                    new BlockPos(pStart.getX() + i, pStart.getY() + i, pStart.getZ() + i));
+//            serverLevel.getEntitiesOfClass(LivingEntity.class, pArea).forEach(entity -> {
+//                if (player.equals(entity))
+//                    return;
+//                entity.setInvulnerable(false);
+//                if (DRACONIC_MOD.isPresent() && DraconicCompat.attackGuardian(player, entity, false))
+//                    return;
+//                player.attack(entity);
+//            });
+//            if (DRACONIC_MOD.isPresent())
+//                DraconicCompat.attackCrystals(player, serverLevel, pArea, false);
+//        });
+//        NetworkRegister.sendToAllClientsExcept(player, new AnimationPacket(player.getStringUUID(), "multiple_punches"));
+//        TickScheduler.scheduleFromHere(Duration.of(5, ChronoUnit.SECONDS), () -> NetworkRegister.sendToAllClientsExcept(player, new AnimationPacket(player.getStringUUID(), "stop")));
+//    }
 }

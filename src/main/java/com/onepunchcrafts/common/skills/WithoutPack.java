@@ -44,7 +44,9 @@ public class WithoutPack implements SkillPack {
     public Skill getCurrentSkill() {
         return new Skill() {
             @Override
-            public void execute(Player player) {}
+            public SkillExecutionResult execute(Player player) {
+                return null;
+            }
             @Override
             public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {}
         };
@@ -76,7 +78,7 @@ public class WithoutPack implements SkillPack {
     }
 
     @Override
-    public void adjustAbility(ShortConsumer setter, short currentValue, double scrollDelta) {
+    public void adjustAbility(double scrollDelta) {
 
     }
 

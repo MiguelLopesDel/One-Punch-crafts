@@ -1,5 +1,6 @@
 package com.onepunchcrafts.common.skills.boros;
 
+import com.onepunchcrafts.common.skills.SkillExecutionResult;
 import com.onepunchcrafts.common.skills.SkillPassive;
 import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.util.TickScheduler;
@@ -10,7 +11,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
 import java.awt.*;
-import java.math.BigInteger;
 import java.time.Duration;
 
 public class BorosRegeneration implements SkillPassive {
@@ -23,10 +23,11 @@ public class BorosRegeneration implements SkillPassive {
     }
 
     @Override
-    public void execute(Player player) {
+    public SkillExecutionResult execute(Player player) {
         if (player instanceof ServerPlayer serverPlayer && HelpUtility.getSkillData(serverPlayer, BorosPack.class).getTicksToUseUltraRegeneration() == 0) {
             TickScheduler.scheduleDuringAndWithInterval(Duration.ofSeconds(20), Duration.ofMillis(50), () -> serverPlayer.heal(15_000_000));
         }
+        return null;
     }
 
     @Override

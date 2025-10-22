@@ -6,6 +6,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -33,15 +35,19 @@ public interface SkillPack {
     Skill getCurrentSkill();
     int getCurrentSkillIndex();
 
+    /**
+     * Isso é equivalente ao index maximo da lista e não a quantidade de itens nela
+     * @return
+     */
     int getMaxNumSkill();
 
     void syncVariables(SkillPack serverData);
-
+    @OnlyIn(Dist.CLIENT)
     void renderSkills(int width, int height, Font font, GuiGraphics guiGraphics);
 
     void handleTheDifferences(ServerPlayer player, ArrayList<String> differences, SkillPack serverData, SkillPack clientData);
 
-    void adjustAbility(ShortConsumer setter, short currentValue, double scrollDelta);
+    void adjustAbility(double scrollDelta);
 
     void tick(TickEvent.PlayerTickEvent event);
 

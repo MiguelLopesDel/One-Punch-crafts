@@ -1,6 +1,7 @@
 package com.onepunchcrafts.common.skills.saitama;
 
 import com.onepunchcrafts.common.skills.Skill;
+import com.onepunchcrafts.common.skills.SkillExecutionResult;
 import com.onepunchcrafts.util.HelpUtility;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -23,9 +24,9 @@ import java.util.List;
 public class QuickBackStab implements Skill {
 
     @Override //contem logica de ray cast
-    public void execute(Player player) {
+    public SkillExecutionResult execute(Player player) {
         if (!(player.level() instanceof ServerLevel) || !(player instanceof ServerPlayer sender))
-            return;
+            return null;
         SaitamaPack saitamaPack = HelpUtility.verifyIsSaitamaAndGetCapability(sender).get();
         Vec3 startVec = sender.getEyePosition();
         int distance = 300;
@@ -60,6 +61,7 @@ public class QuickBackStab implements Skill {
 //            if (closestEntity instanceof ServerPlayer target)
 //                NetworkRegister.sendToPlayer(target, new SettingRenderPacket("quick_backstab"));
         }
+        return null;
     }
 
     @Override

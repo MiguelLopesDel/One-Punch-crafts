@@ -72,7 +72,12 @@ public class OnePunchPlayer {
     }
 
     public void adjustAbilityAndSyncWithServer(ShortConsumer setter, short currentValue, double scrollDelta) {
-        getSkillPack().adjustAbility(setter, currentValue, scrollDelta);
+        getSkillPack().adjustAbility(scrollDelta);
+        syncDataWithServer(this);
+    }
+
+    public void adjustAbilityAndSyncWithServer(double scrollDelta) {
+        getSkillPack().adjustAbility(scrollDelta);
         syncDataWithServer(this);
     }
 

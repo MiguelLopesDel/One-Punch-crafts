@@ -2,6 +2,7 @@ package com.onepunchcrafts.common.skills.saitama;
 
 import com.onepunchcrafts.common.damage.DamagesRegistry;
 import com.onepunchcrafts.common.skills.Skill;
+import com.onepunchcrafts.common.skills.SkillExecutionResult;
 import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.util.TickScheduler;
 import com.onepunchcrafts.util.TickUtilities;
@@ -32,9 +33,9 @@ import static com.onepunchcrafts.util.HelpUtility.*;
 public class SeriousPunch implements Skill {
 
     @Override //contem logica de ray cast
-    public void execute(Player p) {
+    public SkillExecutionResult execute(Player p) {
         if (!(p.level() instanceof ServerLevel serverLevel) || !(p instanceof ServerPlayer player))
-            return;
+            return null;
         HelpUtility.clientEffects(player);
         Vec3 lookVec = player.getLookAngle();
         Vec3 playerPos = player.position();
@@ -43,6 +44,7 @@ public class SeriousPunch implements Skill {
         ArrayList<BlockPos> blockPos = markBlocksToClear(serverLevel, 15, 1000, (int) Math.floor(cylinderStartPos.x), (int) Math.floor(cylinderStartPos.y), (int) Math.floor(cylinderStartPos.z), lookVec);
         final TickUtilities tickU = new TickUtilities();
         TickScheduler.scheduleWithCondition(Duration.of(50, ChronoUnit.MILLIS), () -> tickU.fillCylinderAndEmuleEffects(player, serverLevel, 1000, blockPos));
+        return null;
     }
 
     @SubscribeEvent
