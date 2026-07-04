@@ -470,63 +470,80 @@ public class BorosCollapsingStarCannon implements Skill {
     }
 
     /**
-     * Walks square rings outward from a center column so destruction spreads
-     * as an expanding wave, and can pause/resume at any column.
+     * Visits every column within [minRadius, maxRadius] in order of increasing
+     * Euclidean distance from the center, so destruction spreads as a growing
+     * circle instead of a square wave. The sorted offset table is built lazily
+     * on the first tick (and freed with the stage), and the walk resumes from a
+     * cursor so it can pause/resume within the per-tick budget.
      */
-    private abstract class RingStage implements DestructionStage {
+    private abstract class RadialStage implements DestructionStage {
         protected final int centerX;
         protected final int centerY;
         protected final int centerZ;
-        private final int maxRing;
-        private int ring;
+        private final int minRadius;
+        private final int maxRadius;
+        private int[] offsets; // (dx,dz) packed, ordered by squared distance
         private int cursor;
 
-        RingStage(Vec3 center, int startRing, int maxRing) {
+        RadialStage(Vec3 center, int minRadius, int maxRadius) {
             this.centerX = (int) Math.floor(center.x);
             this.centerY = (int) Math.floor(center.y);
             this.centerZ = (int) Math.floor(center.z);
-            this.ring = startRing;
-            this.maxRing = maxRing;
+            this.minRadius = minRadius;
+            this.maxRadius = maxRadius;
+        }
+
+        /**
+         * Orders every column in the band by squared distance via a counting
+         * sort (O(n), no comparisons or sqrt), so the destruction front is an
+         * exact expanding circle. Cheap enough (~3 ms worst case) to build on
+         * demand and let the GC reclaim once the stage finishes.
+         */
+        private void buildOffsets() {
+            long maxSq = (long) maxRadius * maxRadius;
+            long minSq = (long) minRadius * minRadius;
+            int[] count = new int[(int) maxSq + 2];
+            for (int dx = -maxRadius; dx <= maxRadius; dx++) {
+                for (int dz = -maxRadius; dz <= maxRadius; dz++) {
+                    long distSq = (long) dx * dx + (long) dz * dz;
+                    if (distSq > maxSq || distSq < minSq) continue;
+                    count[(int) distSq + 1]++;
+                }
+            }
+            int total = 0;
+            for (int i = 1; i < count.length; i++) {
+                total += count[i];
+                count[i] = total; // count[d] = start index of distSq band d
+            }
+            offsets = new int[total];
+            for (int dx = -maxRadius; dx <= maxRadius; dx++) {
+                for (int dz = -maxRadius; dz <= maxRadius; dz++) {
+                    long distSq = (long) dx * dx + (long) dz * dz;
+                    if (distSq > maxSq || distSq < minSq) continue;
+                    offsets[count[(int) distSq]++] = ((dx + 512) << 11) | (dz + 512);
+                }
+            }
         }
 
         @Override
         public boolean advance(ServerLevel level, long budgetStart, long nanoBudget) {
-            while (System.nanoTime() - budgetStart < nanoBudget) {
-                if (ring > maxRing) return true;
+            if (offsets == null) buildOffsets();
+            while (cursor < offsets.length) {
+                if (System.nanoTime() - budgetStart >= nanoBudget) return false;
 
-                int perimeter = ring == 0 ? 1 : 8 * ring;
-                if (cursor >= perimeter) {
-                    ring++;
-                    cursor = 0;
-                    continue;
-                }
-
-                int dx;
-                int dz;
-                if (ring == 0) {
-                    dx = 0;
-                    dz = 0;
-                } else {
-                    int side = cursor / (2 * ring);
-                    int off = (cursor % (2 * ring)) - ring;
-                    switch (side) {
-                        case 0 -> { dx = off; dz = -ring; }
-                        case 1 -> { dx = ring; dz = off; }
-                        case 2 -> { dx = -off; dz = ring; }
-                        default -> { dx = -ring; dz = -off; }
-                    }
-                }
-                cursor++;
-                processColumn(level, dx, dz, ring);
+                int v = offsets[cursor++];
+                int dx = ((v >> 11) & 1023) - 512;
+                int dz = (v & 1023) - 512;
+                processColumn(level, dx, dz);
             }
-            return ring > maxRing;
+            return true;
         }
 
-        protected abstract void processColumn(ServerLevel level, int dx, int dz, int ring);
+        protected abstract void processColumn(ServerLevel level, int dx, int dz);
     }
 
     /** The deep annihilation crater: ellipsoid bowl + flared top removal. */
-    private class TsarCraterStage extends RingStage {
+    private class TsarCraterStage extends RadialStage {
         private final int craterRadius;
         private final int depth;
         private final int topRemovalHeight;
@@ -545,7 +562,7 @@ public class BorosCollapsingStarCannon implements Skill {
         }
 
         @Override
-        protected void processColumn(ServerLevel level, int dx, int dz, int ring) {
+        protected void processColumn(ServerLevel level, int dx, int dz) {
             // Never force-load/generate chunks; blasting only the loaded world.
             if (!level.hasChunk((centerX + dx) >> 4, (centerZ + dz) >> 4)) return;
 
@@ -570,7 +587,7 @@ public class BorosCollapsingStarCannon implements Skill {
     }
 
     /** Spherical blast pocket with noisy edges (muzzle core / impact core). */
-    private class RadialBlastStage extends RingStage {
+    private class RadialBlastStage extends RadialStage {
         private final Vec3 center;
         private final int horizontalRadius;
         private final int downRadius;
@@ -587,7 +604,7 @@ public class BorosCollapsingStarCannon implements Skill {
         }
 
         @Override
-        protected void processColumn(ServerLevel level, int dx, int dz, int ring) {
+        protected void processColumn(ServerLevel level, int dx, int dz) {
             if (!level.hasChunk((centerX + dx) >> 4, (centerZ + dz) >> 4)) return;
 
             double horizontalDistance = Math.sqrt(dx * dx + dz * dz);
@@ -667,7 +684,7 @@ public class BorosCollapsingStarCannon implements Skill {
      * ragged edge), until only surface soil and trees are gone and the terrain
      * fades back to untouched Minecraft.
      */
-    private class SurfaceScrapeStage extends RingStage {
+    private class SurfaceScrapeStage extends RadialStage {
         private final int innerRadius;
         private final int outerRadius;
         private final int maxDepth;
@@ -680,7 +697,7 @@ public class BorosCollapsingStarCannon implements Skill {
         }
 
         @Override
-        protected void processColumn(ServerLevel level, int dx, int dz, int ring) {
+        protected void processColumn(ServerLevel level, int dx, int dz) {
             int x = centerX + dx;
             int z = centerZ + dz;
             if (!level.hasChunk(x >> 4, z >> 4)) return;
