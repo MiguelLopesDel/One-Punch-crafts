@@ -14,10 +14,11 @@ public class BorosConfig {
     public static final float ACTIVE_REGEN_COST = 150_000_000f;
 
     public static final float ENERGY_BLAST_COST = 4_000_000f;
+    public static final float ROARING_CANNON_COST = 90_000_000f;
 
     public static final float CSRC_COST = 500_000_000f;
-    public static final float METEORIC_BURST_TICK_COST = 850_000.0f;
-    public static final float FLIGHT_COST = 90_000.0f;
+    public static final float METEORIC_BURST_TICK_COST = 100_000.0f;
+    public static final float FLIGHT_COST = 26_000.0f;
 
     @Getter
     @Setter

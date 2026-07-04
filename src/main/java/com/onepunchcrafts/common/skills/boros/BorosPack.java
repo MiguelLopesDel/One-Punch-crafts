@@ -164,7 +164,8 @@ public class BorosPack extends SyncableSkillPack {
         transformSkills.add(1, new BorosMeteoricBurst(this));
 
         ArrayList<Skill> ultimateSkills = new ArrayList<>();
-        ultimateSkills.add(0, new BorosCollapsingStarCannon(this));
+        ultimateSkills.add(0, new BorosRoaringCannon(this));
+        ultimateSkills.add(1, new BorosCollapsingStarCannon(this));
 
         groupList.add(basicSkills);
         groupList.add(transformSkills);
@@ -395,6 +396,10 @@ public class BorosPack extends SyncableSkillPack {
         player.hurtMarked = true;
 
         double speed = nextMotion.length();
+        if (destructiveMode && currentForm > 0 && inputJump && nextMotion.y > 0.08) {
+            breakCeilingWhileAscending(player, nextMotion);
+        }
+
         if (speed > 0.25) {
             destructiveWake(player, 0.75 + currentForm * 0.85 + Math.min(speed, 5.0) * 0.25, speed);
             impactEntities(player, nextMotion, 0.8 + currentForm * 0.45);
@@ -411,6 +416,45 @@ public class BorosPack extends SyncableSkillPack {
             level.sendParticles(ParticleTypes.ELECTRIC_SPARK,
                     player.getX(), player.getY() + 0.9, player.getZ(),
                     currentForm == 2 ? 5 : 2, 0.3, 0.3, 0.3, 0.08);
+        }
+    }
+
+    private void breakCeilingWhileAscending(ServerPlayer player, Vec3 motion) {
+        ServerLevel level = player.serverLevel();
+        double height = currentForm == 2 ? 5.5 : 3.25;
+        double radius = currentForm == 2 ? 1.8 : 1.15;
+        AABB ceilingArea = player.getBoundingBox()
+                .move(0, Math.max(0.35, motion.y * 0.5), 0)
+                .expandTowards(0, height, 0)
+                .inflate(radius, 0.15, radius);
+        int maxBlocks = currentForm == 2 ? 240 : 90;
+        int broken = 0;
+
+        int minX = (int) Math.floor(ceilingArea.minX);
+        int minY = (int) Math.floor(ceilingArea.minY);
+        int minZ = (int) Math.floor(ceilingArea.minZ);
+        int maxX = (int) Math.ceil(ceilingArea.maxX);
+        int maxY = (int) Math.ceil(ceilingArea.maxY);
+        int maxZ = (int) Math.ceil(ceilingArea.maxZ);
+
+        for (int y = minY; y <= maxY && broken < maxBlocks; y++) {
+            for (int x = minX; x <= maxX && broken < maxBlocks; x++) {
+                for (int z = minZ; z <= maxZ && broken < maxBlocks; z++) {
+                    BlockPos pos = new BlockPos(x, y, z);
+                    BlockState state = level.getBlockState(pos);
+                    if (state.isAir() || state.getDestroySpeed(level, pos) < 0) continue;
+                    level.destroyBlock(pos, currentForm < 2, player);
+                    broken++;
+                }
+            }
+        }
+
+        if (broken > 0 && level.getGameTime() % 3 == 0) {
+            level.sendParticles(ParticleTypes.EXPLOSION,
+                    player.getX(), player.getY() + player.getBbHeight() + 0.25, player.getZ(),
+                    currentForm == 2 ? 3 : 1, radius * 0.35, 0.35, radius * 0.35, 0.2);
+            level.playSound(null, player.getX(), player.getY(), player.getZ(),
+                    SoundEvents.STONE_BREAK, SoundSource.PLAYERS, 0.8f, currentForm == 2 ? 0.8f : 1.1f);
         }
     }
 
