@@ -107,6 +107,9 @@ public class OnePunchCrafts {
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);
         RegisterSounds.register(modEventBus);
+        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
+                net.minecraftforge.fml.config.ModConfig.Type.CLIENT,
+                com.onepunchcrafts.client.ClientConfig.SPEC);
 
         // Register the item to a creative tab
 //        modEventBus.addListener(this::addCreative);

@@ -27,7 +27,6 @@ import static com.onepunchcrafts.OnePunchCrafts.DRACONIC_MOD;
 import static com.onepunchcrafts.util.DraconicCompat.attackCrystals;
 import static com.onepunchcrafts.util.DraconicCompat.attackGuardian;
 
-@Mod.EventBusSubscriber
 public class WeakPunch implements Skill {
 
     @Override
@@ -36,7 +35,6 @@ public class WeakPunch implements Skill {
         return null;
     }
 
-    @SubscribeEvent
     public static void flux(LivingDamageEvent event) {
         if (event.getSource().getEntity() instanceof ServerPlayer player) {
             HelpUtility.verifyIsSaitamaAndSkill(player, WeakPunch.class).ifPresent(p ->

@@ -18,7 +18,6 @@ import net.minecraftforge.fml.common.Mod;
 
 import java.awt.*;
 
-@Mod.EventBusSubscriber
 public class WeakeningPunch implements Skill {
     @Override
     public SkillExecutionResult execute(Player player) {
@@ -26,7 +25,6 @@ public class WeakeningPunch implements Skill {
         return null;
     }
 
-    @SubscribeEvent
     public static void flux(LivingHurtEvent event) {
         if (event.getSource().getEntity() instanceof ServerPlayer player) {
             HelpUtility.verifyIsSaitamaAndSkill(player, WeakeningPunch.class).ifPresent(p ->

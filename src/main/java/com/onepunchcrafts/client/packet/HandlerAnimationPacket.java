@@ -25,6 +25,7 @@ public class HandlerAnimationPacket {
         HelpUtility.getOneCraftAnimationLayer((AbstractClientPlayer) playerByUUID).ifPresent(animation -> {
             if (idAnimation.equals("stop")) {
                 animation.setAnimation(null);
+                return;
             }
             KeyframeAnimationPlayer animation1 = new KeyframeAnimationPlayer(PlayerAnimationRegistry.getAnimation(new ResourceLocation(MODID, idAnimation))).setFirstPersonMode(FirstPersonMode.THIRD_PERSON_MODEL).setFirstPersonConfiguration(new FirstPersonConfiguration(true, true, false, false));
             animation.setAnimation(animation1);

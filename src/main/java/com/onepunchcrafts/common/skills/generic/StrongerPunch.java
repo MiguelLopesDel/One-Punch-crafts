@@ -6,11 +6,8 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.fml.common.Mod;
-
 import java.awt.*;
 
-@Mod.EventBusSubscriber
 public class StrongerPunch implements Skill {
 
     @Override

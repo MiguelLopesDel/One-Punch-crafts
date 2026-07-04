@@ -1,0 +1,30 @@
+{
+  "blend": {
+    "func": "add",
+    "srcrgb": "srcalpha",
+    "dstrgb": "1-srcalpha"
+  },
+  "vertex": "onepunchcrafts:csrc",
+  "fragment": "onepunchcrafts:csrc",
+  "attributes": [ "Position" ],
+  "samplers": [
+    { "name": "DiffuseSampler" },
+    { "name": "DepthSampler" }
+  ],
+  "uniforms": [
+    { "name": "ProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+    { "name": "InvProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+    { "name": "InvViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+    { "name": "WorldToClip", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+    { "name": "OutSize", "type": "float", "count": 2, "values": [ 1.0, 1.0 ] },
+    { "name": "CameraPosition", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.0 ] },
+    { "name": "StartPosition", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.0 ] },
+    { "name": "BeamDirection", "type": "float", "count": 3, "values": [ 0.0, 0.0, 1.0 ] },
+    { "name": "ImpactPosition", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.0 ] },
+    { "name": "BeamRange", "type": "float", "count": 1, "values": [ 260.0 ] },
+    { "name": "ImpactRadius", "type": "float", "count": 1, "values": [ 104.0 ] },
+    { "name": "iTime", "type": "float", "count": 1, "values": [ 0.0 ] },
+    { "name": "ChargeTime", "type": "float", "count": 1, "values": [ 2.5 ] },
+    { "name": "FireTime", "type": "float", "count": 1, "values": [ 2.2 ] }
+  ]
+}

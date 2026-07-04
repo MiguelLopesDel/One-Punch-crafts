@@ -6,5 +6,29 @@
         "stream": false
       }
     ]
+  },
+  "csrc_shout_jp": {
+    "sounds": [
+      {
+        "name": "onepunchcrafts:csrc_shout_jp",
+        "stream": false
+      }
+    ]
+  },
+  "csrc_shout_en": {
+    "sounds": [
+      {
+        "name": "onepunchcrafts:csrc_shout_en",
+        "stream": false
+      }
+    ]
+  },
+  "csrc_shout_pt": {
+    "sounds": [
+      {
+        "name": "onepunchcrafts:csrc_shout_pt",
+        "stream": false
+      }
+    ]
   }
 }

@@ -29,7 +29,6 @@ import java.util.Optional;
 import static com.onepunchcrafts.common.event.LivingDamageEventHandler.markBlocksToClear;
 import static com.onepunchcrafts.util.HelpUtility.*;
 
-@Mod.EventBusSubscriber
 public class SeriousPunch implements Skill {
 
     @Override //contem logica de ray cast
@@ -47,7 +46,6 @@ public class SeriousPunch implements Skill {
         return null;
     }
 
-    @SubscribeEvent
     public static void combatEvents(LivingEvent event) {
         if (HelpUtility.getAttackerEntity(event) instanceof ServerPlayer player) {
             verifyIsSaitamaAndSkill(player, SeriousPunch.class).ifPresent(p -> seriosPunch(event));
@@ -67,7 +65,6 @@ public class SeriousPunch implements Skill {
         }
     }
 
-    @SubscribeEvent
     public static void deathEvent(LivingDeathEvent event) {
         boolean saitamaIsTarget = false;
         if (event.getEntity() instanceof ServerPlayer player) {

@@ -74,6 +74,11 @@ public class NetworkRegister {
                 .decoder(BorosMovementInputPacket::new)
                 .consumerMainThread(BorosMovementInputPacket::handle)
                 .add();
+        INSTANCE.messageBuilder(BorosCsrcVfxPacket.class, ++id, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BorosCsrcVfxPacket::encode)
+                .decoder(BorosCsrcVfxPacket::new)
+                .consumerMainThread(BorosCsrcVfxPacket::handle)
+                .add();
     }
 
     public static void sendToServer(Object msg) {

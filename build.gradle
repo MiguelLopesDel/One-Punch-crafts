@@ -147,6 +147,13 @@ repositories {
             includeGroup("com.eliotlash.mclib")
         }
     }
+    // CurseMaven repository for dependencies like curse.maven:aquaculture-60028
+    maven {
+        url = "https://www.cursemaven.com"
+        content {
+            includeGroup "curse.maven"
+        }
+    }
     maven { url = "https://maven.covers1624.net/" }
     maven { url "https://maven.shedaniel.me/" }
     // If you have mod jar dependencies in ./libs, you can declare them as a repository like so.
@@ -197,6 +204,10 @@ dependencies {
 //    compileOnly (fg.deobf("com.brandon3055.brandonscore:BrandonsCore:1.20.1-3.2.1.302:universal"))
 //    compileOnly (fg.deobf("io.codechicken:CodeChickenLib:1.20.1-4.4.0.512:universal"))
     implementation("com.eliotlash.mclib:mclib:20")
+    implementation fg.deobf("curse.maven:distant-horizons-508933:7104610")
+    implementation fg.deobf("nada:ArPhEx-5.0.2-forge-1.20.1:1")
+    implementation fg.deobf("nada:Mini-bossBossBars1.20.11.0.141:1")
+//    implementation fg.deobf("nada:nyfsspiders-forge-1.20.1-2.1.1:1")
 //    implementation fg.deobf("juliand665:dynamic-fps:3.6.4")
 //    implementation fg.deobf("org.embeddedt:embeddium-1.20.1:0.3.28")
 //    implementation fg.deobf("malte0811.ferritecore:ferritecore-6.1.1-FerriteCore:6.1.1")
@@ -255,7 +266,7 @@ tasks.named('jar', Jar).configure {
 }
 
 mixin {
-    mixin.debug=true
+    mixin.debug = true
     add sourceSets.main, 'mixins.onepunchcrafts.refmap.json'
     config 'mixins.onepunchcrafts.json'
     debug.verbose = true
@@ -276,6 +287,12 @@ publishing {
     }
     repositories {
         maven { url "file://${project.projectDir}/mcmodsrepo" }
+        maven {
+            url = "https://www.cursemaven.com"
+            content {
+                includeGroup "curse.maven"
+            }
+        }
     }
 }
 

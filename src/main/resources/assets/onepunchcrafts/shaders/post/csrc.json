@@ -1,0 +1,20 @@
+{
+  "targets": [
+    "swap"
+  ],
+  "passes": [
+    {
+      "name": "onepunchcrafts:csrc",
+      "intarget": "minecraft:main",
+      "outtarget": "swap",
+      "auxtargets": [
+        { "name": "DepthSampler", "id": "minecraft:main:depth" }
+      ]
+    },
+    {
+      "name": "onepunchcrafts:csrc_chromatic",
+      "intarget": "swap",
+      "outtarget": "minecraft:main"
+    }
+  ]
+}

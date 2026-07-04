@@ -29,7 +29,6 @@ import java.time.temporal.ChronoUnit;
 
 import static com.onepunchcrafts.OnePunchCrafts.DRACONIC_MOD;
 
-@Mod.EventBusSubscriber
 public class NormalPunch implements Skill {
 
     @Override
@@ -43,7 +42,6 @@ public class NormalPunch implements Skill {
         guiGraphics.drawString(font, Component.translatable("skill.saitama.normal_punch"), width / 2 - defaultReduce, height / 2 + defaultAdd, Color.GREEN.getRGB(), false);
     }
 
-    @SubscribeEvent
     public static void flux(LivingDamageEvent event) {
         if (event.getSource().getEntity() instanceof ServerPlayer player) {
             HelpUtility.verifyIsSaitamaAndSkill(player, NormalPunch.class).ifPresent(p -> normalPunch(event, player));

@@ -107,6 +107,8 @@ public class BorosPack extends SyncableSkillPack {
     @Syncable(key = "borosdestruction", strategy = SyncStrategy.TOGGLE)
     private boolean destructiveMode = true;
 
+    private boolean infiniteEnergy = false;
+
     @Setter
     @Getter
     @Syncable(key = "borosburststepcooldown", strategy = SyncStrategy.SERVER_AUTHORITY)
@@ -184,6 +186,11 @@ public class BorosPack extends SyncableSkillPack {
     }
 
     public boolean consumeEnergy(float amount) {
+        if (infiniteEnergy) {
+            config.setExhausted(false);
+            energy = BorosConfig.MAX_ENERGY;
+            return true;
+        }
         if (config.isExhausted()) return false;
 
         if (energy >= amount) {
@@ -903,6 +910,13 @@ public class BorosPack extends SyncableSkillPack {
 
     private void handleEnergySystem(ServerPlayer player) {
         long currentTick = player.level().getGameTime();
+        infiniteEnergy = player.isCreative();
+
+        if (infiniteEnergy) {
+            config.setExhausted(false);
+            energy = BorosConfig.MAX_ENERGY;
+            return;
+        }
 
         if (config.isExhausted()) {
             if (config.canRecover(currentTick)) {
