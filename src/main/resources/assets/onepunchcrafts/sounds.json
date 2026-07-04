@@ -8,6 +8,7 @@
     ]
   },
   "csrc_shout_jp": {
+    "subtitle": "subtitles.onepunchcrafts.csrc_shout",
     "sounds": [
       {
         "name": "onepunchcrafts:csrc_shout_jp",
@@ -16,6 +17,7 @@
     ]
   },
   "csrc_shout_en": {
+    "subtitle": "subtitles.onepunchcrafts.csrc_shout",
     "sounds": [
       {
         "name": "onepunchcrafts:csrc_shout_en",
@@ -24,6 +26,7 @@
     ]
   },
   "csrc_shout_pt": {
+    "subtitle": "subtitles.onepunchcrafts.csrc_shout",
     "sounds": [
       {
         "name": "onepunchcrafts:csrc_shout_pt",

@@ -68,17 +68,17 @@ public class BorosCollapsingStarCannon implements Skill {
     @Override
     public SkillExecutionResult execute(Player player) {
         if (pack.getConfig().isExhausted() && !player.isCreative()) {
-            player.sendSystemMessage(Component.literal("§c§lSem Energia Vital!"));
+            player.sendSystemMessage(Component.translatable("skill.boros.csrc.no_energy"));
             return SkillExecutionResult.CONTINUE;
         }
 
         if (!pack.isMeteoricBurstActive() || pack.getCurrentForm() != 2) {
-            player.sendSystemMessage(Component.literal("§c§lCSRC exige Meteoric Burst!"));
+            player.sendSystemMessage(Component.translatable("skill.boros.csrc.requires_burst"));
             return SkillExecutionResult.CONTINUE;
         }
 
         if (!player.isCreative() && !pack.consumeEnergy(BorosConfig.CSRC_COST)) {
-            player.sendSystemMessage(Component.literal("§e§lEnergia Insuficiente para CSRC!"));
+            player.sendSystemMessage(Component.translatable("skill.boros.csrc.insufficient_energy"));
             return SkillExecutionResult.CONTINUE;
         }
 
@@ -101,7 +101,7 @@ public class BorosCollapsingStarCannon implements Skill {
         Vec3 start = player.getEyePosition().add(look.scale(1.5));
         Vec3 impact = start.add(look.scale((BEAM_SAMPLES - 1) * BEAM_STEP));
 
-        player.sendSystemMessage(Component.literal("§5§l✦ COLLAPSING STAR ROARING CANNON! ✦"));
+        player.sendSystemMessage(Component.translatable("skill.boros.csrc.fire"));
         if (player instanceof ServerPlayer serverPlayer) {
             NetworkRegister.sendToPlayer(serverPlayer, new ScreenEffectPacket(18.0f, CHARGE_TICKS + FIRE_TICKS + 40, 0.58f));
         }
@@ -858,7 +858,7 @@ public class BorosCollapsingStarCannon implements Skill {
 
     @Override
     public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
-        guiGraphics.drawString(font, Component.literal("§5§lCollapsing Star Roaring Cannon"),
+        guiGraphics.drawString(font, Component.translatable("skill.boros.csrc"),
                 width / 2 - defaultReduce, height / 2 + defaultAdd, 0xFF00FF, false);
     }
 }

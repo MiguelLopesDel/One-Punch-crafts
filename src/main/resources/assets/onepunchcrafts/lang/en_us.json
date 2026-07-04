@@ -24,5 +24,12 @@
   "skill.saitama.extreme_jump" : "Extreme Jump",
 
   "death.attack.serious_punch_damage": "Don't anger Saitama.",
-  "death.attack.serious_punch_second_damage": "Maybe it was unintentional."
+  "death.attack.serious_punch_second_damage": "Maybe it was unintentional.",
+
+  "skill.boros.csrc": "§5§lCollapsing Star Roaring Cannon",
+  "skill.boros.csrc.fire": "§5§l✦ COLLAPSING STAR ROARING CANNON! ✦",
+  "skill.boros.csrc.no_energy": "§c§lNo Vital Energy!",
+  "skill.boros.csrc.requires_burst": "§c§lCSRC requires Meteoric Burst!",
+  "skill.boros.csrc.insufficient_energy": "§e§lNot enough Energy for CSRC!",
+  "subtitles.onepunchcrafts.csrc_shout": "Boros roars his ultimate attack"
 }

@@ -102,6 +102,16 @@ minecraft {
 
         }
 
+        // Second client for local multiplayer testing (run `runClient2` alongside
+        // `runClient`). Inherits everything from `client`, but logs in under a
+        // different player name and uses its own working directory so the two
+        // instances don't fight over options.txt / logs.
+        client2 {
+            parent minecraft.runs.client
+            workingDirectory project.file('run2')
+            args '--username', 'Player2'
+        }
+
         server {
             property 'forge.enabledGameTestNamespaces', mod_id
             args '--nogui'
@@ -266,11 +276,8 @@ tasks.named('jar', Jar).configure {
 }
 
 mixin {
-    mixin.debug = true
     add sourceSets.main, 'mixins.onepunchcrafts.refmap.json'
     config 'mixins.onepunchcrafts.json'
-    debug.verbose = true
-    debug.export = true
 }
 
 // However if you are in a multi-project build, dev time needs unobfed jar files, so you can delay the obfuscation until publishing by doing:
