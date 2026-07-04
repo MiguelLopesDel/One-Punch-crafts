@@ -8,6 +8,7 @@ import com.onepunchcrafts.util.TickScheduler;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -27,6 +28,7 @@ import net.minecraft.world.phys.Vec3;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
@@ -37,6 +39,7 @@ public class BorosCollapsingStarCannon implements Skill {
     private static final int BEAM_SAMPLES = 210;
     private static final double BEAM_STEP = 1.0;
     private static final int DESTRUCTION_BUDGET_PER_TICK = 900;
+    private static final int IMMEDIATE_DESTRUCTION_BUDGET = 2600;
 
     public BorosCollapsingStarCannon(BorosPack pack) {
         this.pack = pack;
@@ -75,7 +78,7 @@ public class BorosCollapsingStarCannon implements Skill {
         double baseRadius = 5.0;
         float damage = (float) (player.getAttributeValue(Attributes.ATTACK_DAMAGE) * 55.0);
         Set<Integer> hitEntityIds = new HashSet<>();
-        Set<BlockPos> queuedDestruction = new HashSet<>();
+        Set<BlockPos> queuedDestruction = new LinkedHashSet<>();
 
         player.sendSystemMessage(Component.literal("§5§l✦ COLLAPSING STAR ROARING CANNON! ✦"));
         if (player instanceof ServerPlayer serverPlayer) {
@@ -94,9 +97,7 @@ public class BorosCollapsingStarCannon implements Skill {
             drawBeam(level, pos, radius, i);
             damageEntities(level, player, pos, radius, damage, look, hitEntityIds);
 
-            if (pack.isDestructiveMode()) {
-                collectBeamDestruction(level, pos, radius * 0.78, i, queuedDestruction);
-            }
+            collectBeamDestruction(level, pos, radius * 0.9, i, queuedDestruction);
         }
 
         collectImpactCrater(level, impact, 34.0, queuedDestruction);
@@ -163,9 +164,9 @@ public class BorosCollapsingStarCannon implements Skill {
     }
 
     private void collectBeamDestruction(ServerLevel level, Vec3 center, double radius, int sampleIndex, Set<BlockPos> queued) {
-        if (sampleIndex % 3 != 0) return;
+        if (sampleIndex % 2 != 0) return;
 
-        int maxBlocks = 180;
+        int maxBlocks = 260;
         int collected = 0;
         int minX = (int) Math.floor(center.x - radius);
         int minY = (int) Math.floor(center.y - radius);
@@ -179,9 +180,9 @@ public class BorosCollapsingStarCannon implements Skill {
                 for (int z = minZ; z <= maxZ && collected < maxBlocks; z++) {
                     BlockPos pos = new BlockPos(x, y, z);
                     BlockState state = level.getBlockState(pos);
-                    if (!shouldDisintegrate(level, pos, state, center, radius, 180.0f)) continue;
+                    if (!shouldDisintegrate(level, pos, state, center, radius, 420.0f)) continue;
 
-                    if (queued.add(pos)) {
+                    if (queued.add(pos.immutable())) {
                         collected++;
                     }
                 }
@@ -203,7 +204,7 @@ public class BorosCollapsingStarCannon implements Skill {
                     BlockPos pos = new BlockPos(x, y, z);
                     BlockState state = level.getBlockState(pos);
                     if (shouldDisintegrate(level, pos, state, impact, radius, 260.0f)) {
-                        queued.add(pos);
+                        queued.add(pos.immutable());
                     }
                 }
             }
@@ -220,36 +221,56 @@ public class BorosCollapsingStarCannon implements Skill {
         if (distSq > radius * radius) return false;
 
         double falloff = 1.0 - Math.sqrt(distSq) / radius;
+        if (falloff > 0.42 && power >= 400.0f) return true;
+
         float resistance = Math.min(state.getBlock().getExplosionResistance(), 1200.0f);
-        return power * falloff > resistance * 0.22f;
+        return power * falloff > resistance * 0.12f;
     }
 
     private void scheduleBatchedDestruction(ServerLevel level, Player player, Set<BlockPos> blocks) {
         Queue<BlockPos> queue = new ArrayDeque<>(blocks);
         if (queue.isEmpty()) return;
 
+        int immediate = 0;
+        while (immediate < IMMEDIATE_DESTRUCTION_BUDGET && !queue.isEmpty()) {
+            disintegrateBlock(level, player, queue.poll(), immediate);
+            immediate++;
+        }
+
         AtomicInteger tick = new AtomicInteger();
         TickScheduler.scheduleWithCondition(Duration.ofMillis(50), () -> {
             int processed = 0;
             while (processed < DESTRUCTION_BUDGET_PER_TICK && !queue.isEmpty()) {
-                BlockPos pos = queue.poll();
-                BlockState state = level.getBlockState(pos);
-                if (!state.isAir() && !state.is(Blocks.BEDROCK) && state.getDestroySpeed(level, pos) >= 0) {
-                    level.destroyBlock(pos, false, player);
-                }
+                disintegrateBlock(level, player, queue.poll(), processed);
                 processed++;
             }
 
             int currentTick = tick.getAndIncrement();
             if (currentTick % 2 == 0 && !queue.isEmpty()) {
                 BlockPos next = queue.peek();
-                level.sendParticles(ParticleTypes.EXPLOSION,
+                level.sendParticles(ParticleTypes.EXPLOSION_EMITTER,
                         next.getX() + 0.5, next.getY() + 0.5, next.getZ() + 0.5,
-                        8, 3.0, 3.0, 3.0, 0.12);
+                        2, 2.6, 2.6, 2.6, 0.08);
+                level.sendParticles(ParticleTypes.ELECTRIC_SPARK,
+                        next.getX() + 0.5, next.getY() + 0.5, next.getZ() + 0.5,
+                        36, 4.0, 4.0, 4.0, 0.35);
             }
 
             return queue.isEmpty();
         });
+    }
+
+    private void disintegrateBlock(ServerLevel level, Player player, BlockPos pos, int particleIndex) {
+        BlockState state = level.getBlockState(pos);
+        if (state.isAir() || state.is(Blocks.BEDROCK) || state.getDestroySpeed(level, pos) < 0) return;
+
+        if (particleIndex % 16 == 0) {
+            level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, state),
+                    pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
+                    10, 0.35, 0.35, 0.35, 0.18);
+        }
+
+        level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
     }
 
     private void finishImpact(ServerLevel level, Player player, Vec3 impact, Vec3 look) {
@@ -264,6 +285,9 @@ public class BorosCollapsingStarCannon implements Skill {
         level.sendParticles(ParticleTypes.EXPLOSION_EMITTER,
                 impact.x, impact.y, impact.z,
                 28, 3.0, 3.0, 3.0, 0.85);
+        level.sendParticles(ParticleTypes.ELECTRIC_SPARK,
+                impact.x, impact.y, impact.z,
+                240, 10.0, 7.0, 10.0, 0.8);
 
         for (int i = 0; i < 360; i++) {
             Vec3 burst = impact.add(look.scale(-i * 0.18));
@@ -272,6 +296,63 @@ public class BorosCollapsingStarCannon implements Skill {
                     burst.y + (Math.random() - 0.5) * 22,
                     burst.z + (Math.random() - 0.5) * 26,
                     1, 0.1, 0.1, 0.1, 0.12);
+        }
+
+        scheduleImpactVfx(level, impact, look);
+    }
+
+    private void scheduleImpactVfx(ServerLevel level, Vec3 impact, Vec3 look) {
+        scheduleAfterTicks(3, () -> {
+            spawnShockwaveRing(level, impact, 16.0, 96);
+            level.playSound(null, impact.x, impact.y, impact.z,
+                    SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS, 2.4f, 0.55f);
+        });
+        scheduleAfterTicks(6, () -> spawnShockwaveRing(level, impact, 30.0, 144));
+        scheduleAfterTicks(10, () -> spawnShockwaveRing(level, impact, 46.0, 192));
+        scheduleAfterTicks(14, () -> spawnCollapseColumn(level, impact, look));
+    }
+
+    private void scheduleAfterTicks(int ticks, Runnable task) {
+        TickScheduler.scheduleFromHere(Duration.ofMillis(Math.max(1, ticks) * 50L), task);
+    }
+
+    private void spawnShockwaveRing(ServerLevel level, Vec3 center, double radius, int points) {
+        for (int i = 0; i < points; i++) {
+            double angle = (Math.PI * 2.0 * i) / points;
+            double x = center.x + Math.cos(angle) * radius;
+            double z = center.z + Math.sin(angle) * radius;
+            level.sendParticles(ParticleTypes.END_ROD,
+                    x, center.y + 0.35, z,
+                    1, 0.05, 0.05, 0.05, 0.08);
+
+            if (i % 4 == 0) {
+                level.sendParticles(ParticleTypes.LARGE_SMOKE,
+                        x, center.y + 0.15, z,
+                        2, 0.35, 0.18, 0.35, 0.03);
+            }
+        }
+    }
+
+    private void spawnCollapseColumn(ServerLevel level, Vec3 impact, Vec3 look) {
+        for (int i = 0; i < 180; i++) {
+            double angle = i * 0.38;
+            double radius = 2.0 + (i % 24) * 0.72;
+            double y = (i % 50) * 0.32;
+            Vec3 base = impact.add(look.scale(-(i % 30) * 0.28));
+
+            level.sendParticles(i % 3 == 0 ? ParticleTypes.CAMPFIRE_COSY_SMOKE : ParticleTypes.DRAGON_BREATH,
+                    base.x + Math.cos(angle) * radius,
+                    base.y + y,
+                    base.z + Math.sin(angle) * radius,
+                    2, 0.4, 0.55, 0.4, 0.04);
+
+            if (i % 5 == 0) {
+                level.sendParticles(ParticleTypes.EXPLOSION,
+                        base.x + Math.cos(angle) * radius * 0.55,
+                        base.y + y * 0.45,
+                        base.z + Math.sin(angle) * radius * 0.55,
+                        1, 0.15, 0.15, 0.15, 0.0);
+            }
         }
     }
 
