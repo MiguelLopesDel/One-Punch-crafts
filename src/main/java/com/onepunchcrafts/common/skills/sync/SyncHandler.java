@@ -1,6 +1,8 @@
 package com.onepunchcrafts.common.skills.sync;
 
 import com.onepunchcrafts.common.skills.sync.processor.*;
+import com.onepunchcrafts.network.NetworkRegister;
+import com.onepunchcrafts.network.packet.PlayerSyncPacket;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.ArrayList;
@@ -13,7 +15,8 @@ public class SyncHandler {
             SyncStrategy.VALIDATED, new ValidatedProcessor(),
             SyncStrategy.TOGGLE, new ToggleProcessor(),
             SyncStrategy.SKILL_INDEX, new SkillIndexProcessor(),
-            SyncStrategy.GROUP_INDEX, new GroupIndexProcessor()
+            SyncStrategy.GROUP_INDEX, new GroupIndexProcessor(),
+            SyncStrategy.SERVER_AUTHORITY, new ServerAuthorityProcessor()
     );
 
     public static void handleDifferences(ServerPlayer player, ArrayList<String> differences,
@@ -23,43 +26,26 @@ public class SyncHandler {
         Map<String, SyncableField> fieldMap = fields.stream()
                 .collect(java.util.stream.Collectors.toMap(SyncableField::getKey, f -> f));
 
-        differences.forEach(fieldKey -> {
+        boolean requiresSync = false;
+
+        for (String fieldKey : differences) {
             SyncableField field = fieldMap.get(fieldKey);
             if (field != null) {
+                // Se encontrarmos um campo onde o servidor tem autoridade, marcamos para sincronizar no final
+                if (field.getStrategy() == SyncStrategy.SERVER_AUTHORITY) {
+                    requiresSync = true;
+                }
+
                 SyncProcessor processor = processors.get(field.getStrategy());
                 if (processor != null) {
-                    FieldDescriptorAdapter adapter = new FieldDescriptorAdapter(field);
-                    processor.process(player, fieldKey, serverData, clientData, adapter);
+                    processor.process(player, field, serverData, clientData);
                 }
             }
-        });
-    }
-
-    private static class FieldDescriptorAdapter implements com.onepunchcrafts.common.skills.sync.FieldRegistry.FieldDescriptor {
-        private final SyncableField field;
-
-        public FieldDescriptorAdapter(SyncableField field) {
-            this.field = field;
         }
 
-        @Override
-        public Object getValue(SyncableSkillPack obj) {
-            return field.getValue(obj);
-        }
-
-        @Override
-        public void setValue(SyncableSkillPack obj, Object value) {
-            field.setValue(obj, value);
-        }
-
-        @Override
-        public SyncStrategy getStrategy() {
-            return field.getStrategy();
-        }
-
-        @Override
-        public boolean isDifferent(SyncableSkillPack obj1, SyncableSkillPack obj2) {
-            return field.isDifferent(obj1, obj2);
+        // Enviamos o pacote APENAS depois de processar todos os campos (incluindo a troca de skill)
+        if (requiresSync) {
+            NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(serverData));
         }
     }
 }

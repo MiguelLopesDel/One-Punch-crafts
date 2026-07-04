@@ -1,6 +1,6 @@
 package com.onepunchcrafts.common.skills.sync.processor;
 
-import com.onepunchcrafts.common.skills.sync.FieldRegistry;
+import com.onepunchcrafts.common.skills.sync.SyncableField;
 import com.onepunchcrafts.common.skills.sync.SyncableSkillPack;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.PlayerSyncPacket;
@@ -8,9 +8,8 @@ import net.minecraft.server.level.ServerPlayer;
 
 public class ValidatedProcessor implements SyncProcessor {
     @Override
-    public void process(ServerPlayer player, String fieldKey,
-                        SyncableSkillPack serverData, SyncableSkillPack clientData,
-                        FieldRegistry.FieldDescriptor field) {
+    public void process(ServerPlayer player, SyncableField field,
+                        SyncableSkillPack serverData, SyncableSkillPack clientData) {
         Object clientValue = field.getValue(clientData);
 
         if (clientValue instanceof Short shortValue) {

@@ -38,7 +38,7 @@ public class SyncableField {
         try {
             return getter.invoke(obj);
         } catch (Throwable t) {
-            throw new RuntimeException("Erro ao obter valor do campo: " + key, t);
+            throw new RuntimeException("Erro ao obter valor do campo: " + key + " na classe " + obj.getClass().getName(), t);
         }
     }
 

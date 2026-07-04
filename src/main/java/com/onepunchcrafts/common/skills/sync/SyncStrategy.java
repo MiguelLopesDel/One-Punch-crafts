@@ -5,5 +5,6 @@ public enum SyncStrategy {
     VALIDATED,
     SKILL_INDEX,
     GROUP_INDEX,
-    TOGGLE
+    TOGGLE,
+    SERVER_AUTHORITY
 }

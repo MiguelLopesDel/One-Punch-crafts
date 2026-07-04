@@ -7,37 +7,45 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
 
-import java.awt.*;
-
 public class BorosFlight implements Skill {
+    private final BorosPack pack;
+
+    public BorosFlight(BorosPack pack) {
+        this.pack = pack;
+    }
 
     @Override
-    public SkillExecutionResult execute(Player p) {
-        if (p instanceof ServerPlayer player) {
-            BorosPack borosPack = HelpUtility.getSkillData(player, BorosPack.class);
+    public SkillExecutionResult execute(Player player) {
+        boolean newState = !pack.isFlightActive();
 
-            if (borosPack.getCurrentForm() >= 1) {
-                boolean newFlightState = !borosPack.isFlightActive();
-                borosPack.setFlightActive(newFlightState);
+        pack.setFlightActive(newState);
 
-                player.getAbilities().mayfly = newFlightState;
-                player.getAbilities().flying = newFlightState;
-                player.onUpdateAbilities();
+        player.getAbilities().mayfly = false;
+        player.getAbilities().flying = false;
+        player.onUpdateAbilities();
+        player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
+                newState ? SoundEvents.BEACON_POWER_SELECT : SoundEvents.BEACON_DEACTIVATE,
+                SoundSource.PLAYERS, 1.0f, 2.0f);
 
-                String message = newFlightState ? "§a§lFLIGHT ACTIVATED" : "§c§lFLIGHT DEACTIVATED";
-                player.sendSystemMessage(Component.literal(message));
-            } else {
-                player.sendSystemMessage(Component.literal("§c§lNeed Released Form to fly!"));
-            }
+        player.sendSystemMessage(Component.literal(
+                newState ? "§b§lPropulsão de Energia Ativada" : "§7Propulsão Desativada"
+        ));
+
+        if (player instanceof ServerPlayer serverPlayer) {
+            HelpUtility.syncWithPlayer(serverPlayer, HelpUtility.getSkillData(serverPlayer));
         }
-        return null;
+
+        return SkillExecutionResult.CONTINUE;
     }
 
     @Override
     public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
-        guiGraphics.drawString(font, Component.translatable("skill.boros.flight"),
-                width / 2 - defaultReduce, height / 2 + defaultAdd, Color.CYAN.getRGB(), false);
+        String status = pack.isFlightActive() ? "§b[ON]" : "§7[OFF]";
+        guiGraphics.drawString(font, Component.literal("Propulsão " + status),
+                width / 2 - defaultReduce, height / 2 + defaultAdd, 0x00FFFF, false);
     }
 }

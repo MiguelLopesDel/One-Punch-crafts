@@ -1,7 +1,6 @@
 package com.onepunchcrafts.common.skills.saitama;
 
 import com.onepunchcrafts.common.skills.*;
-import com.onepunchcrafts.common.skills.sync.FieldRegistry;
 import com.onepunchcrafts.common.skills.sync.SyncStrategy;
 import com.onepunchcrafts.common.skills.sync.Syncable;
 import com.onepunchcrafts.common.skills.sync.SyncableSkillPack;

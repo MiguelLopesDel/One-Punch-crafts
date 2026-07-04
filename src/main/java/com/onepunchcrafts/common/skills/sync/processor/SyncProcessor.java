@@ -1,11 +1,9 @@
 package com.onepunchcrafts.common.skills.sync.processor;
 
-import com.onepunchcrafts.common.skills.sync.FieldRegistry;
+import com.onepunchcrafts.common.skills.sync.SyncableField;
 import com.onepunchcrafts.common.skills.sync.SyncableSkillPack;
 import net.minecraft.server.level.ServerPlayer;
 
 public interface SyncProcessor {
-    void process(ServerPlayer player, String fieldKey,
-                 SyncableSkillPack serverData, SyncableSkillPack clientData,
-                 FieldRegistry.FieldDescriptor field);
+    void process(ServerPlayer player, SyncableField field, SyncableSkillPack serverData, SyncableSkillPack clientData);
 }

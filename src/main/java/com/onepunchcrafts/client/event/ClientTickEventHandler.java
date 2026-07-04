@@ -3,11 +3,13 @@ package com.onepunchcrafts.client.event;
 import com.onepunchcrafts.client.Keybinding;
 import com.onepunchcrafts.client.gui.GuiDimension;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
+import com.onepunchcrafts.common.skills.boros.BorosPack;
 import com.onepunchcrafts.common.skills.saitama.ExtremeSpeed;
 import com.onepunchcrafts.common.skills.saitama.NormalPunch;
 import com.onepunchcrafts.common.skills.saitama.WeakPunch;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.AnimationPacket;
+import com.onepunchcrafts.network.packet.BorosMovementInputPacket;
 import com.onepunchcrafts.network.packet.SeriousFartPacket;
 import com.onepunchcrafts.network.packet.SpecialSkillPacket;
 import com.onepunchcrafts.network.packet.TeleportPacket;
@@ -50,6 +52,24 @@ public class ClientTickEventHandler {
         LocalPlayer player = minecraft.player;
         boolean playerExist = player != null;
         buttonsManager(player, playerExist);
+        if (event.phase == TickEvent.Phase.END) {
+            sendBorosMovementInput(minecraft, player, playerExist);
+        }
+    }
+
+    private static void sendBorosMovementInput(Minecraft minecraft, LocalPlayer player, boolean playerExist) {
+        if (!playerExist || !(HelpUtility.getSkillData(player).getSkillPack() instanceof BorosPack)) return;
+        if (minecraft.screen != null || minecraft.isPaused()) return;
+
+        NetworkRegister.sendToServer(new BorosMovementInputPacket(
+                minecraft.options.keyUp.isDown(),
+                minecraft.options.keyDown.isDown(),
+                minecraft.options.keyLeft.isDown(),
+                minecraft.options.keyRight.isDown(),
+                minecraft.options.keyJump.isDown(),
+                minecraft.options.keyShift.isDown(),
+                minecraft.options.keySprint.isDown()
+        ));
     }
 
     private static void buttonsManager(LocalPlayer player, boolean playerExist) {

@@ -64,6 +64,16 @@ public class NetworkRegister {
                 .decoder(DimensionsPacket::new)
                 .consumerMainThread(DimensionsPacket::handle)
                 .add();
+        INSTANCE.messageBuilder(ScreenEffectPacket.class, ++id, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ScreenEffectPacket::encode)
+                .decoder(ScreenEffectPacket::new)
+                .consumerMainThread(ScreenEffectPacket::handle)
+                .add();
+        INSTANCE.messageBuilder(BorosMovementInputPacket.class, ++id, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(BorosMovementInputPacket::encode)
+                .decoder(BorosMovementInputPacket::new)
+                .consumerMainThread(BorosMovementInputPacket::handle)
+                .add();
     }
 
     public static void sendToServer(Object msg) {
