@@ -22,35 +22,27 @@ public class BorosForm implements Skill {
 
     @Override
     public SkillExecutionResult execute(Player player) {
-        if (pack.getConfig().isExhausted()) {
-            player.sendSystemMessage(Component.literal("§c§lSem Energia Vital!"));
-            return SkillExecutionResult.CONTINUE;
-        }
-
         short currentForm = pack.getCurrentForm();
-        short nextForm = (short) ((currentForm + 1) % 3);
+        short nextForm = currentForm == 0 ? (short) 1 : (short) 0;
+
+        if (currentForm == 2) {
+            nextForm = 1;
+            pack.setMeteoricBurstActive(false);
+        }
 
         String[] formNames = {"Armadura", "Liberado", "Meteoric Burst"};
         pack.setCurrentForm(nextForm);
-
-        if (nextForm == 2) {
-            pack.setMeteoricBurstActive(true);
-            pack.setFlightActive(true);
-        } else {
-            pack.setMeteoricBurstActive(false);
-        }
 
         player.sendSystemMessage(Component.literal(
                 String.format("§6§lForma: %s", formNames[nextForm])
         ));
 
         player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.ZOMBIE_VILLAGER_CONVERTED, SoundSource.PLAYERS, 1.0f, 0.5f + (nextForm * 0.5f));
+                SoundEvents.ZOMBIE_VILLAGER_CONVERTED, SoundSource.PLAYERS, 1.0f, nextForm == 1 ? 1.0f : 0.55f);
 
         if (player instanceof ServerPlayer serverPlayer) {
             HelpUtility.syncWithPlayer(serverPlayer, HelpUtility.getSkillData(serverPlayer));
-            // Efeito cinematográfico na mudança de forma
-            NetworkRegister.sendToPlayer(serverPlayer, new ScreenEffectPacket(5.0f * nextForm, 20, 1.0f - (0.1f * nextForm)));
+            NetworkRegister.sendToPlayer(serverPlayer, new ScreenEffectPacket(nextForm == 1 ? 4.0f : 1.5f, 18, nextForm == 1 ? 0.92f : 1.0f));
         }
         
         return SkillExecutionResult.CONTINUE;
