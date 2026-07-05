@@ -16,6 +16,7 @@ public class RegisterSounds {
     public static final RegistryObject<SoundEvent> CSRC_SHOUT_JP = registerSounds("csrc_shout_jp");
     public static final RegistryObject<SoundEvent> CSRC_SHOUT_EN = registerSounds("csrc_shout_en");
     public static final RegistryObject<SoundEvent> CSRC_SHOUT_PT = registerSounds("csrc_shout_pt");
+    public static final RegistryObject<SoundEvent> CSRC_CHARGE = registerSounds("csrc_charge");
 
     private static RegistryObject<SoundEvent> registerSounds(String name) {
         return REGISTRY.register(name, () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(MODID, name)));

@@ -1,6 +1,7 @@
 package com.onepunchcrafts.client.event;
 
 import com.onepunchcrafts.client.Keybinding;
+import com.onepunchcrafts.client.gui.CsrcOptionsScreen;
 import com.onepunchcrafts.client.gui.GuiDimension;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
 import com.onepunchcrafts.common.skills.boros.BorosPack;
@@ -24,6 +25,7 @@ import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.contents.LiteralContents;
 import net.minecraft.resources.ResourceLocation;
@@ -88,6 +90,9 @@ public class ClientTickEventHandler {
         }
         if (Keybinding.INSTANCE.USE_TELEPORT.consumeClick() && playerExist) {
             NetworkRegister.sendToServer(new TeleportPacket());
+        }
+        if (Keybinding.INSTANCE.OPEN_CSRC_OPTIONS.consumeClick() && playerExist) {
+            Minecraft.getInstance().setScreen(new CsrcOptionsScreen(null));
         }
         if (Keybinding.INSTANCE.OPEN_DIMENSIONS_GUI.consumeClick() && playerExist) {
             HelpUtility.verifyIsSaitamaAndGetCapability(player).ifPresent(cap ->

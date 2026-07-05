@@ -79,6 +79,11 @@ public class NetworkRegister {
                 .decoder(BorosCsrcVfxPacket::new)
                 .consumerMainThread(BorosCsrcVfxPacket::handle)
                 .add();
+        INSTANCE.messageBuilder(BorosBeamVfxPacket.class, ++id, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(BorosBeamVfxPacket::encode)
+                .decoder(BorosBeamVfxPacket::new)
+                .consumerMainThread(BorosBeamVfxPacket::handle)
+                .add();
     }
 
     public static void sendToServer(Object msg) {

@@ -21,12 +21,12 @@ public class BorosRegeneration implements Skill {
     @Override
     public SkillExecutionResult execute(Player player) {
         if (pack.getConfig().isExhausted()) {
-            player.sendSystemMessage(Component.literal("§c§lSem Energia Vital!"));
+            player.sendSystemMessage(Component.translatable("skill.boros.no_energy"));
             return SkillExecutionResult.CONTINUE;
         }
 
         if (pack.getTicksToUseUltraRegeneration() > 0) {
-            player.sendSystemMessage(Component.literal("§e§lRegeneração em cooldown!"));
+            player.sendSystemMessage(Component.translatable("skill.boros.regeneration.cooldown"));
             return SkillExecutionResult.CONTINUE;
         }
 
@@ -34,7 +34,7 @@ public class BorosRegeneration implements Skill {
             pack.startUltraRegeneration();
             // Define o cooldown de 20 minutos (24000 ticks)
             pack.setTicksToUseUltraRegeneration(24_000);
-            player.sendSystemMessage(Component.literal("§a§lRegeneração Ativa!"));
+            player.sendSystemMessage(Component.translatable("skill.boros.regeneration.active"));
             if (player.level() instanceof ServerLevel serverLevel) {
                 serverLevel.sendParticles(ParticleTypes.HAPPY_VILLAGER, player.getX(), player.getY() + 1, player.getZ(), 20, 0.5, 1.0, 0.5, 0.1);
                 serverLevel.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 1.0f, 1.5f);
@@ -42,7 +42,7 @@ public class BorosRegeneration implements Skill {
             return SkillExecutionResult.CONTINUE;
         }
 
-        player.sendSystemMessage(Component.literal("§e§lEnergia Insuficiente!"));
+        player.sendSystemMessage(Component.translatable("skill.boros.insufficient_energy"));
         return SkillExecutionResult.CONTINUE;
     }
 
@@ -50,7 +50,7 @@ public class BorosRegeneration implements Skill {
     public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
         String cooldown = pack.getTicksToUseUltraRegeneration() > 0 ?
                 String.format(" (CD: %ds)", pack.getTicksToUseUltraRegeneration() / 20) : "";
-        guiGraphics.drawString(font, Component.literal("Regeneração Ativa" + cooldown),
+        guiGraphics.drawString(font, Component.translatable("skill.boros.regeneration", cooldown),
                 width / 2 - defaultReduce, height / 2 + defaultAdd, 0x00FF00, false);
     }
 }

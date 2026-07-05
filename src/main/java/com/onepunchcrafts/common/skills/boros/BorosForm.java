@@ -30,12 +30,10 @@ public class BorosForm implements Skill {
             pack.setMeteoricBurstActive(false);
         }
 
-        String[] formNames = {"Armadura", "Liberado", "Meteoric Burst"};
         pack.setCurrentForm(nextForm);
 
-        player.sendSystemMessage(Component.literal(
-                String.format("§6§lForma: %s", formNames[nextForm])
-        ));
+        player.sendSystemMessage(Component.translatable("skill.boros.form.set",
+                Component.translatable(FORM_KEYS[nextForm])));
 
         player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
                 SoundEvents.ZOMBIE_VILLAGER_CONVERTED, SoundSource.PLAYERS, 1.0f, nextForm == 1 ? 1.0f : 0.55f);
@@ -48,12 +46,14 @@ public class BorosForm implements Skill {
         return SkillExecutionResult.CONTINUE;
     }
 
+    private static final String[] FORM_KEYS = {
+            "skill.boros.form.armor", "skill.boros.form.released", "skill.boros.form.meteoric"
+    };
+
     @Override
     public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
-        String[] formNames = {"Armadura", "Liberado", "Meteoric Burst"};
-        String currentFormName = formNames[pack.getCurrentForm()];
-
-        guiGraphics.drawString(font, Component.literal("Trocar Forma (" + currentFormName + ")"),
+        guiGraphics.drawString(font, Component.translatable("skill.boros.form",
+                        Component.translatable(FORM_KEYS[pack.getCurrentForm()])),
                 width / 2 - defaultReduce, height / 2 + defaultAdd, 0xFFAA00, false);
     }
 }

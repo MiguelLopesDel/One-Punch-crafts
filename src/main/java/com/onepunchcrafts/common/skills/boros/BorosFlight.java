@@ -31,8 +31,8 @@ public class BorosFlight implements Skill {
                 newState ? SoundEvents.BEACON_POWER_SELECT : SoundEvents.BEACON_DEACTIVATE,
                 SoundSource.PLAYERS, 1.0f, 2.0f);
 
-        player.sendSystemMessage(Component.literal(
-                newState ? "§b§lPropulsão de Energia Ativada" : "§7Propulsão Desativada"
+        player.sendSystemMessage(Component.translatable(
+                newState ? "skill.boros.flight.on" : "skill.boros.flight.off"
         ));
 
         if (player instanceof ServerPlayer serverPlayer) {
@@ -45,7 +45,7 @@ public class BorosFlight implements Skill {
     @Override
     public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
         String status = pack.isFlightActive() ? "§b[ON]" : "§7[OFF]";
-        guiGraphics.drawString(font, Component.literal("Propulsão " + status),
+        guiGraphics.drawString(font, Component.translatable("skill.boros.flight", status),
                 width / 2 - defaultReduce, height / 2 + defaultAdd, 0x00FFFF, false);
     }
 }

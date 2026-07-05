@@ -51,4 +51,10 @@ public class Keybinding {
             InputConstants.getKey(InputConstants.KEY_O, -1),
             CATEGORY
     );
+    public final KeyMapping OPEN_CSRC_OPTIONS = new KeyMapping(
+            defaultKeyCode + "open_csrc_options",
+            KeyConflictContext.IN_GAME,
+            InputConstants.getKey(InputConstants.KEY_H, -1),
+            CATEGORY
+    );
 }

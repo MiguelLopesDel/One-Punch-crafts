@@ -33,5 +33,14 @@
         "stream": false
       }
     ]
+  },
+  "csrc_charge": {
+    "subtitle": "subtitles.onepunchcrafts.csrc_charge",
+    "sounds": [
+      {
+        "name": "onepunchcrafts:csrc_charge",
+        "stream": false
+      }
+    ]
   }
 }

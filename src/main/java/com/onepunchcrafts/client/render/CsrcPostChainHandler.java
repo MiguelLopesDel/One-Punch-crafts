@@ -150,6 +150,13 @@ public final class CsrcPostChainHandler {
         List<PostPass> passes = getPasses();
         if (passes.isEmpty()) return;
 
+        // Live-togglable: when the local player is the caster and opted in,
+        // the shaders open clean windows between the anime cuts so the caster
+        // sees their own beam and the impact sphere.
+        float casterView = minecraft.player != null
+                && minecraft.player.getId() == vfx.casterId()
+                && com.onepunchcrafts.client.ClientConfig.CSRC_CASTER_BEAM_VIEW.get() ? 1.0f : 0.0f;
+
         for (PostPass pass : passes) {
             EffectInstance effect = pass.getEffect();
             if (effect == null) continue;
@@ -166,6 +173,9 @@ public final class CsrcPostChainHandler {
             setFloat(effect, "iTime", vfx.ageTicks() / 20.0f);
             setFloat(effect, "ChargeTime", vfx.chargeTicks() / 20.0f);
             setFloat(effect, "FireTime", vfx.fireTicks() / 20.0f);
+            setFloat(effect, "CasterView", casterView);
+            setFloat(effect, "ReducedFlash",
+                    com.onepunchcrafts.client.ClientConfig.CSRC_REDUCED_FLASHES.get() ? 1.0f : 0.0f);
         }
 
         chain.process(minecraft.isPaused() ? 0.0f : event.getPartialTick());

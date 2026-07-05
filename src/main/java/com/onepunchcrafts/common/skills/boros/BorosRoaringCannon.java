@@ -3,6 +3,7 @@ package com.onepunchcrafts.common.skills.boros;
 import com.onepunchcrafts.common.skills.Skill;
 import com.onepunchcrafts.common.skills.SkillExecutionResult;
 import com.onepunchcrafts.network.NetworkRegister;
+import com.onepunchcrafts.network.packet.BorosBeamVfxPacket;
 import com.onepunchcrafts.network.packet.ScreenEffectPacket;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -36,17 +37,17 @@ public class BorosRoaringCannon implements Skill {
     @Override
     public SkillExecutionResult execute(Player player) {
         if (pack.getConfig().isExhausted()) {
-            player.sendSystemMessage(Component.literal("§c§lSem Energia Vital!"));
+            player.sendSystemMessage(Component.translatable("skill.boros.no_energy"));
             return SkillExecutionResult.CONTINUE;
         }
 
         if (pack.getCurrentForm() == 0) {
-            player.sendSystemMessage(Component.literal("§e§lRoaring Cannon exige Forma Liberada!"));
+            player.sendSystemMessage(Component.translatable("skill.boros.roaring_cannon.requires_form"));
             return SkillExecutionResult.CONTINUE;
         }
 
         if (!pack.consumeEnergy(BorosConfig.ROARING_CANNON_COST)) {
-            player.sendSystemMessage(Component.literal("§e§lEnergia Insuficiente para Roaring Cannon!"));
+            player.sendSystemMessage(Component.translatable("skill.boros.roaring_cannon.insufficient_energy"));
             return SkillExecutionResult.CONTINUE;
         }
 
@@ -68,7 +69,7 @@ public class BorosRoaringCannon implements Skill {
         float damage = (float) (player.getAttributeValue(Attributes.ATTACK_DAMAGE) * (meteoric ? 18.0 : 9.0));
         Set<Integer> hitEntityIds = new HashSet<>();
 
-        player.sendSystemMessage(Component.literal("§d§lROARING CANNON!"));
+        player.sendSystemMessage(Component.translatable("skill.boros.roaring_cannon.fire"));
         level.playSound(null, player.getX(), player.getY(), player.getZ(),
                 SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS, 1.8f, meteoric ? 0.65f : 0.85f);
         level.playSound(null, player.getX(), player.getY(), player.getZ(),
@@ -76,6 +77,16 @@ public class BorosRoaringCannon implements Skill {
 
         if (player instanceof ServerPlayer serverPlayer) {
             NetworkRegister.sendToPlayer(serverPlayer, new ScreenEffectPacket(meteoric ? 8.0f : 4.0f, meteoric ? 24 : 14, meteoric ? 0.78f : 0.9f));
+        }
+
+        // Dedicated quad-beam render on every nearby client.
+        BorosBeamVfxPacket beamPacket = new BorosBeamVfxPacket(player.getId(), start, look, samples * step,
+                meteoric ? BorosBeamVfxPacket.STYLE_ROARING_CANNON_METEORIC : BorosBeamVfxPacket.STYLE_ROARING_CANNON,
+                meteoric ? 30 : 24);
+        for (ServerPlayer nearby : level.getServer().getPlayerList().getPlayers()) {
+            if (nearby.level() == level && nearby.distanceToSqr(player) <= 256.0D * 256.0D) {
+                NetworkRegister.sendToPlayer(nearby, beamPacket);
+            }
         }
 
         for (int i = 0; i < samples; i++) {
@@ -152,7 +163,7 @@ public class BorosRoaringCannon implements Skill {
 
     @Override
     public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
-        guiGraphics.drawString(font, Component.literal("§d§lRoaring Cannon"),
+        guiGraphics.drawString(font, Component.translatable("skill.boros.roaring_cannon"),
                 width / 2 - defaultReduce, height / 2 + defaultAdd, 0xDD55FF, false);
     }
 }

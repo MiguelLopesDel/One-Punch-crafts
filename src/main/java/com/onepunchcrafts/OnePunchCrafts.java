@@ -110,6 +110,8 @@ public class OnePunchCrafts {
         net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
                 net.minecraftforge.fml.config.ModConfig.Type.CLIENT,
                 com.onepunchcrafts.client.ClientConfig.SPEC);
+        net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
+                () -> com.onepunchcrafts.client.ClientModExtensions::registerConfigScreen);
 
         // Register the item to a creative tab
 //        modEventBus.addListener(this::addCreative);

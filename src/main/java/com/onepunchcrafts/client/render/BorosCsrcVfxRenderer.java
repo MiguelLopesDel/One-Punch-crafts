@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.onepunchcrafts.client.ClientConfig;
 import com.onepunchcrafts.common.RegisterSounds;
+import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -30,8 +31,9 @@ import static com.onepunchcrafts.OnePunchCrafts.MODID;
 @Mod.EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
 public class BorosCsrcVfxRenderer {
     private static final List<CsrcEffect> EFFECTS = new CopyOnWriteArrayList<>();
-    // Must cover the shader's AFTERGLOW_TIME (2.4s) so the post effect fades out fully.
-    private static final int AFTERGLOW_TICKS = 52;
+    // Must cover the shader's longest afterglow (ARCS_AFTERGLOW, 6.5s) so the
+    // surface shockwaves finish walking before the post effect is dropped.
+    private static final int AFTERGLOW_TICKS = 134;
 
     public static void addEffect(int casterId, Vec3 start, Vec3 direction, double range,
                                  int chargeTicks, int fireTicks, Vec3 impact, double impactRadius) {
@@ -44,6 +46,14 @@ public class BorosCsrcVfxRenderer {
         // Like the anime: the scream starts right at the release, not at the
         // beginning of the charge (the clip leads the beam by ~0.3s).
         PENDING_SHOUTS.add(new PendingShout(now + Math.max(0, chargeTicks - 6), start));
+        // The charge soundtrack from the show (heartbeat double-thump, the
+        // background music ducking, the held-breath pause) is cut to end
+        // exactly where the shout begins, so playing it at charge start makes
+        // the whole sequence seamless.
+        minecraft.level.playLocalSound(start.x, start.y, start.z,
+                RegisterSounds.CSRC_CHARGE.get(), SoundSource.PLAYERS,
+                2.1f * ClientConfig.CSRC_MUSIC_VOLUME.get().floatValue(), 1.0f, false);
+        beginCinematicCamera(minecraft, casterId, chargeTicks, now);
     }
 
     private record PendingShout(long dueTick, Vec3 pos) {}
@@ -57,11 +67,39 @@ public class BorosCsrcVfxRenderer {
             default -> RegisterSounds.CSRC_SHOUT_JP.get();
         };
         minecraft.level.playLocalSound(start.x, start.y, start.z, voice,
-                SoundSource.PLAYERS, 3.0f, 1.0f, false);
+                SoundSource.PLAYERS, 3.0f * ClientConfig.CSRC_VOICE_VOLUME.get().floatValue(), 1.0f, false);
+    }
+
+    // ------------------------------------------------------------------
+    // Cinematic camera: when the local player fires the CSRC, the charge is
+    // watched in third person (Boros' body with the bolts and yellow lines),
+    // and the moment the release cuts start the view snaps back to what the
+    // player was using, so the fire phase hits in first person.
+    // ------------------------------------------------------------------
+    private static CameraType savedCamera;
+    private static boolean cameraOverridden;
+    private static long cameraRestoreTick;
+
+    private static void beginCinematicCamera(Minecraft minecraft, int casterId, int chargeTicks, long now) {
+        if (!ClientConfig.CSRC_CINEMATIC_CAMERA.get()) return;
+        if (minecraft.player == null || minecraft.player.getId() != casterId) return;
+        if (!cameraOverridden) {
+            savedCamera = minecraft.options.getCameraType();
+            cameraOverridden = true;
+        }
+        minecraft.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+        cameraRestoreTick = now + chargeTicks;
+    }
+
+    private static void restoreCinematicCamera(Minecraft minecraft) {
+        if (!cameraOverridden) return;
+        cameraOverridden = false;
+        minecraft.options.setCameraType(savedCamera == null ? CameraType.FIRST_PERSON : savedCamera);
+        savedCamera = null;
     }
 
     /** Snapshot of the newest live effect, consumed by {@link CsrcPostChainHandler}. */
-    public record ActiveVfx(Vec3 origin, Vec3 direction, double range, int chargeTicks, int fireTicks,
+    public record ActiveVfx(int casterId, Vec3 origin, Vec3 direction, double range, int chargeTicks, int fireTicks,
                             Vec3 impact, double impactRadius, float ageTicks) {}
 
     public static ActiveVfx activeVfx(float partialTick) {
@@ -82,7 +120,7 @@ public class BorosCsrcVfxRenderer {
         if (newest == null) return null;
 
         Vec3 origin = resolveCoreOrigin(minecraft, newest, partialTick);
-        return new ActiveVfx(origin, newest.direction, newest.range, newest.chargeTicks,
+        return new ActiveVfx(newest.casterId, origin, newest.direction, newest.range, newest.chargeTicks,
                 newest.fireTicks, newest.impact, newest.impactRadius, newestAge);
     }
 
@@ -93,10 +131,14 @@ public class BorosCsrcVfxRenderer {
         if (minecraft.level == null) {
             EFFECTS.clear();
             PENDING_SHOUTS.clear();
+            restoreCinematicCamera(minecraft);
             return;
         }
 
         long now = minecraft.level.getGameTime();
+        if (cameraOverridden && now >= cameraRestoreTick) {
+            restoreCinematicCamera(minecraft);
+        }
         for (PendingShout shout : PENDING_SHOUTS) {
             if (now >= shout.dueTick) {
                 playShout(minecraft, shout.pos);
@@ -126,6 +168,10 @@ public class BorosCsrcVfxRenderer {
         VertexConsumer buffer = bufferSource.getBuffer(RenderType.lightning());
         Vec3 camera = event.getCamera().getPosition();
         PoseStack poseStack = event.getPoseStack();
+        // The stage pose stack only carries the camera rotation; world-space
+        // geometry must be emitted relative to the camera position.
+        poseStack.pushPose();
+        poseStack.translate(-camera.x, -camera.y, -camera.z);
         Matrix4f matrix = poseStack.last().pose();
         long gameTime = minecraft.level.getGameTime();
 
@@ -141,6 +187,7 @@ public class BorosCsrcVfxRenderer {
         }
 
         bufferSource.endBatch(RenderType.lightning());
+        poseStack.popPose();
     }
 
     @SubscribeEvent
@@ -405,10 +452,17 @@ public class BorosCsrcVfxRenderer {
         if (side.lengthSqr() < 0.001) side = stableSide(direction);
         side = side.normalize().scale(width);
 
+        // RenderType.lightning() culls back faces, so emit both windings —
+        // exactly one of them survives from any camera angle.
         addVertex(buffer, matrix, start.add(side), r, g, b, alpha);
         addVertex(buffer, matrix, start.subtract(side), r, g, b, alpha);
         addVertex(buffer, matrix, end.subtract(side), r, g, b, alpha);
         addVertex(buffer, matrix, end.add(side), r, g, b, alpha);
+
+        addVertex(buffer, matrix, end.add(side), r, g, b, alpha);
+        addVertex(buffer, matrix, end.subtract(side), r, g, b, alpha);
+        addVertex(buffer, matrix, start.subtract(side), r, g, b, alpha);
+        addVertex(buffer, matrix, start.add(side), r, g, b, alpha);
     }
 
     private static void renderBillboard(VertexConsumer buffer, Matrix4f matrix, Vec3 camera, Vec3 center,
@@ -421,10 +475,11 @@ public class BorosCsrcVfxRenderer {
         right = right.normalize().scale(size);
         Vec3 up = right.cross(forward).normalize().scale(size);
 
-        addVertex(buffer, matrix, center.subtract(right).subtract(up), r, g, b, alpha);
-        addVertex(buffer, matrix, center.add(right).subtract(up), r, g, b, alpha);
-        addVertex(buffer, matrix, center.add(right).add(up), r, g, b, alpha);
+        // Camera-facing winding (lightning() culls back faces).
         addVertex(buffer, matrix, center.subtract(right).add(up), r, g, b, alpha);
+        addVertex(buffer, matrix, center.add(right).add(up), r, g, b, alpha);
+        addVertex(buffer, matrix, center.add(right).subtract(up), r, g, b, alpha);
+        addVertex(buffer, matrix, center.subtract(right).subtract(up), r, g, b, alpha);
     }
 
     private static void renderRing(VertexConsumer buffer, Matrix4f matrix, Vec3 camera, Vec3 center, Vec3 side, Vec3 up,

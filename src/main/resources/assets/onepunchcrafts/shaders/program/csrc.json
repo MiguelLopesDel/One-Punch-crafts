@@ -24,7 +24,9 @@
     { "name": "BeamRange", "type": "float", "count": 1, "values": [ 260.0 ] },
     { "name": "ImpactRadius", "type": "float", "count": 1, "values": [ 104.0 ] },
     { "name": "iTime", "type": "float", "count": 1, "values": [ 0.0 ] },
-    { "name": "ChargeTime", "type": "float", "count": 1, "values": [ 2.5 ] },
-    { "name": "FireTime", "type": "float", "count": 1, "values": [ 2.2 ] }
+    { "name": "ChargeTime", "type": "float", "count": 1, "values": [ 4.5 ] },
+    { "name": "FireTime", "type": "float", "count": 1, "values": [ 2.2 ] },
+    { "name": "CasterView", "type": "float", "count": 1, "values": [ 0.0 ] },
+    { "name": "ReducedFlash", "type": "float", "count": 1, "values": [ 0.0 ] }
   ]
 }

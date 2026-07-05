@@ -21,7 +21,7 @@ public class BorosMeteoricBurst implements Skill {
     @Override
     public SkillExecutionResult execute(Player player) {
         if (pack.getConfig().isExhausted()) {
-            player.sendSystemMessage(Component.literal("§c§lSem Energia Vital!"));
+            player.sendSystemMessage(Component.translatable("skill.boros.no_energy"));
             return SkillExecutionResult.CONTINUE;
         }
 
@@ -29,7 +29,7 @@ public class BorosMeteoricBurst implements Skill {
             pack.setCurrentForm((short) 2);
             pack.setMeteoricBurstActive(true);
             pack.setFlightActive(true);
-            player.sendSystemMessage(Component.literal("§c§l⚡ METEORIC BURST ATIVADO! ⚡"));
+            player.sendSystemMessage(Component.translatable("skill.boros.meteoric_burst.on"));
             if (player instanceof ServerPlayer serverPlayer) {
                 NetworkRegister.sendToPlayer(serverPlayer, new ScreenEffectPacket(10.0f, 30, 0.7f));
                 HelpUtility.syncWithPlayer(serverPlayer, HelpUtility.getSkillData(serverPlayer));
@@ -37,7 +37,7 @@ public class BorosMeteoricBurst implements Skill {
         } else {
             pack.setCurrentForm((short) 1);
             pack.setMeteoricBurstActive(false);
-            player.sendSystemMessage(Component.literal("§6§lMeteoric Burst desativado"));
+            player.sendSystemMessage(Component.translatable("skill.boros.meteoric_burst.off"));
             if (player instanceof ServerPlayer serverPlayer) {
                 HelpUtility.syncWithPlayer(serverPlayer, HelpUtility.getSkillData(serverPlayer));
             }
@@ -48,8 +48,10 @@ public class BorosMeteoricBurst implements Skill {
 
     @Override
     public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
-        String status = pack.isMeteoricBurstActive() ? "§c[ATIVO]" : "";
-        guiGraphics.drawString(font, Component.literal("Meteoric Burst " + status),
+        Component status = pack.isMeteoricBurstActive()
+                ? Component.translatable("skill.boros.meteoric_burst.status_active")
+                : Component.literal("");
+        guiGraphics.drawString(font, Component.translatable("skill.boros.meteoric_burst", status),
                 width / 2 - defaultReduce, height / 2 + defaultAdd, 0xFF0000, false);
     }
 }

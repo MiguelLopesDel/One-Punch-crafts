@@ -364,7 +364,7 @@ public class BorosPack extends SyncableSkillPack {
 
         if (!consumeEnergy(tickCost)) {
             setFlightActive(false);
-            player.sendSystemMessage(Component.literal("§cPropulsão desativada - sem energia!"));
+            player.sendSystemMessage(Component.translatable("skill.boros.flight.no_energy"));
             return;
         }
 
@@ -922,7 +922,7 @@ public class BorosPack extends SyncableSkillPack {
             if (config.canRecover(currentTick)) {
                 config.setExhausted(false);
                 energy = 1f;
-                player.sendSystemMessage(Component.literal("§a§lEnergia Vital restaurada!"));
+                player.sendSystemMessage(Component.translatable("skill.boros.energy_restored"));
             }
             return;
         }
@@ -932,7 +932,7 @@ public class BorosPack extends SyncableSkillPack {
             if (!consumeEnergy(BorosConfig.METEORIC_BURST_TICK_COST)) {
                 setMeteoricBurstActive(false);
                 setCurrentForm((short) 1);
-                player.sendSystemMessage(Component.literal("§c§lMeteoric Burst desativado - sem energia!"));
+                player.sendSystemMessage(Component.translatable("skill.boros.meteoric_burst.no_energy"));
             }
             return;
         }

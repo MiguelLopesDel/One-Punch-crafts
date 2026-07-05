@@ -15,8 +15,11 @@ public class DamagesRegistry {
 
     public static ResourceKey<DamageType> SERIOUS_PUNCH = ResourceKey.create(Registries.DAMAGE_TYPE, new ResourceLocation(MODID, "serious_punch_damage"));
 
+    public static ResourceKey<DamageType> CSRC = ResourceKey.create(Registries.DAMAGE_TYPE, new ResourceLocation(MODID, "csrc_damage"));
+
     public static void bootstrap(BootstapContext<DamageType> context) {
         context.register(SERIOUS_PUNCH, new DamageType("serious_punch_damage", DamageScaling.ALWAYS, 0.1F));
         context.register(SERIOUS_PUNCH_SECOND, new DamageType("serious_punch_second_damage", DamageScaling.ALWAYS, 0.1F));
+        context.register(CSRC, new DamageType("csrc_damage", DamageScaling.ALWAYS, 0.1F));
     }
 }

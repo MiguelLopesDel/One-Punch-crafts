@@ -19,8 +19,8 @@ public class BorosDestructiveMovement implements SkillPassive {
     public SkillExecutionResult execute(Player player) {
         if (player instanceof ServerPlayer serverPlayer) {
             pack.setDestructiveMode(!pack.isDestructiveMode());
-            serverPlayer.sendSystemMessage(Component.literal(
-                    pack.isDestructiveMode() ? "§c§lMovimento Destrutivo Ativado" : "§7Movimento Destrutivo Desativado"
+            serverPlayer.sendSystemMessage(Component.translatable(
+                    pack.isDestructiveMode() ? "skill.boros.destructive_movement.on" : "skill.boros.destructive_movement.off"
             ));
         }
         return SkillExecutionResult.CONTINUE;
@@ -33,7 +33,7 @@ public class BorosDestructiveMovement implements SkillPassive {
     @Override
     public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
         String status = pack.isDestructiveMode() ? "§c[ON]" : "§7[OFF]";
-        guiGraphics.drawString(font, Component.literal("Movimento Destrutivo " + status),
+        guiGraphics.drawString(font, Component.translatable("skill.boros.destructive_movement", status),
                 width / 2 - defaultReduce, height / 2 + defaultAdd, pack.isDestructiveMode() ? 0xFF3333 : 0x777777, false);
     }
 }

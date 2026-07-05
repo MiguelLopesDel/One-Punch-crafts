@@ -57,5 +57,19 @@ public class OneDamageProvider extends TagsProvider<DamageType> {
         this.tag(DamageTypeTags.AVOIDS_GUARDIAN_THORNS).add(seriousPunchSecond);
         this.tag(DamageTypeTags.ALWAYS_HURTS_ENDER_DRAGONS).add(seriousPunchSecond);
         this.tag(DEDamage.Tags.CHAOTIC).add(seriousPunchSecond);
+
+        // CSRC pierces most defenses (armor, shields, potion effects, wither
+        // immunities) but deliberately NOT command/creative invulnerability.
+        ResourceKey<DamageType> csrc = DamagesRegistry.CSRC;
+        this.tag(DamageTypeTags.DAMAGES_HELMET).add(csrc);
+        this.tag(DamageTypeTags.BYPASSES_ARMOR).add(csrc);
+        this.tag(DamageTypeTags.BYPASSES_SHIELD).add(csrc);
+        this.tag(DamageTypeTags.BYPASSES_EFFECTS).add(csrc);
+        this.tag(DamageTypeTags.BYPASSES_RESISTANCE).add(csrc);
+        this.tag(DamageTypeTags.BYPASSES_ENCHANTMENTS).add(csrc);
+        this.tag(DamageTypeTags.IS_EXPLOSION).add(csrc);
+        this.tag(DamageTypeTags.AVOIDS_GUARDIAN_THORNS).add(csrc);
+        this.tag(DamageTypeTags.ALWAYS_HURTS_ENDER_DRAGONS).add(csrc);
+        this.tag(DEDamage.Tags.CHAOTIC).add(csrc);
     }
 }

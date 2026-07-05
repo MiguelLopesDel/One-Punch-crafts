@@ -30,17 +30,17 @@ public class BorosDash implements Skill {
     @Override
     public SkillExecutionResult execute(Player player) {
         if (pack.getConfig().isExhausted()) {
-            player.sendSystemMessage(Component.literal("§c§lSem Energia Vital!"));
+            player.sendSystemMessage(Component.translatable("skill.boros.no_energy"));
             return SkillExecutionResult.CONTINUE;
         }
 
         if (!pack.canUseBurstStep()) {
-            player.sendSystemMessage(Component.literal("§7Burst Step em recuperação!"));
+            player.sendSystemMessage(Component.translatable("skill.boros.dash.cooldown"));
             return SkillExecutionResult.CONTINUE;
         }
 
-        if (!pack.consumeEnergy(BorosConfig.ENERGY_BLAST_COST * 2)) {
-            player.sendSystemMessage(Component.literal("§e§lEnergia Insuficiente!"));
+        if (!pack.consumeEnergy(BorosConfig.ENERGY_BLAST_COST * 1.25f)) {
+            player.sendSystemMessage(Component.translatable("skill.boros.insufficient_energy"));
             return SkillExecutionResult.CONTINUE;
         }
 
@@ -60,28 +60,29 @@ public class BorosDash implements Skill {
         LivingEntity target = findTarget(player);
         
         double speed = switch (pack.getCurrentForm()) {
-            case 0 -> 2.0;
-            case 1 -> 4.0;
-            case 2 -> 7.0;
-            default -> 2.0;
+            case 0 -> 3.4;
+            case 1 -> 6.2;
+            case 2 -> 10.5;
+            default -> 3.4;
         };
 
         if (target != null) {
             Vec3 targetPos = target.position();
             Vec3 toTarget = targetPos.subtract(player.position()).normalize();
             Vec3 side = new Vec3(-toTarget.z, 0, toTarget.x).scale(player.getRandom().nextBoolean() ? 0.9 : -0.9);
-            Vec3 burst = toTarget.scale(speed).add(side).add(0, 0.25 + pack.getCurrentForm() * 0.12, 0);
+            Vec3 burst = toTarget.scale(speed).add(side).add(0, 0.3 + pack.getCurrentForm() * 0.15, 0);
             player.setDeltaMovement(burst);
         } else {
             Vec3 horizontalLook = lookVec.multiply(1, 0, 1);
             if (horizontalLook.lengthSqr() < 0.001) horizontalLook = lookVec;
-            Vec3 burst = horizontalLook.normalize().scale(speed).add(0, lookVec.y * speed * 0.35, 0);
+            // Follows the aim more, so diagonal/aerial dashes actually go there.
+            Vec3 burst = horizontalLook.normalize().scale(speed).add(0, lookVec.y * speed * 0.5, 0);
             player.setDeltaMovement(burst);
         }
 
         player.fallDistance = 0;
         player.hurtMarked = true;
-        pack.markBurstStepUsed(pack.getCurrentForm() == 2 ? 5 : 10);
+        pack.markBurstStepUsed(pack.getCurrentForm() == 2 ? 3 : 6);
 
         level.playSound(null, player.getX(), player.getY(), player.getZ(),
                 SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS, 0.8f, 1.7f);
@@ -114,7 +115,7 @@ public class BorosDash implements Skill {
 
     @Override
     public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
-        guiGraphics.drawString(font, Component.literal("Velocidade Divina (Dash)"),
+        guiGraphics.drawString(font, Component.translatable("skill.boros.dash"),
                 width / 2 - defaultReduce, height / 2 + defaultAdd, 0x00FFFF, false);
     }
 }

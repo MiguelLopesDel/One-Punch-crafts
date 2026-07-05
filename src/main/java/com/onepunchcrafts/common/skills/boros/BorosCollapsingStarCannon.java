@@ -1,5 +1,7 @@
 package com.onepunchcrafts.common.skills.boros;
 
+import com.onepunchcrafts.common.damage.DamageSourceMod;
+import com.onepunchcrafts.common.damage.DamagesRegistry;
 import com.onepunchcrafts.common.skills.Skill;
 import com.onepunchcrafts.common.skills.SkillExecutionResult;
 import com.onepunchcrafts.network.NetworkRegister;
@@ -10,6 +12,10 @@ import com.onepunchcrafts.util.TickScheduler;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -29,21 +35,29 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
+import net.minecraft.server.level.TicketType;
+import net.minecraft.world.level.ChunkPos;
+
 import java.time.Duration;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class BorosCollapsingStarCannon implements Skill {
     private final BorosPack pack;
     private static final int BEAM_SAMPLES = 260;
     private static final double BEAM_STEP = 1.0;
-    // Timeline shared with the client post shader: charge -> release.
-    private static final int CHARGE_TICKS = 50;
+    // Timeline shared with the client post shader: charge -> release. The
+    // charge matches the anime cut: buildup, the heartbeat double-thump, the
+    // ducked-music pause, then the shout lands right before the release
+    // (csrc_charge.ogg is 4.2s and ends exactly where the shout begins).
+    private static final int CHARGE_TICKS = 90;
     private static final int FIRE_TICKS = 44;
     // Destruction is processed by resumable stages with a per-tick time budget
-    // (HBM style, minus its slowness). The budget is adaptive: we measure the
+    // (resumable stages). The budget is adaptive: we measure the
     // real interval between our destruction ticks — if the server is keeping
     // 20 TPS we ramp the budget up to eat blocks as fast as possible, and the
     // moment ticks start stretching we back off, so it never feels frozen.
@@ -60,6 +74,20 @@ public class BorosCollapsingStarCannon implements Skill {
     private static final float MIN_DIRECT_DAMAGE = 50_000_000.0f;
     private static final float MIN_BACKBLAST_DAMAGE = 60_000_000.0f;
     private static final float MIN_SHOCKWAVE_DAMAGE = 80_000_000.0f;
+    // Sustained area damage: pulses cover the whole destruction footprint for
+    // AS LONG AS blocks are still being destroyed (nothing walks out of the
+    // blast), and keep biting with falloff well past the visible craters —
+    // it is area damage after all. MIN is a floor, MAX a safety cap.
+    private static final int AREA_DAMAGE_MIN_PULSES = 24;
+    private static final int AREA_DAMAGE_MAX_PULSES = 360;
+    private static final long AREA_DAMAGE_INTERVAL_MS = 500L;
+    private static final double MUZZLE_DAMAGE_RADIUS = 135.0;
+    private static final double MUZZLE_DAMAGE_OUTER = 195.0;
+    private static final double IMPACT_DAMAGE_RADIUS = 195.0;
+    private static final double IMPACT_DAMAGE_OUTER = 265.0;
+    private static final double CORRIDOR_DAMAGE_RADIUS = 20.0;
+    private static final double CORRIDOR_DAMAGE_OUTER = 48.0;
+    private static final double AREA_DAMAGE_MIN_FALLOFF = 0.10;
 
     public BorosCollapsingStarCannon(BorosPack pack) {
         this.pack = pack;
@@ -123,14 +151,16 @@ public class BorosCollapsingStarCannon implements Skill {
         float backblastDamage = (float) Math.max(MIN_BACKBLAST_DAMAGE, baseAttack * BACKBLAST_DAMAGE_MULTIPLIER);
         float shockwaveDamage = (float) Math.max(MIN_SHOCKWAVE_DAMAGE, baseAttack * SHOCKWAVE_DAMAGE_MULTIPLIER);
 
+        // Kept well below the shout/soundtrack so the voice leads the mix.
         level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.PLAYERS, 3.0f, 0.55f);
+                SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.PLAYERS, 1.5f, 0.55f);
         level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS, 2.6f, 0.4f);
+                SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS, 1.3f, 0.4f);
 
         Vec3 core = player.position().add(0, player.getBbHeight() * 0.62, 0).add(look.scale(0.35));
         Vec3 muzzleCraterCenter = core.add(look.scale(-3.5)).subtract(0, player.getBbHeight() * 0.25, 0);
         Vec3 impact = beamEnd;
+        DamageSource csrcSource = csrcDamageSource(level, player);
 
         // Craters must bite terrain even when Boros fires while flying or the
         // beam ends mid-air: anchor each blast center to the ground below it.
@@ -144,28 +174,32 @@ public class BorosCollapsingStarCannon implements Skill {
             drawBeam(level, start.add(look.scale(i * BEAM_STEP)), baseRadius + progress * 11.5, i);
         }
 
-        damageEntitiesAlongBeam(level, player, start, look, beamLength, baseRadius, damage);
+        damageEntitiesAlongBeam(level, player, csrcSource, start, look, beamLength, baseRadius, damage);
 
         // Two destruction zones advance in parallel every tick, so the launch
         // site and the impact site erupt together instead of one waiting for
         // the other; within each zone stages still roll near -> far.
         List<DestructionStage> muzzleZone = List.of(
-                new TsarCraterStage(muzzleGround, 96, 54, 72, 2800.0f),
+                new DeepCraterStage(muzzleGround, 96, 54, 72, 2800.0f),
                 new RadialBlastStage(coreGround, 58, 30, 42, 2200.0f),
                 new SurfaceScrapeStage(muzzleGround, 78, 135, 8)
         );
         List<DestructionStage> impactZone = List.of(
                 new BeamTrenchStage(start, look, baseRadius),
-                new TsarCraterStage(impactGround, 104, 62, 46, 2100.0f),
+                new DeepCraterStage(impactGround, 104, 62, 46, 2100.0f),
                 new RadialBlastStage(impactGround, 88, 52, 36, 1700.0f),
                 new SurfaceScrapeStage(impactGround, 100, 195, 13)
         );
 
         emitServerCinematicVfx(level, player, start, look, impact);
-        scheduleDestructionPipeline(level, muzzleZone, impactZone);
+        forceLoadDestructionArea(level, muzzleGround, impactGround, start, look);
+        AtomicBoolean destructionRunning = new AtomicBoolean(true);
+        scheduleDestructionPipeline(level, muzzleZone, impactZone, destructionRunning);
         finishImpact(level, player, impact, look);
-        damageCasterBackblast(level, player, core, 52.0, backblastDamage);
-        damageShockwave(level, player, impact, 144.0, shockwaveDamage);
+        damageCasterBackblast(level, player, csrcSource, core, 52.0, backblastDamage);
+        damageShockwave(level, player, csrcSource, impact, 144.0, shockwaveDamage);
+        schedulePeriodicAreaDamage(level, player, csrcSource, muzzleGround, impactGround,
+                start, look, beamLength, shockwaveDamage, destructionRunning);
         Vec3 recoil = look.scale(-2.6).add(0, 0.35, 0);
         player.setDeltaMovement(player.getDeltaMovement().add(recoil));
         player.hurtMarked = true;
@@ -235,12 +269,14 @@ public class BorosCollapsingStarCannon implements Skill {
     }
 
     private void playCharge(ServerLevel level, Player player, Vec3 look) {
+        // Ambient support only: the charge soundtrack (heartbeat) carries the
+        // scene, so the vanilla layers stay quiet under it.
         level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.ENDER_DRAGON_GROWL, SoundSource.PLAYERS, 2.2f, 0.35f);
+                SoundEvents.ENDER_DRAGON_GROWL, SoundSource.PLAYERS, 1.0f, 0.35f);
         level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 1.4f, 0.45f);
+                SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.7f, 0.45f);
         scheduleAfterTicks(CHARGE_TICKS / 2, () -> level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.WARDEN_SONIC_CHARGE, SoundSource.PLAYERS, 2.4f, 0.65f));
+                SoundEvents.WARDEN_SONIC_CHARGE, SoundSource.PLAYERS, 1.1f, 0.65f));
 
         // Sustained implosion vortex: energy motes stream inward for the whole
         // charge, tightening and accelerating as the star condenses.
@@ -293,7 +329,37 @@ public class BorosCollapsingStarCannon implements Skill {
         }
     }
 
-    private void damageEntitiesAlongBeam(ServerLevel level, Player player, Vec3 start, Vec3 look,
+    /** The CSRC damage type bypasses armor/shields/effects/resistance (see OneDamageProvider). */
+    private DamageSource csrcDamageSource(ServerLevel level, Player player) {
+        Holder.Reference<DamageType> holder = level.registryAccess()
+                .registryOrThrow(Registries.DAMAGE_TYPE)
+                .getHolderOrThrow(DamagesRegistry.CSRC);
+        return new DamageSourceMod(holder, player, player);
+    }
+
+    /**
+     * Gimmick invulnerabilities (mobs whose hurt() only accepts hits on a weak
+     * spot / from a certain angle, e.g. Mowzie's Ferrous Wroughtnaut) do not
+     * survive a collapsing star: if the CSRC source is rejected, fall back to
+     * the out-of-world source and finally to a direct health cut. Command
+     * invulnerability and creative/spectator players stay respected.
+     */
+    private void pierceDefenses(ServerLevel level, LivingEntity entity, DamageSource source, float damage) {
+        entity.invulnerableTime = 0;
+        if (entity.hurt(source, damage)) return;
+        if (entity.isInvulnerable() || !entity.isAlive()) return;
+        if (entity instanceof Player target && (target.isCreative() || target.isSpectator())) return;
+
+        entity.invulnerableTime = 0;
+        if (entity.hurt(level.damageSources().fellOutOfWorld(), damage)) return;
+
+        entity.setHealth(entity.getHealth() - Math.max(1.0f, damage));
+        if (entity.getHealth() <= 0.0f) {
+            entity.die(source);
+        }
+    }
+
+    private void damageEntitiesAlongBeam(ServerLevel level, Player player, DamageSource source, Vec3 start, Vec3 look,
                                          double beamLength, double baseRadius, float damage) {
         Vec3 end = start.add(look.scale(beamLength));
         AABB corridor = new AABB(start, end).inflate(baseRadius + 12.5);
@@ -305,15 +371,84 @@ public class BorosCollapsingStarCannon implements Skill {
             double radiusHere = baseRadius + (along / beamLength) * 11.5 + entity.getBbWidth() * 0.5;
             if (center.distanceTo(start.add(look.scale(along))) > radiusHere) continue;
 
-            living.invulnerableTime = 0;
-            living.hurt(level.damageSources().playerAttack(player), damage);
+            pierceDefenses(level, living, source, damage);
             Vec3 knockback = look.scale(9.0);
             living.setDeltaMovement(knockback.x, 2.2, knockback.z);
             living.hurtMarked = true;
         }
     }
 
-    private double tsarProfileStrength(double horizontalDistance, int dy, double craterRadius,
+    /**
+     * While the craters are still being carved, damage pulses sweep the whole
+     * footprint (muzzle disc + beam corridor + impact disc) so mobs cannot
+     * simply walk out between the release and the end of the destruction; the
+     * pulses reach past the visible craters with distance falloff.
+     */
+    private void schedulePeriodicAreaDamage(ServerLevel level, Player player, DamageSource source,
+                                            Vec3 muzzleCenter, Vec3 impactCenter,
+                                            Vec3 start, Vec3 look, double beamLength, float pulseDamage,
+                                            AtomicBoolean destructionRunning) {
+        AtomicInteger pulses = new AtomicInteger();
+        TickScheduler.scheduleWithCondition(Duration.ofMillis(AREA_DAMAGE_INTERVAL_MS), () -> {
+            int pulse = pulses.incrementAndGet();
+            // Later pulses soften so stragglers at the fringe are mauled, not
+            // necessarily one-shot, while anything inside keeps being erased.
+            float scale = pulse <= 6 ? 1.0f : 0.55f;
+            damageDisc(level, player, source, muzzleCenter, MUZZLE_DAMAGE_RADIUS, MUZZLE_DAMAGE_OUTER, pulseDamage * scale);
+            damageDisc(level, player, source, impactCenter, IMPACT_DAMAGE_RADIUS, IMPACT_DAMAGE_OUTER, pulseDamage * scale);
+            damageCorridor(level, player, source, start, look, beamLength, pulseDamage * scale);
+            // Keep pulsing for the whole life of the destruction pipeline.
+            boolean done = !destructionRunning.get() && pulse >= AREA_DAMAGE_MIN_PULSES;
+            return done || pulse >= AREA_DAMAGE_MAX_PULSES;
+        });
+    }
+
+    private void damageDisc(ServerLevel level, Player player, DamageSource source, Vec3 center,
+                            double fullRadius, double outerRadius, float damage) {
+        AABB area = new AABB(center.x - outerRadius, center.y - 72.0, center.z - outerRadius,
+                center.x + outerRadius, center.y + 96.0, center.z + outerRadius);
+        for (LivingEntity entity : level.getEntitiesOfClass(LivingEntity.class, area, e -> e != player && e.isAlive())) {
+            double dx = entity.getX() - center.x;
+            double dz = entity.getZ() - center.z;
+            double dist = Math.sqrt(dx * dx + dz * dz);
+            if (dist > outerRadius) continue;
+
+            double strength = dist <= fullRadius
+                    ? 1.0
+                    : Math.max(AREA_DAMAGE_MIN_FALLOFF,
+                        1.0 - (dist - fullRadius) / Math.max(1.0, outerRadius - fullRadius));
+            hurtWithPulse(level, entity, source, (float) (damage * strength), center, strength);
+        }
+    }
+
+    private void damageCorridor(ServerLevel level, Player player, DamageSource source,
+                                Vec3 start, Vec3 look, double beamLength, float damage) {
+        Vec3 end = start.add(look.scale(beamLength));
+        AABB corridor = new AABB(start, end).inflate(CORRIDOR_DAMAGE_OUTER);
+        for (LivingEntity entity : level.getEntitiesOfClass(LivingEntity.class, corridor, e -> e != player && e.isAlive())) {
+            Vec3 center = entity.position().add(0, entity.getBbHeight() * 0.5, 0);
+            double along = Math.max(0.0, Math.min(beamLength, center.subtract(start).dot(look)));
+            double dist = center.distanceTo(start.add(look.scale(along)));
+            if (dist > CORRIDOR_DAMAGE_OUTER) continue;
+
+            double strength = dist <= CORRIDOR_DAMAGE_RADIUS
+                    ? 1.0
+                    : Math.max(AREA_DAMAGE_MIN_FALLOFF,
+                        1.0 - (dist - CORRIDOR_DAMAGE_RADIUS) / (CORRIDOR_DAMAGE_OUTER - CORRIDOR_DAMAGE_RADIUS));
+            hurtWithPulse(level, entity, source, (float) (damage * strength), start.add(look.scale(along)), strength);
+        }
+    }
+
+    private void hurtWithPulse(ServerLevel level, LivingEntity entity, DamageSource source, float damage, Vec3 from, double strength) {
+        pierceDefenses(level, entity, source, damage);
+        Vec3 away = entity.position().subtract(from);
+        away = away.lengthSqr() < 0.001 ? new Vec3(0, 1, 0) : away.normalize();
+        entity.setDeltaMovement(entity.getDeltaMovement()
+                .add(away.x * 1.1 * strength, 0.45 * strength, away.z * 1.1 * strength));
+        entity.hurtMarked = true;
+    }
+
+    private double craterProfileStrength(double horizontalDistance, int dy, double craterRadius,
                                        double topRadius, int depth, int topRemovalHeight) {
         if (dy <= 0) {
             double xz = horizontalDistance / Math.max(1.0, craterRadius);
@@ -362,7 +497,7 @@ public class BorosCollapsingStarCannon implements Skill {
         return power * falloff > resistance * 0.08f;
     }
 
-    private void damageCasterBackblast(ServerLevel level, Player player, Vec3 center, double radius, float damage) {
+    private void damageCasterBackblast(ServerLevel level, Player player, DamageSource source, Vec3 center, double radius, float damage) {
         AABB area = new AABB(center.subtract(radius, radius * 0.55, radius), center.add(radius, radius * 0.55, radius));
         List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, area, e -> e != player && e.isAlive());
         for (LivingEntity entity : entities) {
@@ -370,8 +505,7 @@ public class BorosCollapsingStarCannon implements Skill {
             if (distance > radius) continue;
 
             double falloff = 1.0 - distance / radius;
-            entity.invulnerableTime = 0;
-            entity.hurt(level.damageSources().playerAttack(player), (float) (damage * Math.max(0.45, falloff)));
+            pierceDefenses(level, entity, source, (float) (damage * Math.max(0.45, falloff)));
             Vec3 away = entity.position().subtract(player.position());
             if (away.lengthSqr() < 0.001) away = player.getLookAngle().scale(-1);
             Vec3 knockback = away.normalize().scale(10.0 * Math.max(0.45, falloff));
@@ -393,15 +527,56 @@ public class BorosCollapsingStarCannon implements Skill {
         return pos;
     }
 
+    /**
+     * The beam reaches ~260 blocks — usually beyond what is loaded around the
+     * player — so without tickets the far half of the blast would be clipped
+     * to a square of loaded chunks. Region tickets pull the whole footprint
+     * in (async); the stages defer columns until their chunks arrive.
+     */
+    private void forceLoadDestructionArea(ServerLevel level, Vec3 muzzleCenter, Vec3 impactCenter,
+                                          Vec3 start, Vec3 look) {
+        List<ChunkPos> tickets = new ArrayList<>();
+        collectDiscChunks(tickets, muzzleCenter, 9);
+        collectDiscChunks(tickets, impactCenter, 10);
+        for (int i = 0; i < BEAM_SAMPLES; i += 24) {
+            Vec3 pos = start.add(look.scale(i * BEAM_STEP));
+            tickets.add(new ChunkPos(((int) Math.floor(pos.x)) >> 4, ((int) Math.floor(pos.z)) >> 4));
+        }
+
+        for (ChunkPos pos : tickets) {
+            level.getChunkSource().addRegionTicket(TicketType.FORCED, pos, 2, pos);
+        }
+        TickScheduler.scheduleFromHere(Duration.ofSeconds(90), () -> {
+            for (ChunkPos pos : tickets) {
+                level.getChunkSource().removeRegionTicket(TicketType.FORCED, pos, 2, pos);
+            }
+        });
+    }
+
+    /** Chunk positions covering a disc, on a 2-chunk grid (tickets have radius). */
+    private void collectDiscChunks(List<ChunkPos> out, Vec3 center, int chunkRadius) {
+        int centerX = ((int) Math.floor(center.x)) >> 4;
+        int centerZ = ((int) Math.floor(center.z)) >> 4;
+        for (int dx = -chunkRadius; dx <= chunkRadius; dx += 2) {
+            for (int dz = -chunkRadius; dz <= chunkRadius; dz += 2) {
+                if (dx * dx + dz * dz > (chunkRadius + 1) * (chunkRadius + 1)) continue;
+                out.add(new ChunkPos(centerX + dx, centerZ + dz));
+            }
+        }
+    }
+
     private void scheduleDestructionPipeline(ServerLevel level, List<DestructionStage> muzzleStages,
-                                             List<DestructionStage> impactStages) {
+                                             List<DestructionStage> impactStages, AtomicBoolean running) {
         Queue<DestructionStage> muzzleZone = new ArrayDeque<>(muzzleStages);
         Queue<DestructionStage> impactZone = new ArrayDeque<>(impactStages);
 
         // One violent bite the instant the beam fires, then budgeted ticks.
         advanceZone(level, muzzleZone, System.nanoTime(), RELEASE_NANO_BUDGET / 2);
         advanceZone(level, impactZone, System.nanoTime(), RELEASE_NANO_BUDGET / 2);
-        if (muzzleZone.isEmpty() && impactZone.isEmpty()) return;
+        if (muzzleZone.isEmpty() && impactZone.isEmpty()) {
+            running.set(false);
+            return;
+        }
 
         AtomicInteger tick = new AtomicInteger();
         // [0] = current budget in nanos, [1] = nanoTime of the previous run.
@@ -439,7 +614,9 @@ public class BorosCollapsingStarCannon implements Skill {
                         36, 4.0, 4.0, 4.0, 0.35);
             }
 
-            return muzzleZone.isEmpty() && impactZone.isEmpty();
+            boolean finished = muzzleZone.isEmpty() && impactZone.isEmpty();
+            if (finished) running.set(false);
+            return finished;
         });
     }
 
@@ -447,6 +624,9 @@ public class BorosCollapsingStarCannon implements Skill {
         while (!zone.isEmpty() && System.nanoTime() - start < nanoBudget) {
             if (zone.peek().advance(level, start, nanoBudget)) {
                 zone.poll();
+            } else {
+                // Budget exhausted or the stage is waiting on chunks to load.
+                break;
             }
         }
     }
@@ -484,6 +664,10 @@ public class BorosCollapsingStarCannon implements Skill {
         private final int maxRadius;
         private int[] offsets; // (dx,dz) packed, ordered by squared distance
         private int cursor;
+        // Columns whose chunks were still loading (region tickets are async);
+        // they are retried until they arrive or the deadline passes.
+        private final List<Integer> deferred = new ArrayList<>();
+        private long chunkWaitDeadline;
 
         RadialStage(Vec3 center, int minRadius, int maxRadius) {
             this.centerX = (int) Math.floor(center.x);
@@ -527,23 +711,37 @@ public class BorosCollapsingStarCannon implements Skill {
 
         @Override
         public boolean advance(ServerLevel level, long budgetStart, long nanoBudget) {
-            if (offsets == null) buildOffsets();
+            if (offsets == null) {
+                buildOffsets();
+                chunkWaitDeadline = System.currentTimeMillis() + 45_000L;
+            }
             while (cursor < offsets.length) {
                 if (System.nanoTime() - budgetStart >= nanoBudget) return false;
 
                 int v = offsets[cursor++];
                 int dx = ((v >> 11) & 1023) - 512;
                 int dz = (v & 1023) - 512;
+                if (!level.hasChunk((centerX + dx) >> 4, (centerZ + dz) >> 4)) {
+                    deferred.add(v);
+                    continue;
+                }
                 processColumn(level, dx, dz);
             }
-            return true;
+            if (deferred.isEmpty() || System.currentTimeMillis() > chunkWaitDeadline) return true;
+
+            // Re-arm with the waiting columns and yield until the next tick.
+            offsets = new int[deferred.size()];
+            for (int i = 0; i < offsets.length; i++) offsets[i] = deferred.get(i);
+            deferred.clear();
+            cursor = 0;
+            return false;
         }
 
         protected abstract void processColumn(ServerLevel level, int dx, int dz);
     }
 
     /** The deep annihilation crater: ellipsoid bowl + flared top removal. */
-    private class TsarCraterStage extends RadialStage {
+    private class DeepCraterStage extends RadialStage {
         private final int craterRadius;
         private final int depth;
         private final int topRemovalHeight;
@@ -551,7 +749,7 @@ public class BorosCollapsingStarCannon implements Skill {
         private final int topRadius;
         private final Vec3 center;
 
-        TsarCraterStage(Vec3 center, int horizontalRadius, int depth, int topRemovalHeight, float power) {
+        DeepCraterStage(Vec3 center, int horizontalRadius, int depth, int topRemovalHeight, float power) {
             super(center, 0, (int) Math.ceil(horizontalRadius * 1.35));
             this.center = center;
             this.craterRadius = horizontalRadius;
@@ -563,9 +761,6 @@ public class BorosCollapsingStarCannon implements Skill {
 
         @Override
         protected void processColumn(ServerLevel level, int dx, int dz) {
-            // Never force-load/generate chunks; blasting only the loaded world.
-            if (!level.hasChunk((centerX + dx) >> 4, (centerZ + dz) >> 4)) return;
-
             double horizontalDistance = Math.sqrt(dx * dx + dz * dz);
             double noise = areaNoise(centerX + dx, centerZ + dz);
             double noisyCraterRadius = craterRadius * (0.9 + noise * 0.16);
@@ -574,7 +769,7 @@ public class BorosCollapsingStarCannon implements Skill {
 
             BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
             for (int dy = -depth; dy <= topRemovalHeight; dy++) {
-                double strength = tsarProfileStrength(horizontalDistance, dy, noisyCraterRadius, noisyTopRadius, depth, topRemovalHeight);
+                double strength = craterProfileStrength(horizontalDistance, dy, noisyCraterRadius, noisyTopRadius, depth, topRemovalHeight);
                 if (strength <= 0.0) continue;
 
                 pos.set(centerX + dx, centerY + dy, centerZ + dz);
@@ -605,8 +800,6 @@ public class BorosCollapsingStarCannon implements Skill {
 
         @Override
         protected void processColumn(ServerLevel level, int dx, int dz) {
-            if (!level.hasChunk((centerX + dx) >> 4, (centerZ + dz) >> 4)) return;
-
             double horizontalDistance = Math.sqrt(dx * dx + dz * dz);
             double noisyRadius = horizontalRadius * (0.92 + 0.13 * areaNoise(centerX + dx, centerZ + dz));
             if (horizontalDistance > noisyRadius) return;
@@ -633,24 +826,45 @@ public class BorosCollapsingStarCannon implements Skill {
         private final Vec3 look;
         private final double baseRadius;
         private int sample;
+        // Samples waiting for their chunks to load (see forceLoadDestructionArea).
+        private final List<Integer> deferredSamples = new ArrayList<>();
+        private Queue<Integer> retryQueue;
+        private long chunkWaitDeadline;
 
         BeamTrenchStage(Vec3 start, Vec3 look, double baseRadius) {
             this.start = start;
             this.look = look;
             this.baseRadius = baseRadius;
+            this.chunkWaitDeadline = 0L;
         }
 
         @Override
         public boolean advance(ServerLevel level, long budgetStart, long nanoBudget) {
+            if (chunkWaitDeadline == 0L) {
+                chunkWaitDeadline = System.currentTimeMillis() + 45_000L;
+            }
             BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
             while (System.nanoTime() - budgetStart < nanoBudget) {
-                if (sample >= BEAM_SAMPLES) return true;
-
-                double progress = (double) sample / (BEAM_SAMPLES - 1);
-                double radius = baseRadius + progress * 11.5;
-                Vec3 center = start.add(look.scale(sample * BEAM_STEP));
-                if (!level.hasChunk((int) center.x >> 4, (int) center.z >> 4)) {
+                int currentSample;
+                if (sample < BEAM_SAMPLES) {
+                    currentSample = sample;
                     sample += 2;
+                } else if (retryQueue != null && !retryQueue.isEmpty()) {
+                    currentSample = retryQueue.poll();
+                } else if (!deferredSamples.isEmpty() && System.currentTimeMillis() <= chunkWaitDeadline) {
+                    // Re-arm the waiting samples and yield until the next tick.
+                    retryQueue = new ArrayDeque<>(deferredSamples);
+                    deferredSamples.clear();
+                    return false;
+                } else {
+                    return true;
+                }
+
+                double progress = (double) currentSample / (BEAM_SAMPLES - 1);
+                double radius = baseRadius + progress * 11.5;
+                Vec3 center = start.add(look.scale(currentSample * BEAM_STEP));
+                if (!level.hasChunk(((int) Math.floor(center.x)) >> 4, ((int) Math.floor(center.z)) >> 4)) {
+                    deferredSamples.add(currentSample);
                     continue;
                 }
 
@@ -672,14 +886,14 @@ public class BorosCollapsingStarCannon implements Skill {
                         }
                     }
                 }
-                sample += 2;
             }
-            return sample >= BEAM_SAMPLES;
+            // Budget exhausted mid-walk.
+            return false;
         }
     }
 
     /**
-     * HBM Tsar-style surface leveling: outside the main crater the ground is
+     * Wide surface leveling: outside the main crater the ground is
      * scraped a few blocks deep, shallower with distance (plus noise for a
      * ragged edge), until only surface soil and trees are gone and the terrain
      * fades back to untouched Minecraft.
@@ -700,7 +914,6 @@ public class BorosCollapsingStarCannon implements Skill {
         protected void processColumn(ServerLevel level, int dx, int dz) {
             int x = centerX + dx;
             int z = centerZ + dz;
-            if (!level.hasChunk(x >> 4, z >> 4)) return;
 
             // Euclidean distance keeps the leveling circular; the square ring
             // walk is only an iteration order, so its corners must be trimmed.
@@ -757,9 +970,9 @@ public class BorosCollapsingStarCannon implements Skill {
 
     private void finishImpact(ServerLevel level, Player player, Vec3 impact, Vec3 look) {
         level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.ENDER_DRAGON_DEATH, SoundSource.PLAYERS, 2.0f, 0.35f);
+                SoundEvents.ENDER_DRAGON_DEATH, SoundSource.PLAYERS, 1.0f, 0.35f);
         level.playSound(null, impact.x, impact.y, impact.z,
-                SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 3.0f, 0.45f);
+                SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 1.7f, 0.45f);
 
         level.explode(player, impact.x, impact.y, impact.z,
                 28.0f, true, Level.ExplosionInteraction.NONE);
@@ -787,7 +1000,7 @@ public class BorosCollapsingStarCannon implements Skill {
         scheduleAfterTicks(3, () -> {
             spawnShockwaveRing(level, impact, 16.0, 96);
             level.playSound(null, impact.x, impact.y, impact.z,
-                    SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS, 2.4f, 0.55f);
+                    SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS, 1.2f, 0.55f);
         });
         scheduleAfterTicks(6, () -> spawnShockwaveRing(level, impact, 30.0, 144));
         scheduleAfterTicks(10, () -> spawnShockwaveRing(level, impact, 46.0, 192));
@@ -838,7 +1051,7 @@ public class BorosCollapsingStarCannon implements Skill {
         }
     }
 
-    private void damageShockwave(ServerLevel level, Player player, Vec3 impact, double radius, float damage) {
+    private void damageShockwave(ServerLevel level, Player player, DamageSource source, Vec3 impact, double radius, float damage) {
         AABB area = new AABB(impact.subtract(radius, radius * 0.55, radius), impact.add(radius, radius * 0.55, radius));
         List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, area, e -> e != player && e.isAlive());
         for (LivingEntity entity : entities) {
@@ -846,8 +1059,7 @@ public class BorosCollapsingStarCannon implements Skill {
             if (distance > radius) continue;
 
             double falloff = 1.0 - distance / radius;
-            entity.invulnerableTime = 0;
-            entity.hurt(level.damageSources().playerAttack(player), (float) (damage * Math.max(0.25, falloff)));
+            pierceDefenses(level, entity, source, (float) (damage * Math.max(0.25, falloff)));
             Vec3 away = entity.position().subtract(impact);
             if (away.lengthSqr() < 0.001) away = player.getLookAngle();
             Vec3 knockback = away.normalize().scale(8.0 * Math.max(0.25, falloff));

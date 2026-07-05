@@ -14,6 +14,8 @@ uniform float BeamRange;
 uniform float iTime;
 uniform float ChargeTime;
 uniform float FireTime;
+uniform float CasterView;
+uniform float ReducedFlash;
 uniform vec2 OutSize;
 
 in vec2 texCoord;
@@ -31,12 +33,22 @@ void main() {
     float chargeP = clamp(iTime / max(ChargeTime, 0.001), 0.0, 1.0);
     float localFire = iTime - ChargeTime;
     float fireP = clamp(localFire / max(FireTime, 0.001), 0.0, 1.0);
-    float aftP = clamp((localFire - FireTime) / 2.4, 0.0, 1.0);
+    // Matches the beam afterglow in csrc.fsh; the aberration/vignette die
+    // with the beam while the sphere and surface waves keep going clean.
+    float aftP = clamp((localFire - FireTime) / 2.8, 0.0, 1.0);
 
     float intensity = 7.0 * pow(chargeP, 6.0);
+    // Heartbeat thumps (synced with csrc_charge.ogg, anchored to charge end)
+    // kick the aberration for a single blink each.
+    float hb = exp(-55.0 * abs(iTime - (ChargeTime - 2.65)))
+             + exp(-55.0 * abs(iTime - (ChargeTime - 2.35)));
+    intensity += 14.0 * clamp(hb, 0.0, 1.0) * step(iTime, ChargeTime);
     if (localFire > 0.0) {
         intensity = 52.0 * exp(-localFire * 3.1)
                 + 6.0 * (0.7 + 0.3 * sin(iTime * 34.0)) * (1.0 - fireP * 0.5) * (1.0 - aftP);
+        // The caster keeps a crisper image of their own beam.
+        intensity *= mix(1.0, 0.6, CasterView);
+        intensity *= mix(1.0, 0.55, ReducedFlash);
     }
 
     // Attenuate with distance from the camera to the beam segment.
@@ -72,7 +84,9 @@ void main() {
     // Cuts flip at ~12 fps like the show (drawn on twos).
     // ------------------------------------------------------------------
     if (localFire > 0.0) {
-        float frame = floor(iTime * 12.0);
+        // Photosensitivity mode: cuts drop from ~12 to ~3 per second and land
+        // softer, staying under the strobing danger zone.
+        float frame = floor(iTime * mix(12.0, 3.0, ReducedFlash));
         float lum = dot(col, vec3(0.299, 0.587, 0.114));
         float tone = smoothstep(0.28, 0.60, lum);
         vec3 cutCol = col;
@@ -111,9 +125,19 @@ void main() {
             w = max(w, 1.0 - arr / 0.40);
         }
 
+        // Caster view: instead of removing the impact frames, they become
+        // rhythmic bursts (drawn-on-twos montage) with clean windows between
+        // them — the anime cuts still hit, and in every gap the caster sees
+        // the golden beam and the impact sphere raw.
+        if (CasterView > 0.5) {
+            float cutGate = step(fract(localFire * 2.2), 0.45);
+            w *= cutGate;
+        }
+
         if (w > 0.0) {
             // Full punch up close (first person), softer for far spectators.
             float strength = w * clamp(140.0 / (dist + 60.0), 0.0, 1.0);
+            strength *= mix(1.0, 0.5, ReducedFlash);
             col = mix(col, cutCol, strength);
         }
     }

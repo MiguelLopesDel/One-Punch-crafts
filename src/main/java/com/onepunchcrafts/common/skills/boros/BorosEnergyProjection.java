@@ -3,6 +3,7 @@ package com.onepunchcrafts.common.skills.boros;
 import com.onepunchcrafts.common.skills.Skill;
 import com.onepunchcrafts.common.skills.SkillExecutionResult;
 import com.onepunchcrafts.network.NetworkRegister;
+import com.onepunchcrafts.network.packet.BorosBeamVfxPacket;
 import com.onepunchcrafts.network.packet.ScreenEffectPacket;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -34,12 +35,12 @@ public class BorosEnergyProjection implements Skill {
     @Override
     public SkillExecutionResult execute(Player player) {
         if (pack.getConfig().isExhausted()) {
-            player.sendSystemMessage(Component.literal("§c§lSem Energia Vital!"));
+            player.sendSystemMessage(Component.translatable("skill.boros.no_energy"));
             return SkillExecutionResult.CONTINUE;
         }
 
         if (!pack.consumeEnergy(BorosConfig.ENERGY_BLAST_COST)) {
-            player.sendSystemMessage(Component.literal("§e§lEnergia Insuficiente!"));
+            player.sendSystemMessage(Component.translatable("skill.boros.insufficient_energy"));
             return SkillExecutionResult.CONTINUE;
         }
 
@@ -57,6 +58,9 @@ public class BorosEnergyProjection implements Skill {
             int range = (int) (50 * pack.getPowerModifier() * 1.6); // Escala range com poder
             if (range > 200) range = 200;
             Set<Integer> hitEntityIds = new HashSet<>();
+
+            // Dedicated quad-beam render on every nearby client.
+            sendBeamVfx(serverLevel, player, startPos, lookVec, range * 0.5);
 
             for (int i = 0; i < range; i++) {
                 Vec3 pos = startPos.add(lookVec.scale(i * 0.5));
@@ -118,9 +122,19 @@ public class BorosEnergyProjection implements Skill {
         return SkillExecutionResult.CONTINUE;
     }
 
+    private void sendBeamVfx(ServerLevel level, Player player, Vec3 start, Vec3 look, double beamLength) {
+        BorosBeamVfxPacket packet = new BorosBeamVfxPacket(player.getId(), start, look, beamLength,
+                BorosBeamVfxPacket.STYLE_ENERGY_PROJECTION, 14);
+        for (ServerPlayer serverPlayer : level.getServer().getPlayerList().getPlayers()) {
+            if (serverPlayer.level() == level && serverPlayer.distanceToSqr(player) <= 256.0D * 256.0D) {
+                NetworkRegister.sendToPlayer(serverPlayer, packet);
+            }
+        }
+    }
+
     @Override
     public void renderName(int width, int height, Font font, GuiGraphics guiGraphics, int defaultReduce, int defaultAdd) {
-        guiGraphics.drawString(font, Component.literal("Projeção de Energia"),
+        guiGraphics.drawString(font, Component.translatable("skill.boros.energy_projection"),
                 width / 2 - defaultReduce, height / 2 + defaultAdd, 0xFF00FF, false);
     }
 }
