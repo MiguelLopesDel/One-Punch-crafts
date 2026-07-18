@@ -6,15 +6,8 @@ import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
-import com.onepunchcrafts.common.capability.OnePunchPlayer;
-import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
-import com.onepunchcrafts.common.skills.SkillPack;
-import com.onepunchcrafts.util.HelpUtility;
-import com.onepunchcrafts.network.NetworkRegister;
-import com.onepunchcrafts.network.packet.PowerStateSnapshotPacket;
-import com.onepunchcrafts.v3.OnePunchV3;
-import com.onepunchcrafts.v3.content.SaitamaContent;
-import com.onepunchcrafts.v3.minecraft.PowerStateCodec;
+import com.onepunchcrafts.v3.core.character.CharacterIdentity;
+import com.onepunchcrafts.v3.minecraft.MinecraftCharacterAssignment;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -22,7 +15,6 @@ import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.commands.arguments.selector.EntitySelector;
 import net.minecraft.network.chat.*;
 import net.minecraft.network.chat.contents.LiteralContents;
-import net.minecraft.server.level.ServerPlayer;
 
 import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
@@ -32,8 +24,6 @@ import java.security.Signature;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
-import static com.onepunchcrafts.OnePunchCrafts.WITHOUT_PACK;
 
 public class GamerUtilCommand {
 
@@ -83,14 +73,9 @@ public class GamerUtilCommand {
                 throw new SimpleCommandExceptionType(MutableComponent.create(new LiteralContents(""))).create();
             }
             chall.poll();
-            ServerPlayer player = arguments.getArgument(target, EntitySelector.class).findSinglePlayer(source);
-            SkillPack skillPack = WITHOUT_PACK;
-            OnePunchPlayer cap = HelpUtility.getSkillDataOr(player, skillPack);
-            cap.setSkillPack(skillPack);
-            if (isSaitama) OnePunchV3.POWERS.assign(cap.getPowerState(), SaitamaContent.POWER_SET);
-            else OnePunchV3.POWERS.clear(cap.getPowerState());
-            HelpUtility.syncWithPlayer(player, cap);
-            NetworkRegister.sendToPlayer(player, new PowerStateSnapshotPacket(PowerStateCodec.encode(cap.getPowerState())));
+            var player = arguments.getArgument(target, EntitySelector.class).findSinglePlayer(source);
+            MinecraftCharacterAssignment.assign(player,
+                    isSaitama ? CharacterIdentity.SAITAMA : CharacterIdentity.NONE);
             source.sendSuccess(() -> MutableComponent.create(new LiteralContents("sucess")), false);
             return 1;
         };

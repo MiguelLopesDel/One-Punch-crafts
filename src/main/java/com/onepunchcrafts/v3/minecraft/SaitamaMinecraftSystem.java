@@ -23,6 +23,12 @@ public final class SaitamaMinecraftSystem {
 
     private SaitamaMinecraftSystem() {}
 
+    /** Releases per-player transient state when Saitama is removed or reassigned. */
+    public static void clear(ServerPlayer player) {
+        SHIFT_HOLD.remove(player.getUUID());
+        PREVIOUS.remove(player.getUUID());
+    }
+
     public static void tick(ServerPlayer player) {
         var state = HelpUtility.getSkillData(player).getPowerState();
         if (!state.powerSetId().equals(SaitamaContent.POWER_SET)) return;

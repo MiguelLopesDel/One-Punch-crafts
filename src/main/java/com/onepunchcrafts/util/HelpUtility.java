@@ -82,6 +82,18 @@ public class HelpUtility {
         player.getAttribute(Attributes.ATTACK_SPEED).setBaseValue(4.0D);
     }
 
+    /** Removes every Minecraft-side attribute/effect projection owned by a Pack. */
+    public static void resetCharacterProjection(ServerPlayer player) {
+        setAttributesToDefault(player);
+        player.getAttribute(Attributes.ATTACK_DAMAGE).setBaseValue(1.0D);
+        player.getAttribute(Attributes.MAX_HEALTH).setBaseValue(20.0D);
+        if (player.getAttribute(ForgeMod.STEP_HEIGHT_ADDITION.get()) != null) {
+            player.getAttribute(ForgeMod.STEP_HEIGHT_ADDITION.get()).setBaseValue(0.0D);
+        }
+        removeGodLevelEffectSet(player);
+        player.setHealth(Math.min(player.getHealth(), player.getMaxHealth()));
+    }
+
     public static void teleportPlayerToTarget(ServerPlayer sender) {
         Vec3 startVec = sender.getEyePosition();
         int distance = 300;

@@ -8,6 +8,7 @@ import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.AnimationPacket;
 import com.onepunchcrafts.network.packet.BorosCsrcVfxPacket;
 import com.onepunchcrafts.network.packet.ScreenEffectPacket;
+import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.util.TickScheduler;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -143,6 +144,9 @@ public class BorosCollapsingStarCannon implements Skill {
 
     private void releaseBeam(ServerLevel level, Player player, Vec3 start, Vec3 look, Vec3 beamEnd) {
         if (player.isRemoved() || !player.isAlive() || player.level() != level) return;
+        // A charged action belongs to the Pack instance that started it. A
+        // character switch invalidates it before it can release as the new one.
+        if (HelpUtility.getSkillData(player).getSkillPack() != pack) return;
 
         double baseRadius = 6.5;
         double beamLength = (BEAM_SAMPLES - 1) * BEAM_STEP;

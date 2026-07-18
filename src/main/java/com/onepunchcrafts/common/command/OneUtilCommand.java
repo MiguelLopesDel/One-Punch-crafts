@@ -6,19 +6,10 @@ import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
-import com.onepunchcrafts.common.capability.OnePunchPlayer;
-import com.onepunchcrafts.common.skills.boros.BorosPack;
-import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
-import com.onepunchcrafts.common.skills.SkillPack;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.LevelSyncPacket;
-import com.onepunchcrafts.util.HelpUtility;
-import com.onepunchcrafts.util.TickScheduler;
-import com.onepunchcrafts.v3.OnePunchV3;
-import com.onepunchcrafts.v3.content.SaitamaContent;
-import com.onepunchcrafts.v3.core.state.PowerState;
-import com.onepunchcrafts.v3.minecraft.PowerStateCodec;
-import com.onepunchcrafts.network.packet.PowerStateSnapshotPacket;
+import com.onepunchcrafts.v3.core.character.CharacterIdentity;
+import com.onepunchcrafts.v3.minecraft.MinecraftCharacterAssignment;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
@@ -28,18 +19,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.contents.LiteralContents;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.effect.MobEffects;
-import net.minecraft.world.entity.ai.attributes.Attributes;
 
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.onepunchcrafts.OnePunchCrafts.*;
-import static com.onepunchcrafts.util.HelpUtility.removeGodLevelEffectSet;
-import static com.onepunchcrafts.util.HelpUtility.removeSaitamaEffectsSet;
 
 public class OneUtilCommand {
 
@@ -121,18 +106,9 @@ public class OneUtilCommand {
         return arguments -> {
             CommandSourceStack source = arguments.getSource();
             boolean isSaitama = arguments.getArgument("isSaitama", Boolean.class);
-            ServerPlayer player = arguments.getArgument(target, EntitySelector.class).findSinglePlayer(source);
-            SkillPack skillPack = WITHOUT_PACK;
-            OnePunchPlayer cap = player.getCapability(ONE_PLAYER_CAPABILITY).orElse(new OnePunchPlayer(skillPack));
-            cap.setSkillPack(skillPack);
-            if (isSaitama) OnePunchV3.POWERS.assign(cap.getPowerState(), SaitamaContent.POWER_SET);
-            else OnePunchV3.POWERS.clear(cap.getPowerState());
-            if (!isSaitama) {
-                HelpUtility.setAttributesToDefault(player);
-                removeSaitamaEffectsSet(player);
-            }
-            HelpUtility.syncWithPlayer(player, cap);
-            NetworkRegister.sendToPlayer(player, new PowerStateSnapshotPacket(PowerStateCodec.encode(cap.getPowerState())));
+            var player = arguments.getArgument(target, EntitySelector.class).findSinglePlayer(source);
+            MinecraftCharacterAssignment.assign(player,
+                    isSaitama ? CharacterIdentity.SAITAMA : CharacterIdentity.NONE);
             source.sendSuccess(() -> MutableComponent.create(new LiteralContents("sucess")), false);
             return 1;
         };
@@ -142,19 +118,9 @@ public class OneUtilCommand {
         return arguments -> {
             CommandSourceStack source = arguments.getSource();
             boolean isBoros = arguments.getArgument("isBoros", Boolean.class);
-            ServerPlayer player = arguments.getArgument(target, EntitySelector.class).findSinglePlayer(source);
-            SkillPack skillPack = isBoros ? new BorosPack() : WITHOUT_PACK;
-            OnePunchPlayer cap = HelpUtility.getSkillData(player);
-            cap.setSkillPack(skillPack);
-            OnePunchV3.POWERS.clear(cap.getPowerState());
-            if (!isBoros) {
-                HelpUtility.setAttributesToDefault(player);
-                player.getAttribute(Attributes.MAX_HEALTH).setBaseValue(20);
-                removeGodLevelEffectSet(player);
-                player.removeEffect(MobEffects.REGENERATION);
-            }
-            HelpUtility.syncWithPlayer(player, cap);
-            TickScheduler.scheduleFromHere(Duration.ofMillis(300), () -> player.setHealth(new BorosPack().getMAX_HEALTH()));
+            var player = arguments.getArgument(target, EntitySelector.class).findSinglePlayer(source);
+            MinecraftCharacterAssignment.assign(player,
+                    isBoros ? CharacterIdentity.BOROS : CharacterIdentity.NONE);
             source.sendSuccess(() -> MutableComponent.create(new LiteralContents("sucess")), false);
             return 1;
         };
