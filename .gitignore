@@ -14,15 +14,21 @@ out
 .idea
 
 # gradle
-build
+/build/
 .gradle
 
-# other
+# local secrets
+.env
+.env.*
+!.env.example
+
+# local runtime data
 eclipse
-run
-run-data
+/run/
+/run-data/
+/run[0-9]*/
 src/generated
-libs
+/libs/
 changelog.txt
 
 # Files from Forge MDK

@@ -1,0 +1,96 @@
+ONE PUNCH CRAFTS PROPRIETARY SOURCE LICENSE
+Version 1.0 — 18 July 2026
+
+Copyright (c) 2024-present Miguel Lopes Santos Delmondes.
+All rights reserved.
+
+1. Scope
+
+This license applies to the One Punch Crafts source code, assets,
+documentation, and other original material in this repository (the
+"Project") for which Miguel Lopes Santos Delmondes is the copyright owner
+(the "Owner"). Third-party material remains governed by its respective
+license and notices, including those identified in THIRD_PARTY_NOTICES.txt.
+
+The Project is source-available proprietary software. It is not open-source
+or free software.
+
+2. Reservation of rights
+
+Except for the limited permissions expressly stated in Section 3, no right
+or license is granted. The Owner reserves every copyright, neighboring
+right, database right, trademark right, patent right, and other intellectual
+property right in the Project.
+
+3. Limited permission
+
+Subject to this license, the Owner permits an individual to:
+
+  a. view the source code in this repository;
+  b. use GitHub's built-in fork functionality only to the extent required by
+     GitHub's terms and functionality;
+  c. download, compile, and run an unmodified copy solely for personal,
+     non-commercial use; and
+  d. prepare modifications privately solely for personal evaluation or for
+     submission to the Owner as a Contribution under
+     CONTRIBUTOR_ASSIGNMENT.md.
+
+These permissions are personal, limited, non-exclusive, non-transferable,
+non-sublicensable, and revocable upon breach. They do not permit publishing
+or distributing a fork or modified copy outside the functionality that
+GitHub necessarily provides for a public fork.
+
+4. Prohibited conduct
+
+Without the Owner's prior written permission, you may not:
+
+  a. copy, redistribute, republish, mirror, sublicense, sell, rent, lease, or
+     otherwise provide the Project or a substantial portion of it to another
+     person, whether in source or binary form;
+  b. distribute modified versions, derivative works, ports, or competing
+     products based on the Project;
+  c. use the Project or any part of it for commercial purposes, paid
+     services, monetized content, or commercial hosting;
+  d. incorporate the Project's code or assets into another project;
+  e. remove or alter copyright, license, attribution, or proprietary notices;
+     or
+  f. represent that an unofficial build, fork, or modification is authorized
+     by or affiliated with the Owner.
+
+5. Contributions
+
+Permission to submit a Contribution is conditioned on the contributor's
+explicit acceptance of CONTRIBUTOR_ASSIGNMENT.md. Submission alone does not
+oblige the Owner to review, accept, use, or compensate the contributor.
+
+6. Third-party material
+
+This license does not change, replace, or restrict any license that applies
+to third-party material. Where third-party terms conflict with this license,
+those terms control only for the applicable third-party material.
+
+7. Termination
+
+The permissions in Section 3 terminate automatically upon breach. Upon
+termination, you must stop using the Project and delete copies under your
+control, except where retention is required by law or GitHub's operation.
+
+8. No trademark license
+
+No permission is granted to use the names, logos, branding, or trademarks of
+One Punch Crafts or the Owner except to identify the unmodified Project in a
+factually accurate manner.
+
+9. Disclaimer and limitation of liability
+
+THE PROJECT IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE, TITLE, AND NON-INFRINGEMENT. TO THE MAXIMUM EXTENT PERMITTED BY LAW,
+THE OWNER SHALL NOT BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY
+ARISING FROM OR RELATED TO THE PROJECT OR ITS USE.
+
+10. Written exceptions
+
+Any permission outside this license must be granted in a separate written
+instrument signed by the Owner. A failure to enforce a provision is not a
+waiver of that provision or any other right.

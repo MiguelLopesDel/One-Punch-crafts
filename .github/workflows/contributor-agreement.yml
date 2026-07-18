@@ -1,0 +1,61 @@
+name: Contributor agreement
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify explicit acceptance and commit sign-offs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.pull_request.body || '';
+            const requiredAcceptances = [
+              'CLA_ACCEPT',
+              'CLA_SIGNOFF',
+              'CLA_AUTHORITY'
+            ];
+
+            const missingAcceptances = requiredAcceptances.filter((marker) => {
+              const pattern = new RegExp(
+                `<!--\\s*${marker}\\s*-->\\s*\\r?\\n- \\[[xX]\\]`
+              );
+              return !pattern.test(body);
+            });
+
+            if (missingAcceptances.length > 0) {
+              core.setFailed(
+                `Contributor agreement boxes not accepted: ${missingAcceptances.join(', ')}`
+              );
+              return;
+            }
+
+            const commits = await github.paginate(
+              github.rest.pulls.listCommits,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+                per_page: 100
+              }
+            );
+
+            const signoff = /^Signed-off-by:\s+[^<>\r\n]+\s+<[^<>\s]+@[^<>\s]+>\s*$/im;
+            const unsigned = commits.filter(
+              (commit) => !signoff.test(commit.commit.message || '')
+            );
+
+            if (unsigned.length > 0) {
+              core.setFailed(
+                `Commits missing a valid Signed-off-by line: ${unsigned
+                  .map((commit) => commit.sha.slice(0, 12))
+                  .join(', ')}`
+              );
+            }
