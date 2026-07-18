@@ -3,9 +3,9 @@
 **Status:** aceita — implementação em andamento (RFC 0001 superseded)
 **Data:** 2026-07-18
 
-**Implementação:** núcleo, adapters e corte vertical do Saitama iniciados em
+**Implementação:** núcleo, adapters e corte vertical do Saitama presentes em
 `com.onepunchcrafts.v3`; decisões fundadoras registradas em `docs/adr/0001` a
-`0003`. O port segue a estratégia C deste RFC, não uma bridge no fluxo legado.
+`0004`. O port segue a estratégia C deste RFC, não uma bridge no fluxo legado.
 
 O RFC 0001 propõe evoluir o molde atual. Este RFC responde à pergunta maior:
 *se o mod fosse desenhado hoje, do zero, qual seria a arquitetura?* — com os
@@ -13,6 +13,22 @@ requisitos: flexível, extensível por terceiros (API), fácil de adicionar
 skills/personagens, tipos de habilidade imprevistos, timeline visual+física
 unificada, performático, e estruturalmente imune às classes de bug que o
 design atual produz (sincronia, auto-referência, ordem de execução).
+
+### Estado em 2026-07-18
+
+Este RFC descreve a arquitetura-alvo. No baseline publicado:
+
+- **implementado:** registries congeláveis, `PowerState`, seleção por ID,
+  `Ability`/`AttackPlan`/`Timeline`, `Strike`, `Effect`, `DamagePipeline`,
+  adapters Minecraft, persistência versionada, intents/deltas básicos, testes
+  do núcleo e o corte vertical do Saitama;
+- **transitório:** cues ainda projetam parte da apresentação por packets
+  existentes, e o runtime convive com o legado para personagens não portados;
+- **pendente:** port do Boros, PowerSets/balance externos ao código, conclusão
+  dos deltas por componente e remoção do núcleo legado.
+
+Uma decisão aceita não significa que toda a seção já foi portada; este quadro
+é a referência de progresso até o legado desaparecer.
 
 ---
 
@@ -78,9 +94,9 @@ Tag          estado declarativo hierárquico (state.form.meteoric, immune.iframe
 Cue          apresentação por id, disparada pela Timeline com o MESMO relógio
 ```
 
-Regra de ouro: **gameplay nunca toca eventos vanilla, atributos vanilla ou
-entidades de outros mods diretamente**. Tudo passa por Effects e pela
-DamagePipeline; o vanilla é adaptado nas bordas por dois adapters.
+Regra de ouro: **o núcleo de gameplay nunca toca eventos vanilla, atributos
+vanilla ou entidades de outros mods diretamente**. Tudo passa por Effects e
+pela DamagePipeline; o Minecraft/Forge é adaptado nas bordas.
 
 ---
 
@@ -88,20 +104,25 @@ DamagePipeline; o vanilla é adaptado nas bordas por dois adapters.
 
 ### 3.1 Componentes por jogador (estado)
 
-Uma capability única com um mapa pequeno de componentes serializados por
-**Codec** (versionável, sem strings NBT à mão):
+Uma capability única com um mapa pequeno de componentes. O estado durável é
+serializado por **Codec** (versionável, sem strings NBT à mão); timelines e
+outros estados efêmeros obedecem a uma política explícita de ciclo de vida:
 
 ```java
 PowerIdentity   // ResourceLocation do PowerSet ("onepunchcrafts:boros")
 AttributeMap    // valores base + modificadores ativos
 EffectContainer // efeitos ativos (duração, stacks, fonte)
-AbilityBook     // estado por ability: cooldown, timeline em andamento
+AbilityBook     // seleção, cooldown e timelines em andamento
 ResourceMap     // pools nomeados (energy, ...) com regras de regen
 TagSet          // tags ativas (derivadas de efeitos e formas)
 ```
 
 Cada componente tem dirty-flag; sync desce por delta de componente — nunca o
 objeto inteiro, nunca por reflection-compare.
+
+Na política inicial, timelines são `CANCEL_ON_LOGOUT`: o Codec não promete
+retomar ações em andamento. Torná-las retomáveis exigirá persistir timeline,
+cursor, alvos capturados e parâmetros como uma decisão posterior explícita.
 
 ### 3.2 Ability + Timeline: um relógio só
 
@@ -125,9 +146,9 @@ public final class SeriousPunchAbility extends TimelineAbility {
   `(cueId, startTick, params)`; o cliente reproduz a fase certa a partir do
   mesmo tick de origem. Um relógio, duas projeções — física e visual não
   podem mais divergir.
-- Timeline é estado do `AbilityBook`: relog no meio do windup retoma ou
-  cancela *limpo* (hoje: lambdas órfãs no TickScheduler capturando player
-  morto).
+- Timeline é estado do `AbilityBook`: relog no meio do windup cancela *limpo*
+  pela política inicial `CANCEL_ON_LOGOUT` (hoje: lambdas órfãs no
+  TickScheduler capturando player morto).
 - Tipos novos de habilidade = **primitivas novas de Timeline/Effect**
   (canalizada, em área persistente, transformação, contra-golpe...), não
   interfaces novas.
@@ -206,18 +227,21 @@ VERIFY(resultado/fallback)        // garante Unstoppable para alvo elegível
 ```
 
 - **Compat com criaturas de outros mods** (o motivo original do flux):
-  handlers de `INTERCEPT` registrados via API com chave de ordenação —
-  o caso Wroughtnaut/Draconic vira um interceptor declarado, não um
-  `pierceDefenses()` com três fallbacks.
+  handlers de `INTERCEPT` registrados via API com chave de ordenação tratam
+  regras conhecidas antes da aplicação. Uma entidade que simplesmente nega
+  `hurt()` — como o Wroughtnaut fora do ponto fraco — é tratada pela
+  verificação/fallback de Unstoppable, não exige um interceptor especial.
 - `TARGET_POLICY` resolve primeiro a Saitama Invulnerability. Para qualquer
   outro alvo, `Tier.SERIOUS` **aplica** morte pelo caminho do próprio
   pipeline — nunca mais des-cancelar `LivingDeathEvent`.
 - I-frames são política por tier no `CLAMP` — a rajada nunca mais luta
   contra `invulnerableTime`.
-- **Adapters nas bordas**: `VanillaInbound` (dano vanilla/outros mods
+- **Adapters de dano nas bordas**: `VanillaInbound` (dano vanilla/outros mods
   atingindo um personagem → vira DamageSpec `Tier.MUNDANE`+tags) e
   `VanillaOutbound` (DamageSpec aplicado a entidade comum → `hurt()` com
-  DamageSource do mod). São os únicos dois pontos que tocam eventos Forge.
+  DamageSource do mod). São os únicos pontos da resolução de dano que conhecem
+  Forge/Minecraft; adapters de input, persistência e apresentação formam
+  outras bordas independentes.
 
 #### 3.4.1 "Unstoppable": a intenção dos `setCanceled`, promovida a conceito
 
@@ -364,7 +388,7 @@ menos, cracks/debris/cinemática pendurados no mesmo relógio.
 | I-frames engolindo rajada | Política de i-frame por tier no `CLAMP` |
 | Eco/auto-referência de sync | Intents sobem, deltas descem; estado nunca sobe |
 | Timer visual ≠ timer físico | Timeline única no servidor; cue carrega `startTick` |
-| Lambdas órfãs no scheduler | Timeline é estado serializado do AbilityBook |
+| Lambdas órfãs no scheduler | Timeline é estado explícito do AbilityBook e cancela no logout |
 | Tag+scan global (`targetnormalpunch`) | Effect com `onExpire` no alvo |
 | Atributos reescritos por tick | AttributeSystem aplica só quando muda |
 | Crash client-class em servidor dedicado | Cue é id; handler só existe no client |
@@ -410,7 +434,6 @@ Três caminhos:
   portar Boros; deletar o legado. O mod compila e roda em todas as etapas —
   personagens ainda não portados continuam no sistema velho até a sua vez.
 
-Se (C) for a escolha, o RFC 0001 fica **superseded** (as boas ideias dele —
-IDs, tiers, config, dispatcher único — estão aqui em forma final) e as
-primeiras decisões viram ADRs: adoção do modelo ability/effect/cue,
-unidirecionalidade da rede, e tiers de dano.
+A estratégia (C) foi aceita. O RFC 0001 está **superseded**; suas boas ideias
+— IDs, tiers, dados de balance e dispatcher único — aparecem aqui em forma
+final. As decisões vigentes estão em `docs/adr/0001` a `0004`.

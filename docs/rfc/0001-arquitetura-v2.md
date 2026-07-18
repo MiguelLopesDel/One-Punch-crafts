@@ -1,7 +1,11 @@
 # RFC 0001 — Arquitetura v2 do OnePunchCrafts
 
-**Status:** proposta (aguardando decisões da seção 6)
+**Status:** superseded pelo RFC 0002
 **Data:** 2026-07-18
+
+> Documento histórico. A alternativa incremental foi rejeitada quando o
+> rewrite por fatias verticais do RFC 0002 foi aceito. As decisões vigentes
+> estão nos ADRs, não na seção 6 deste documento.
 
 A arquitetura atual foi desenhada há mais de um ano e cresceu por acreção:
 cada personagem novo, skill nova e mecânica nova foi encaixada no molde que
@@ -251,7 +255,7 @@ CSRC), TickScheduler para efeitos fire-and-forget.
 
 ---
 
-## 6. Decisões
+## 6. Encerramento das decisões
 
 **Decidida — duas entradas por skill de soco:** a skill selecionada recebe o
 clique esquerdo como `PrimaryAttackIntent` e a tecla de skill como
@@ -261,12 +265,12 @@ ativação direcional sem alvo de melee. Cada plano/timeline captura sua
 identidade ao começar; skills compostas invocam Strikes sem alterar a
 seleção.
 
-**Em aberto:**
+As perguntas que pertenciam a esta alternativa foram encerradas pelo desenho
+v3:
 
-1. **Semântica do dano** (bloqueia F4): dano absoluto por tier (proposta) ou
-   manter multiplicador sobre o hit vanilla (soco escala com arma/crit)?
-2. **Registry**: mapa próprio (proposta, simples) ou custom registry Forge
-   (necessário só se quisermos skills definidas por datapack no futuro)?
-3. **Config**: TOML server config (proposta) ou datapack JSON por pack?
+1. dano é absoluto e semanticamente classificado por `DamageTier`/Strike;
+2. IDs namespaced vivem em registries próprios congelados no bootstrap;
+3. PowerSets e balance caminham para dados versionados, mantendo código apenas
+   para comportamento genuinamente novo.
 
-Decididas as três restantes, cada uma vira um ADR curto em `docs/adr/`.
+Consulte o RFC 0002 e `docs/adr/0001` a `0004` para as decisões aceitas.

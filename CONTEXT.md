@@ -28,10 +28,10 @@ _Avoid_: category, tab
 ### Combat
 
 **Flux**:
-The server-side stream of combat events (attack, hurt, damage, death) that is
-offered to the Packs of both the victim and the attacker, letting each apply its
-rules (multipliers, mitigation, cancellation).
-_Avoid_: event pipeline, damage hook
+The ordered resolution of a Strike, where attacker rules, target rules and
+world rules may influence the attempted hit before its outcome is observed.
+Forge's event sequence is an integration mechanism, not the Flux itself.
+_Avoid_: EventBus relay, damage hook
 
 **Strike**:
 A single offensive action whose identity is fixed when it starts. It may be
@@ -64,19 +64,25 @@ A composite Saitama Skill that teleports him through nearby targets and delivers
 a Normal Punch Strike to each one.
 _Avoid_: Consecutive Normal Punches, normal punch army
 
+**Quick Backstab**:
+A composite Saitama Skill that acquires a distant target, teleports Saitama to
+it and delivers one Normal Punch Strike.
+_Avoid_: Primary Attack, Weak Punch
+
 **Serious Punch**:
-Saitama's finisher bypasses every form of mitigation and defeats every
-non-Saitama target; a Saitama target survives even another Saitama's Serious
-Punch. Its Primary Attack delivers a direct Serious Strike plus the full
-sequence; its Skill Activation releases the aimed sequence without requiring a
-melee target.
+Saitama's finisher bypasses every form of mitigation and defeats every eligible
+non-Saitama combat target; a Saitama target survives even another Saitama's
+Serious Punch. Creative and spectator players are outside the eligible target
+set. Its Primary Attack delivers a direct Serious Strike plus the full sequence;
+its Skill Activation releases the aimed sequence without requiring a melee
+target.
 _Avoid_: ultimate punch
 
 **Unstoppable**:
-A damage rule: against a target not protected by Saitama Invulnerability, once
-the hit lands its outcome cannot be denied by defense, cancellation,
-invulnerability or event interference. Serious Punch is the canonical
-unstoppable attack.
+A damage rule: against an eligible target not protected by Saitama
+Invulnerability, once the hit lands its outcome cannot be denied by defense,
+cancellation, invulnerability or event interference. Serious Punch is the
+canonical unstoppable attack.
 _Avoid_: uncancellable, bypass damage
 
 **Saitama Invulnerability**:
@@ -84,10 +90,10 @@ The absolute durability rule of a Saitama target: attacks cannot damage or kill
 him, including a Serious Punch delivered by another Saitama.
 _Avoid_: Unstoppable exemption list, event cancellation
 
-**Serious-damage threshold**:
-The damage magnitude (≥10¹²) that marks an attack as Serious Punch territory.
-Mitigation and caps do not apply at or above it; Saitama Invulnerability still
-takes precedence.
+**Damage Tier**:
+The semantic class of a Strike's damage. Rules such as mitigation, caps and
+Unstoppable depend on the tier, never on crossing a numeric threshold.
+_Avoid_: damage threshold, giant multiplier
 
 **Mitigation**:
 Boros' durability rule: each Form takes only a fraction of incoming damage, and
@@ -97,8 +103,8 @@ _Avoid_: resistance, armor (armor is a Form, not the rule)
 ### Boros
 
 **Form**:
-Boros' current combat stance: **Armored** (0), **Released** (1) or **Meteoric
-Burst** (2). Form scales power, speed, mitigation and regeneration.
+Boros' current combat stance: **Armored**, **Released** or **Meteoric Burst**.
+Form scales power, speed, mitigation and regeneration.
 _Avoid_: mode, stage
 
 **Energy**:
