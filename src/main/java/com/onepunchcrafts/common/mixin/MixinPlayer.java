@@ -1,6 +1,6 @@
 package com.onepunchcrafts.common.mixin;
 
-import com.onepunchcrafts.v3.minecraft.MinecraftPowerDispatcher;
+import com.onepunchcrafts.minecraft.MinecraftPowerDispatcher;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.resources.ResourceLocation;

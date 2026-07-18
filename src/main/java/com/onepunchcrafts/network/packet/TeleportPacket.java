@@ -47,7 +47,7 @@ public class TeleportPacket {
 
     public void handle(Supplier<NetworkEvent.Context> ctx) {
         ServerPlayer player = ctx.get().getSender();
-        if (player != null && HelpUtility.isV3Saitama(player)) teleport(player);
+        if (player != null && HelpUtility.hasSaitamaPowerSet(player)) teleport(player);
         HelpUtility.verifyIsSaitamaAndGetCapability(player).ifPresent(cap -> {
             teleport(player);
         });

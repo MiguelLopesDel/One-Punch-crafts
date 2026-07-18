@@ -1,7 +1,7 @@
 package com.onepunchcrafts.common.event;
 
 import com.onepunchcrafts.util.HelpUtility;
-import com.onepunchcrafts.v3.content.SaitamaContent;
+import com.onepunchcrafts.content.SaitamaContent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -25,7 +25,7 @@ public class PlayerInteractEventhandler {
     @SubscribeEvent
     public static void breakBlocks(PlayerInteractEvent.LeftClickBlock event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            if (HelpUtility.hasV3Tag(player, SaitamaContent.TAG_BREAK_BLOCKS)) {
+            if (HelpUtility.hasPowerTag(player, SaitamaContent.TAG_BREAK_BLOCKS)) {
                 Level level = event.getLevel();
                 BlockPos pos = event.getPos();
                 everyDrop(level.getBlockState(pos), level, pos, player);

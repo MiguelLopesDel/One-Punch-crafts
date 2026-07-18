@@ -139,7 +139,7 @@ public class SeriousPunch implements Skill {
         });
     }
 
-    /** Physical release used by both the legacy entry and the v3 Timeline Adapter. */
+    /** Physical release used by both the legacy entry and the power Timeline Adapter. */
     public static void releaseSeriousPunch(ServerPlayer player, ServerLevel serverLevel, Vec3 lookVec) {
         Vec3 fist = player.getEyePosition().add(lookVec.scale(1.2));
         Vec3 cylinderStartPos = player.position().add(lookVec.scale(3));
@@ -149,7 +149,7 @@ public class SeriousPunch implements Skill {
         releaseSeriousPunch(player, serverLevel, lookVec, fist, blockPos);
     }
 
-    /** Release-only presentation; v3 owns destruction/damage as explicit jobs. */
+    /** Release-only presentation; the power runtime owns destruction/damage as explicit jobs. */
     public static void releaseSeriousVisuals(ServerPlayer player, ServerLevel serverLevel, Vec3 lookVec) {
         Vec3 fist = player.getEyePosition().add(lookVec.scale(1.2));
         carveGroundCracks(serverLevel, player, lookVec);

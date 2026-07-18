@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static com.onepunchcrafts.common.event.PlayerInteractEventhandler.everyDrop;
-import com.onepunchcrafts.v3.content.SaitamaContent;
+import com.onepunchcrafts.content.SaitamaContent;
 
 public class CheckAndDestructionBlockInAroundPacket {
 
@@ -42,7 +42,7 @@ public class CheckAndDestructionBlockInAroundPacket {
     public void handle(Supplier<NetworkEvent.Context> ctx) {
         ServerPlayer player = ctx.get().getSender();
         ctx.get().enqueueWork(() -> {
-            if (player != null && HelpUtility.hasV3Tag(player, SaitamaContent.TAG_EXTREME_SPEED))
+            if (player != null && HelpUtility.hasPowerTag(player, SaitamaContent.TAG_EXTREME_SPEED))
                 destroy(player);
             HelpUtility.verifyIsSaitamaAndGetCapability(player).ifPresent(cap -> {
                 destroy(player);

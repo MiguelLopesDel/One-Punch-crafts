@@ -2,7 +2,7 @@ package com.onepunchcrafts.common.event;
 
 import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
 import com.onepunchcrafts.util.HelpUtility;
-import com.onepunchcrafts.v3.minecraft.MinecraftPowerDispatcher;
+import com.onepunchcrafts.minecraft.MinecraftPowerDispatcher;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;

@@ -3,15 +3,18 @@ package com.onepunchcrafts.client.event;
 import com.onepunchcrafts.common.skills.SkillPack;
 import com.onepunchcrafts.common.skills.boros.BorosConfig;
 import com.onepunchcrafts.common.skills.boros.BorosPack;
+import com.onepunchcrafts.client.power.TechniquePresentation;
 import com.onepunchcrafts.util.HelpUtility;
-import com.onepunchcrafts.v3.api.Id;
-import com.onepunchcrafts.v3.content.SaitamaContent;
-import com.onepunchcrafts.v3.core.state.PowerState;
+import com.onepunchcrafts.api.Id;
+import com.onepunchcrafts.api.Technique;
+import com.onepunchcrafts.runtime.OnePunchRuntime;
+import com.onepunchcrafts.runtime.state.PowerState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -35,7 +38,7 @@ public class RenderGuiEventHandler {
 
         PowerState state = HelpUtility.getSkillData(player).getPowerState();
         if (!state.powerSetId().equals(PowerState.NONE)) {
-            renderV3Ability(state, width, height, font, guiGraphics);
+            renderTechnique(state, width, height, font, guiGraphics);
             return;
         }
         SkillPack pack = HelpUtility.getSkillData(player).getSkillPack();
@@ -46,37 +49,41 @@ public class RenderGuiEventHandler {
         }
     }
 
-    private static void renderV3Ability(PowerState state, int width, int height, Font font, GuiGraphics graphics) {
-        Id ability = state.abilities().selectedAbility();
-        String key = ability.equals(SaitamaContent.WEAK_PUNCH) ? "skill.saitama.weak_punch"
-                : ability.equals(SaitamaContent.NORMAL_PUNCH) ? "skill.saitama.normal_punch"
-                : ability.equals(SaitamaContent.SERIOUS_PUNCH) ? "skill.saitama.serious_punch"
-                : ability.equals(SaitamaContent.WEAKENING_PUNCH) ? "skill.saitama.weakening_punch"
-                : ability.equals(SaitamaContent.QUICK_BACKSTAB) ? "skill.saitama.quick_backstab"
-                : ability.equals(SaitamaContent.NORMAL_PUNCHES_IN_AREA) ? "skill.saitama.normalpuncharmy"
-                : ability.equals(SaitamaContent.DASH) ? "skill.saitama.dash"
-                : ability.equals(SaitamaContent.SERIOUS_FART) ? "skill.saitama.serious_fart"
-                : ability.equals(SaitamaContent.SPEED) ? "skill.saitama.super_speed"
-                : ability.equals(SaitamaContent.BREAK_BLOCKS) ? "skill.saitama.break_blocks_quickly"
-                : ability.equals(SaitamaContent.WEIGHT) ? "skill.saitama.set_weight"
-                : ability.equals(SaitamaContent.KNOCKBACK_RESISTANCE) ? "skill.saitama.knockback_resistance"
-                : ability.equals(SaitamaContent.ATTACK_KNOCKBACK) ? "skill.saitama.attack_knockback"
-                : ability.equals(SaitamaContent.SWIM_SPEED) ? "skill.saitama.swim_speed"
-                : ability.equals(SaitamaContent.EXTREME_SPEED) ? "skill.saitama.extreme_speed"
-                : "skill.saitama.extreme_jump";
-        Id attribute = ability.equals(SaitamaContent.SPEED) ? SaitamaContent.ATTR_SPEED
-                : ability.equals(SaitamaContent.WEIGHT) ? SaitamaContent.ATTR_WEIGHT
-                : ability.equals(SaitamaContent.KNOCKBACK_RESISTANCE) ? SaitamaContent.ATTR_KNOCKBACK_RESISTANCE
-                : ability.equals(SaitamaContent.ATTACK_KNOCKBACK) ? SaitamaContent.ATTR_ATTACK_KNOCKBACK
-                : ability.equals(SaitamaContent.SWIM_SPEED) ? SaitamaContent.ATTR_SWIM_SPEED : null;
-        Component text = attribute == null ? Component.translatable(key)
-                : Component.translatable(key, (int) state.attributes().base(attribute));
-        boolean disabledToggle = (ability.equals(SaitamaContent.SERIOUS_FART) && !state.tags().contains(SaitamaContent.TAG_SERIOUS_FART))
-                || (ability.equals(SaitamaContent.BREAK_BLOCKS) && !state.tags().contains(SaitamaContent.TAG_BREAK_BLOCKS))
-                || (ability.equals(SaitamaContent.EXTREME_SPEED) && !state.tags().contains(SaitamaContent.TAG_EXTREME_SPEED))
-                || (ability.equals(SaitamaContent.EXTREME_JUMP) && !state.tags().contains(SaitamaContent.TAG_EXTREME_JUMP));
-        graphics.drawString(font, text, width / 2 - (int) (width * 0.05),
-                height / 2 + (int) (height * 0.25), disabledToggle ? 0xFF0000 : 0x00FF00, false);
+    private static void renderTechnique(PowerState state, int width, int height, Font font, GuiGraphics graphics) {
+        Id selected = state.abilities().selectedTechnique();
+        if (selected == null) return;
+        Technique technique;
+        try { technique = OnePunchRuntime.REGISTRIES.techniques.require(selected); }
+        catch (IllegalArgumentException ignored) { return; }
+
+        Component name = TechniquePresentation.name(technique, state);
+        var primary = TechniquePresentation.primary(technique);
+        var active = TechniquePresentation.active(technique);
+        int textWidth = font.width(name);
+        if (primary.isPresent()) textWidth = Math.max(textWidth, font.width(primary.orElseThrow()));
+        if (active.isPresent()) textWidth = Math.max(textWidth, font.width(active.orElseThrow()));
+
+        int panelWidth = Math.max(112, textWidth + 42);
+        int lines = 1 + (primary.isPresent() ? 1 : 0) + (active.isPresent() ? 1 : 0);
+        int panelHeight = Math.max(34, 8 + lines * (font.lineHeight + 1));
+        int x = width / 2 - panelWidth / 2;
+        int y = height / 2 + (int) (height * 0.21);
+        int background = TechniquePresentation.disabledToggle(technique, state) ? 0xD9803030 : 0xD9E9E4D8;
+        graphics.fill(x - 1, y - 1, x + panelWidth + 1, y + panelHeight + 1, 0xE6000000);
+        graphics.fill(x, y, x + panelWidth, y + panelHeight, background);
+
+        Id icon = technique.presentation().icon();
+        graphics.blit(new ResourceLocation(icon.namespace(), icon.path()), x + 4, y + (panelHeight - 28) / 2,
+                0, 0, 28, 28, 64, 64);
+        int textX = x + 36;
+        int lineY = y + 4;
+        graphics.drawString(font, name, textX, lineY, 0xFF090909, false);
+        lineY += font.lineHeight + 1;
+        if (primary.isPresent()) {
+            graphics.drawString(font, primary.orElseThrow(), textX, lineY, 0xFF303030, false);
+            lineY += font.lineHeight + 1;
+        }
+        if (active.isPresent()) graphics.drawString(font, active.orElseThrow(), textX, lineY, 0xFF303030, false);
     }
 
     private static void renderBorosEnergy(BorosPack boros, int width, int height, Font font, GuiGraphics guiGraphics) {

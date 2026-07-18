@@ -3,7 +3,8 @@ package com.onepunchcrafts.client.event;
 import com.onepunchcrafts.client.Keybinding;
 import com.onepunchcrafts.client.gui.CsrcOptionsScreen;
 import com.onepunchcrafts.client.gui.GuiDimension;
-import com.onepunchcrafts.client.v3.SaitamaClientSystem;
+import com.onepunchcrafts.client.gui.TechniqueWheelScreen;
+import com.onepunchcrafts.client.power.SaitamaClientSystem;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
 import com.onepunchcrafts.common.skills.boros.BorosPack;
 import com.onepunchcrafts.common.skills.saitama.ExtremeSpeed;
@@ -15,9 +16,10 @@ import com.onepunchcrafts.network.packet.BorosMovementInputPacket;
 import com.onepunchcrafts.network.packet.SeriousFartPacket;
 import com.onepunchcrafts.network.packet.SpecialSkillPacket;
 import com.onepunchcrafts.network.packet.TeleportPacket;
-import com.onepunchcrafts.network.packet.CastAbilityIntentPacket;
-import com.onepunchcrafts.network.packet.SelectAbilityIntentPacket;
-import com.onepunchcrafts.v3.core.state.PowerState;
+import com.onepunchcrafts.network.packet.ActivateTechniqueIntentPacket;
+import com.onepunchcrafts.network.packet.SwapTechniqueIntentPacket;
+import com.onepunchcrafts.runtime.state.PowerState;
+import com.onepunchcrafts.runtime.OnePunchRuntime;
 import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.util.TickClientScheduler;
 import com.onepunchcrafts.util.TickScheduler;
@@ -50,6 +52,10 @@ import static com.onepunchcrafts.OnePunchCrafts.MODID;
 public class ClientTickEventHandler {
 
     private static final List<Integer> tasks = new ArrayList<>();
+    private static final int TECHNIQUE_WHEEL_HOLD_TICKS = 4;
+    private static boolean techniqueKeyWasDown;
+    private static boolean techniqueWheelOpened;
+    private static int techniqueKeyHeldTicks;
 
     @SubscribeEvent
     public static void clientTick(TickEvent.ClientTickEvent event) throws Exception {
@@ -57,8 +63,9 @@ public class ClientTickEventHandler {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
         boolean playerExist = player != null;
-        buttonsManager(player, playerExist);
         if (event.phase == TickEvent.Phase.END) {
+            manageTechniqueSelector(minecraft, player);
+            buttonsManager(player, playerExist);
             sendBorosMovementInput(minecraft, player, playerExist);
             if (playerExist) SaitamaClientSystem.tick(player);
         }
@@ -80,9 +87,6 @@ public class ClientTickEventHandler {
     }
 
     private static void buttonsManager(LocalPlayer player, boolean playerExist) {
-        if (Keybinding.INSTANCE.CHANGE_SKILL.consumeClick() && playerExist) {
-            onKeyChangePressed();
-        }
         if (Keybinding.INSTANCE.SPECIAL_CHANGE_SKILL.consumeClick() && playerExist) {
             onKeySpecialChangePressed();
         }
@@ -100,10 +104,57 @@ public class ClientTickEventHandler {
             Minecraft.getInstance().setScreen(new CsrcOptionsScreen(null));
         }
         if (Keybinding.INSTANCE.OPEN_DIMENSIONS_GUI.consumeClick() && playerExist) {
-            if (HelpUtility.isV3Saitama(player) || HelpUtility.verifyIsSaitamaAndGetCapability(player).isPresent())
+            if (HelpUtility.hasSaitamaPowerSet(player) || HelpUtility.verifyIsSaitamaAndGetCapability(player).isPresent())
                 Minecraft.getInstance().setScreen(new GuiDimension(MutableComponent.create(new LiteralContents("Select Dimension"))));
             NetworkRegister.sendToServer(new TeleportPacket());
         }
+    }
+
+    private static void manageTechniqueSelector(Minecraft minecraft, LocalPlayer player) {
+        if (player == null) {
+            resetTechniqueKey();
+            return;
+        }
+        PowerState state = HelpUtility.getSkillData(player).getPowerState();
+        if (state.powerSetId().equals(PowerState.NONE)) {
+            resetTechniqueKey();
+            if (Keybinding.INSTANCE.CHANGE_SKILL.consumeClick()) onKeyChangePressed();
+            return;
+        }
+
+        while (Keybinding.INSTANCE.CHANGE_SKILL.consumeClick()) { /* edge is represented by isDown below */ }
+        boolean down = Keybinding.INSTANCE.CHANGE_SKILL.isDown();
+        if (down) {
+            if (!techniqueKeyWasDown) {
+                techniqueKeyHeldTicks = 0;
+                techniqueWheelOpened = false;
+            } else {
+                techniqueKeyHeldTicks++;
+            }
+            if (!techniqueWheelOpened && techniqueKeyHeldTicks >= TECHNIQUE_WHEEL_HOLD_TICKS
+                    && minecraft.screen == null) {
+                minecraft.setScreen(new TechniqueWheelScreen(state));
+                techniqueWheelOpened = true;
+            }
+        } else if (techniqueKeyWasDown) {
+            if (techniqueWheelOpened) {
+                if (minecraft.screen instanceof TechniqueWheelScreen wheel) wheel.confirmAndClose();
+            } else {
+                if (state.abilities().previousTechnique() != null) {
+                    OnePunchRuntime.POWERS.swapPrevious(state);
+                    state.consumeDirty();
+                }
+                NetworkRegister.sendToServer(new SwapTechniqueIntentPacket());
+            }
+            resetTechniqueKey();
+        }
+        techniqueKeyWasDown = down;
+    }
+
+    private static void resetTechniqueKey() {
+        techniqueKeyWasDown = false;
+        techniqueWheelOpened = false;
+        techniqueKeyHeldTicks = 0;
     }
 
     private static void onKeySpecialSkillPressed() {
@@ -111,7 +162,7 @@ public class ClientTickEventHandler {
         if (player != null) {
             PowerState state = HelpUtility.getSkillData(player).getPowerState();
             if (!state.powerSetId().equals(PowerState.NONE)) {
-                NetworkRegister.sendToServer(new CastAbilityIntentPacket(state.abilities().selectedAbility()));
+                NetworkRegister.sendToServer(new ActivateTechniqueIntentPacket(state.abilities().selectedTechnique()));
                 return;
             }
         }
@@ -121,8 +172,8 @@ public class ClientTickEventHandler {
     private static void managerAnimation(LocalPlayer player) {
         PowerState state = HelpUtility.getSkillData(player).getPowerState();
         if (!state.powerSetId().equals(PowerState.NONE)
-                && (state.abilities().selectedAbility().equals(com.onepunchcrafts.v3.content.SaitamaContent.WEAK_PUNCH)
-                || state.abilities().selectedAbility().equals(com.onepunchcrafts.v3.content.SaitamaContent.NORMAL_PUNCH))) {
+                && (state.abilities().selectedTechnique().equals(com.onepunchcrafts.content.SaitamaContent.WEAK_PUNCH)
+                || state.abilities().selectedTechnique().equals(com.onepunchcrafts.content.SaitamaContent.NORMAL_PUNCH))) {
             startAnimation(player, "multiple_punches");
             tasks.add(TickClientScheduler.scheduleFromHere(Duration.of(5, ChronoUnit.SECONDS), () -> stopAnimation(player)));
             return;
@@ -152,10 +203,7 @@ public class ClientTickEventHandler {
     private static void onKeySpecialChangePressed() {
         LocalPlayer player = Minecraft.getInstance().player;
         OnePunchPlayer data = HelpUtility.getSkillData(player);
-        if (!data.getPowerState().powerSetId().equals(PowerState.NONE)) {
-            NetworkRegister.sendToServer(new SelectAbilityIntentPacket(player.isShiftKeyDown() ? -1 : 1, true));
-            return;
-        }
+        if (!data.getPowerState().powerSetId().equals(PowerState.NONE)) return;
         data.decideCurrentGroup(player);
         HelpUtility.syncDataWithServer(data);
     }
@@ -163,10 +211,6 @@ public class ClientTickEventHandler {
     private static void onKeyChangePressed() {
         LocalPlayer player = Minecraft.getInstance().player;
         OnePunchPlayer data = HelpUtility.getSkillData(player);
-        if (!data.getPowerState().powerSetId().equals(PowerState.NONE)) {
-            NetworkRegister.sendToServer(new SelectAbilityIntentPacket(player.isShiftKeyDown() ? -1 : 1, false));
-            return;
-        }
         data.decideCurrentSkill(player);
         HelpUtility.syncDataWithServer(data);
     }

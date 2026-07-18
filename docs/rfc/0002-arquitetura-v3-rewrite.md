@@ -4,8 +4,9 @@
 **Data:** 2026-07-18
 
 **Implementação:** núcleo, adapters e corte vertical do Saitama presentes em
-`com.onepunchcrafts.v3`; decisões fundadoras registradas em `docs/adr/0001` a
-`0004`. O port segue a estratégia C deste RFC, não uma bridge no fluxo legado.
+`com.onepunchcrafts.api`, `runtime`, `content` e `minecraft`; decisões fundadoras
+registradas em `docs/adr/0001` a `0005`. `v3` nomeia este RFC histórico, não os
+pacotes permanentes. O port segue a estratégia C, não uma bridge no fluxo legado.
 
 O RFC 0001 propõe evoluir o molde atual. Este RFC responde à pergunta maior:
 *se o mod fosse desenhado hoje, do zero, qual seria a arquitetura?* — com os
@@ -19,7 +20,8 @@ design atual produz (sincronia, auto-referência, ordem de execução).
 Este RFC descreve a arquitetura-alvo. No baseline publicado:
 
 - **implementado:** registries congeláveis, `PowerState`, seleção por ID,
-  `Ability`/`AttackPlan`/`Timeline`, `Strike`, `Effect`, `DamagePipeline`,
+  `Technique`/`Ability`/`AttackPlan`/`Timeline`, páginas radiais, troca rápida,
+  `Strike`, `Effect`, `DamagePipeline`,
   adapters Minecraft, persistência versionada, intents/deltas básicos, testes
   do núcleo e o corte vertical do Saitama;
 - **transitório:** cues ainda projetam parte da apresentação por packets
@@ -82,11 +84,12 @@ indústria para exatamente este problema ("muitos personagens, muitas
 habilidades compostas, replicação, extensão por terceiros") — traduzido
 para os idiomas do Minecraft (capability, registries, codecs, SimpleChannel).
 
-Sete conceitos, cada um um módulo fundo:
+Oito conceitos, cada um um módulo fundo:
 
 ```
-PowerSet     quem você é: atributos base, passivas, loadout de Abilities
-Ability      duas entradas: Primary Attack opcional + ativação/Timeline
+PowerSet     quem você é: atributos, passivas e páginas de Techniques
+Technique    entrada selecionável: Primary Attack + ação ativa + apresentação
+Ability      comportamento executável referenciado por uma Technique
 Strike       um golpe atômico cuja identidade é fixada quando ele começa
 Effect       a ÚNICA forma de mudar estado: instantâneo/duração/periódico
 Attribute    números com base+modificadores (vida, dano, mitigação, custo)
@@ -153,26 +156,28 @@ public final class SeriousPunchAbility extends TimelineAbility {
   (canalizada, em área persistente, transformação, contra-golpe...), não
   interfaces novas.
 
-#### 3.2.1 Seleção roteia duas entradas; não vira estado do golpe
+#### 3.2.1 Technique roteia duas entradas; não vira estado do golpe
 
-Uma skill de soco tem dois gatilhos com propósitos diferentes. O clique é o
+Uma Technique de soco tem dois gatilhos com propósitos diferentes. O clique é o
 soco em si; a ativação executa a técnica composta ou oferece outra forma de
 entregar o mesmo golpe. A seleção decide quem recebe os gatilhos, mas não é
 consultada novamente durante os eventos ou ticks resultantes:
 
 ```java
 PrimaryAttackIntent(target)
-    → selectedAbility.onPrimaryAttack(context, target)
+    → selectedTechnique.primaryAbility.onPrimaryAttack(context, target)
     → AttackPlan                              // identidade capturada
 
-CastIntent(abilityId)
+ActivateTechniqueIntent(techniqueId)
+    → technique.activeAction
     → ability.activate(context)
     → Timeline                                // identidade capturada
 ```
 
-- O clique esquerdo resolve a skill selecionada **quando o ataque começa** e
+- O clique esquerdo resolve a Technique selecionada **quando o ataque começa** e
   recebe um `AttackPlan`. Trocar de seleção depois não transmuta o plano.
-- A ativação resolve a Ability por ID e sua Timeline armazena os `StrikeId`s
+- A ativação resolve a ação ativa da Technique e a Ability referenciada; sua
+  Timeline armazena os `StrikeId`s
   que emitirá. Uma rajada de Normal Punch continua normal mesmo se o jogador
   mudar a seleção enquanto ela roda.
 - `NormalPunchesInArea` invoca `Strikes.NORMAL_PUNCH` para cada alvo;
@@ -181,7 +186,7 @@ CastIntent(abilityId)
   preservam o gameplay
   atual sem `setCurrentSkill(...)` temporário.
 
-| Skill selecionada | `PrimaryAttackIntent` (clique) | `CastIntent` (ativação) |
+| Technique selecionada | `PrimaryAttackIntent` (clique) | `ActivateTechniqueIntent` |
 |---|---|---|
 | Normal Punch | um `NORMAL_PUNCH` no alvo | sequência de `NORMAL_PUNCH` no cone |
 | Weak Punch | um `WEAK_PUNCH` no alvo | sequência de `WEAK_PUNCH` em área próxima |
@@ -191,8 +196,8 @@ O Serious Punch reutiliza uma `SeriousPunchSequence` comum nas duas entradas;
 somente o plano do clique inclui também o alvo direto. Assim o cast alcança
 alvos distantes ou difíceis de acertar sem depender de um hit vanilla.
 
-`Strike` não substitui `Ability`: a Ability coordena uma ação/timeline;
-o Strike é uma unidade ofensiva reutilizável que ela ou o ataque manual emite.
+`Technique` não substitui `Ability`: a primeira roteia inputs e apresentação;
+a segunda coordena execução/timeline. Strike é a unidade ofensiva reutilizável.
 
 ### 3.3 Effects: a única porta de mudança de estado
 
@@ -387,7 +392,7 @@ menos, cracks/debris/cinemática pendurados no mesmo relógio.
 | Classe de bug hoje | O que a elimina na v3 |
 |---|---|
 | Ordem de execução de eventos | Pipeline com estágios fixos; vanilla só nas bordas |
-| Skill selecionada usada como relay | seleção só roteia o intent inicial; `AttackPlan`/Timeline capturam IDs |
+| Technique selecionada usada como relay | seleção só roteia o intent inicial; `AttackPlan`/Timeline capturam IDs |
 | Des-cancelar morte/dano | `TARGET_POLICY` preserva Saitama; `APPLY`/`VERIFY` garantem SERIOUS nos demais |
 | I-frames engolindo rajada | Política de i-frame por tier no `CLAMP` |
 | Eco/auto-referência de sync | Intents sobem, deltas descem; estado nunca sobe |
@@ -434,10 +439,10 @@ Três caminhos:
   F1/F2/F3 de lá são, na prática, aproximações tímidas de §3.2/§3.4/§3.5.
 - **(B) Big-bang rewrite:** o mod para de evoluir até tudo portar. Não.
 - **(C) Núcleo novo + port por fatia vertical** *(recomendado)*: construir o
-  núcleo v3 num pacote novo sem dependência do legado; portar Saitama;
+  runtime novo nos pacotes definitivos sem dependência do legado; portar Saitama;
   portar Boros; deletar o legado. O mod compila e roda em todas as etapas —
   personagens ainda não portados continuam no sistema velho até a sua vez.
 
 A estratégia (C) foi aceita. O RFC 0001 está **superseded**; suas boas ideias
 — IDs, tiers, dados de balance e dispatcher único — aparecem aqui em forma
-final. As decisões vigentes estão em `docs/adr/0001` a `0004`.
+final. As decisões vigentes estão em `docs/adr/0001` a `0005`.

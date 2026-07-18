@@ -11,9 +11,9 @@ import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.common.block.PortalBlock;
 import com.onepunchcrafts.common.block.entity.PortalBlockEntity;
 import com.onepunchcrafts.util.HelpUtility;
-import com.onepunchcrafts.v3.minecraft.PowerStateCodec;
-import com.onepunchcrafts.v3.OnePunchV3;
-import com.onepunchcrafts.v3.content.SaitamaContent;
+import com.onepunchcrafts.minecraft.PowerStateCodec;
+import com.onepunchcrafts.runtime.OnePunchRuntime;
+import com.onepunchcrafts.content.SaitamaContent;
 import com.onepunchcrafts.network.packet.PowerStateSnapshotPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -94,7 +94,7 @@ public class OnePunchCrafts {
             );
 
     public OnePunchCrafts() {
-        OnePunchV3.register(SaitamaContent::register);
+        OnePunchRuntime.register(SaitamaContent::register);
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
         // Register the commonSetup method for modloading
@@ -178,7 +178,7 @@ public class OnePunchCrafts {
     @SubscribeEvent
     public void commonSetup(FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
-            OnePunchV3.bootstrap();
+            OnePunchRuntime.bootstrap();
             NetworkRegister.registerMessages();
         });
     }

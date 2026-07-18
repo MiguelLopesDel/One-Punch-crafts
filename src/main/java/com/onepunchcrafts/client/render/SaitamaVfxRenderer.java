@@ -2,7 +2,7 @@ package com.onepunchcrafts.client.render;
 
 import com.onepunchcrafts.client.event.ScreenEffectHandler;
 import com.onepunchcrafts.network.packet.SaitamaVfxPacket;
-import com.onepunchcrafts.v3.content.ConsecutiveNormalPunches;
+import com.onepunchcrafts.content.ConsecutiveNormalPunches;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;

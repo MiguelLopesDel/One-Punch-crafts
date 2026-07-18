@@ -15,7 +15,7 @@ import static com.onepunchcrafts.OnePunchCrafts.MODID;
 public class NetworkRegister {
 
     private static int id = 0;
-    private static final String PROTOCOL_VERSION = "1";
+    private static final String PROTOCOL_VERSION = "2";
     private static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, "main"),
             () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals
     );
@@ -101,25 +101,30 @@ public class NetworkRegister {
                 .decoder(PowerStateSnapshotPacket::new)
                 .consumerMainThread(PowerStateSnapshotPacket::handle)
                 .add();
-        INSTANCE.messageBuilder(SelectAbilityIntentPacket.class, ++id, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(SelectAbilityIntentPacket::encode)
-                .decoder(SelectAbilityIntentPacket::new)
-                .consumerMainThread(SelectAbilityIntentPacket::handle)
+        INSTANCE.messageBuilder(SelectTechniqueIntentPacket.class, ++id, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(SelectTechniqueIntentPacket::encode)
+                .decoder(SelectTechniqueIntentPacket::new)
+                .consumerMainThread(SelectTechniqueIntentPacket::handle)
                 .add();
-        INSTANCE.messageBuilder(CastAbilityIntentPacket.class, ++id, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(CastAbilityIntentPacket::encode)
-                .decoder(CastAbilityIntentPacket::new)
-                .consumerMainThread(CastAbilityIntentPacket::handle)
+        INSTANCE.messageBuilder(SwapTechniqueIntentPacket.class, ++id, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(SwapTechniqueIntentPacket::encode)
+                .decoder(SwapTechniqueIntentPacket::new)
+                .consumerMainThread(SwapTechniqueIntentPacket::handle)
+                .add();
+        INSTANCE.messageBuilder(ActivateTechniqueIntentPacket.class, ++id, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(ActivateTechniqueIntentPacket::encode)
+                .decoder(ActivateTechniqueIntentPacket::new)
+                .consumerMainThread(ActivateTechniqueIntentPacket::handle)
                 .add();
         INSTANCE.messageBuilder(PowerComponentDeltaPacket.class, ++id, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(PowerComponentDeltaPacket::encode)
                 .decoder(PowerComponentDeltaPacket::new)
                 .consumerMainThread(PowerComponentDeltaPacket::handle)
                 .add();
-        INSTANCE.messageBuilder(AdjustPowerIntentPacket.class, ++id, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(AdjustPowerIntentPacket::encode)
-                .decoder(AdjustPowerIntentPacket::new)
-                .consumerMainThread(AdjustPowerIntentPacket::handle)
+        INSTANCE.messageBuilder(AdjustTechniqueIntentPacket.class, ++id, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(AdjustTechniqueIntentPacket::encode)
+                .decoder(AdjustTechniqueIntentPacket::new)
+                .consumerMainThread(AdjustTechniqueIntentPacket::handle)
                 .add();
     }
 

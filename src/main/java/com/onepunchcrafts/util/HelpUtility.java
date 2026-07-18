@@ -8,8 +8,8 @@ import com.onepunchcrafts.common.skills.SkillPack;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.AnimationPacket;
 import com.onepunchcrafts.network.packet.PlayerSyncPacket;
-import com.onepunchcrafts.v3.api.Id;
-import com.onepunchcrafts.v3.content.SaitamaContent;
+import com.onepunchcrafts.api.Id;
+import com.onepunchcrafts.content.SaitamaContent;
 import dev.kosmx.playerAnim.api.layered.IAnimation;
 import dev.kosmx.playerAnim.api.layered.ModifierLayer;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess;
@@ -230,11 +230,11 @@ public class HelpUtility {
                 || getSkillData(player).getPowerState().powerSetId().equals(SaitamaContent.POWER_SET));
     }
 
-    public static boolean isV3Saitama(Player player) {
+	public static boolean hasSaitamaPowerSet(Player player) {
         return getSkillData(player).getPowerState().powerSetId().equals(SaitamaContent.POWER_SET);
     }
 
-    public static boolean hasV3Tag(Player player, Id tag) {
+	public static boolean hasPowerTag(Player player, Id tag) {
         return getSkillData(player).getPowerState().tags().contains(tag);
     }
 

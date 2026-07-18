@@ -1,7 +1,7 @@
 package com.onepunchcrafts.common.mixin;
 
 import com.onepunchcrafts.util.HelpUtility;
-import com.onepunchcrafts.v3.content.SaitamaContent;
+import com.onepunchcrafts.content.SaitamaContent;
 import net.minecraft.network.TickablePacketListener;
 import net.minecraft.network.protocol.game.ServerGamePacketListener;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
@@ -32,13 +32,13 @@ public abstract class MixinServerGamePacketListenerImpl implements ServerPlayerC
 
     @Inject(method = "tick", at = @At(value = "FIELD", target = "Lnet/minecraft/server/network/ServerGamePacketListenerImpl;clientIsFloating:Z"))
     public void tick(CallbackInfo ci) {
-        if (HelpUtility.isV3Saitama(this.player)) this.clientIsFloating = false;
+        if (HelpUtility.hasSaitamaPowerSet(this.player)) this.clientIsFloating = false;
         else HelpUtility.getSaitamaPack(this.player).ifPresent(sai -> this.clientIsFloating = false);
     }
 
     @Redirect(method = "handleMovePlayer", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerPlayer;isChangingDimension()Z", ordinal = 0))
     public boolean isChangingDimension(ServerPlayer player) {
-        if (HelpUtility.isV3Saitama(this.player)) return true;
+        if (HelpUtility.hasSaitamaPowerSet(this.player)) return true;
         return HelpUtility.getSaitamaPack(this.player)
                 .map(p -> true)
                 .orElseGet(player::isChangingDimension);
@@ -46,7 +46,7 @@ public abstract class MixinServerGamePacketListenerImpl implements ServerPlayerC
 
     @ModifyVariable(method = "handleMovePlayer", at = @At("STORE"), ordinal = 2)
     public boolean modifyFlag2(boolean flag2) {
-        if (HelpUtility.hasV3Tag(this.player, SaitamaContent.TAG_EXTREME_SPEED) || HelpUtility.verifyIsSaitamaAndGetCapability(this.player)
+        if (HelpUtility.hasPowerTag(this.player, SaitamaContent.TAG_EXTREME_SPEED) || HelpUtility.verifyIsSaitamaAndGetCapability(this.player)
                 .map(cap -> cap.isExtremeSpeedActive())
                 .orElse(false)) {
             return false;
@@ -56,7 +56,7 @@ public abstract class MixinServerGamePacketListenerImpl implements ServerPlayerC
 
     @Redirect(method = "handleMovePlayer", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerGamePacketListenerImpl;isPlayerCollidingWithAnythingNew(Lnet/minecraft/world/level/LevelReader;Lnet/minecraft/world/phys/AABB;DDD)Z"))
     public boolean isPlayerCollidingWithAnythingNew(ServerGamePacketListenerImpl instance, LevelReader levelReader, AABB pLevel, double pBox, double pX, double pY) {
-        if (HelpUtility.hasV3Tag(this.player, SaitamaContent.TAG_EXTREME_SPEED) || HelpUtility.verifyIsSaitamaAndGetCapability(this.player)
+        if (HelpUtility.hasPowerTag(this.player, SaitamaContent.TAG_EXTREME_SPEED) || HelpUtility.verifyIsSaitamaAndGetCapability(this.player)
                 .map(cap -> cap.isExtremeSpeedActive())
                 .orElse(false)) {
             return false;

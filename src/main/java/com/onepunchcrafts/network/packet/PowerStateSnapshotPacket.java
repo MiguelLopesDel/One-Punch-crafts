@@ -1,7 +1,7 @@
 package com.onepunchcrafts.network.packet;
 
 import com.onepunchcrafts.util.HelpUtility;
-import com.onepunchcrafts.v3.minecraft.PowerStateCodec;
+import com.onepunchcrafts.minecraft.PowerStateCodec;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;

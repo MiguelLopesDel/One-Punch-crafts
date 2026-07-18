@@ -4,10 +4,10 @@ import com.onepunchcrafts.common.skills.Skill;
 import com.onepunchcrafts.common.skills.boros.BorosPack;
 import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
 import com.onepunchcrafts.common.skills.SkillPack;
-import com.onepunchcrafts.v3.core.state.PowerState;
-import com.onepunchcrafts.v3.minecraft.PowerStateCodec;
-import com.onepunchcrafts.v3.OnePunchV3;
-import com.onepunchcrafts.v3.content.SaitamaContent;
+import com.onepunchcrafts.runtime.state.PowerState;
+import com.onepunchcrafts.minecraft.PowerStateCodec;
+import com.onepunchcrafts.runtime.OnePunchRuntime;
+import com.onepunchcrafts.content.SaitamaContent;
 import it.unimi.dsi.fastutil.shorts.ShortConsumer;
 import lombok.Data;
 import lombok.NonNull;
@@ -26,6 +26,8 @@ import static com.onepunchcrafts.util.HelpUtility.syncDataWithServer;
 
 @Data
 public class OnePunchPlayer {
+	private static final String POWER_STATE_KEY = "power_state";
+	private static final String LEGACY_POWER_STATE_KEY = "v3";
 
     @NonNull
     @Setter
@@ -38,7 +40,7 @@ public class OnePunchPlayer {
 
     public Tag writeNBT() {
         CompoundTag nbt = (CompoundTag) skillPack.writeNBT();
-        nbt.put("v3", PowerStateCodec.encode(powerState));
+		nbt.put(POWER_STATE_KEY, PowerStateCodec.encode(powerState));
         return nbt;
     }
 
@@ -50,11 +52,13 @@ public class OnePunchPlayer {
             default -> WITHOUT_PACK;
         };
         readNBT(nbt);
-        if (nbt.contains("v3", Tag.TAG_COMPOUND)) {
-            PowerStateCodec.decodeInto(nbt.getCompound("v3"), powerState);
+		String stateKey = nbt.contains(POWER_STATE_KEY, Tag.TAG_COMPOUND)
+				? POWER_STATE_KEY : LEGACY_POWER_STATE_KEY;
+		if (nbt.contains(stateKey, Tag.TAG_COMPOUND)) {
+			PowerStateCodec.decodeInto(nbt.getCompound(stateKey), powerState);
             if (powerState.powerSetId().equals(SaitamaContent.POWER_SET)) skillPack = WITHOUT_PACK;
         } else if (skillPack instanceof SaitamaPack) {
-            OnePunchV3.POWERS.assign(powerState, SaitamaContent.POWER_SET);
+            OnePunchRuntime.POWERS.assign(powerState, SaitamaContent.POWER_SET);
             skillPack = WITHOUT_PACK;
         }
     }

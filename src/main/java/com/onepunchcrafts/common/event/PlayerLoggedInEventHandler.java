@@ -6,7 +6,7 @@ import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.LevelSyncPacket;
 import com.onepunchcrafts.network.packet.PlayerSyncPacket;
 import com.onepunchcrafts.network.packet.PowerStateSnapshotPacket;
-import com.onepunchcrafts.v3.minecraft.PowerStateCodec;
+import com.onepunchcrafts.minecraft.PowerStateCodec;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;

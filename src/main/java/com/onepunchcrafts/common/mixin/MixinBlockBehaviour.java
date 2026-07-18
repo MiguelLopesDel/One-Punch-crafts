@@ -3,7 +3,7 @@ package com.onepunchcrafts.common.mixin;
 import com.google.common.collect.ImmutableMap;
 import com.mojang.serialization.MapCodec;
 import com.onepunchcrafts.util.HelpUtility;
-import com.onepunchcrafts.v3.content.SaitamaContent;
+import com.onepunchcrafts.content.SaitamaContent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.entity.LivingEntity;
@@ -52,7 +52,7 @@ public abstract class MixinBlockBehaviour extends StateHolder<Block, BlockState>
                 pContext instanceof EntityCollisionContext context && context.getEntity() instanceof Player player && HelpUtility.canWalk(player, state.getFluidState())) {
             cir.setReturnValue(Shapes.join(cir.getReturnValue(), SHAPES_CACHE.computeIfAbsent(15, i -> Block.box(0.0, 0.0, 0.0, 16.0, i, 16.0)), BooleanOp.OR));
         } else if (pContext instanceof EntityCollisionContext context && context.getEntity() instanceof Player player) {
-            if (HelpUtility.hasV3Tag(player, SaitamaContent.TAG_EXTREME_SPEED) && shouldRemoveCollisionAggressive(player, pPos)) {
+            if (HelpUtility.hasPowerTag(player, SaitamaContent.TAG_EXTREME_SPEED) && shouldRemoveCollisionAggressive(player, pPos)) {
                 cir.setReturnValue(Shapes.empty());
                 return;
             }

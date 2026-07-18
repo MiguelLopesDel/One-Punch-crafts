@@ -1,29 +1,32 @@
 # OnePunchCrafts
 
 A Forge 1.20.1 mod where players become One-Punch Man characters. The domain is
-character kits: who you are determines your skills, your durability, and how the
+Power Sets: who you are determines your Techniques, durability, and how the
 world reacts when you use them.
 
 ## Language
 
 ### Characters and kits
 
-**Pack**:
-The complete kit that makes a player a character — their skills, attributes,
-resources and combat rules. A player is Saitama or Boros *because* they hold that
-Pack; holding no Pack means an ordinary player.
-_Avoid_: class, kit, capability
+**Power Set**:
+The complete definition that makes a player a character — their Techniques,
+attributes, resources and combat rules. Holding no Power Set means an ordinary player.
+_Avoid_: Pack, class, kit, capability
 
-**Skill**:
-One selectable ability inside a Pack, organized in Skill Groups the player cycles
-through. A Skill may define different behavior for a Primary Attack and for its
-explicit Skill Activation, or may be a toggle (Flight) or adjustable stat.
-_Avoid_: ability, power, move
+**Technique**:
+One selectable entry in a Power Set. It routes Primary Attack and explicit Technique
+Activation independently, and may instead expose a toggle or adjustable control.
+_Avoid_: selected Ability, Skill, stance, move
 
-**Skill Group**:
-An ordered page of Skills within a Pack (e.g. Boros: basic / transformation /
-ultimate). The player switches groups, then cycles skills within the group.
-_Avoid_: category, tab
+**Technique Page**:
+An ordered radial-wheel page containing at most eight Techniques. The first page is
+the character's fast combat selection; additional pages hold broader controls.
+_Avoid_: Skill Group, category, loadout index
+
+**Ability**:
+An executable behavior referenced by a Technique or composite action. An Ability is
+never selected directly and may produce an Attack Plan or Timeline.
+_Avoid_: Technique, Skill
 
 ### Combat
 
@@ -35,19 +38,19 @@ _Avoid_: EventBus relay, damage hook
 
 **Strike**:
 A single offensive action whose identity is fixed when it starts. It may be
-emitted by a Primary Attack or as one step of a Skill Activation.
+emitted by a Primary Attack or as one step of a Technique Activation.
 _Avoid_: stance, current skill (when referring to the resulting hit)
 
 **Primary Attack**:
-The left-click action whose behavior is supplied by the selected punch Skill.
+The left-click action whose behavior is supplied by the selected punch Technique.
 Normal and Weak Punch emit one Strike; Serious Punch also releases its full
 sequence.
-_Avoid_: skill activation, cast, plain punch
+_Avoid_: Technique Activation, Skill Activation, cast, plain punch
 
-**Skill Activation**:
-The explicit use of a selected Skill, distinct from Primary Attack. For punch
-Skills it may repeat a Strike or provide a different way to deliver the same move.
-_Avoid_: primary attack, click
+**Technique Activation**:
+The explicit use of a selected Technique, distinct from Primary Attack. For punch
+Techniques it may repeat a Strike or provide a different way to deliver the same move.
+_Avoid_: Primary Attack, Skill Activation, click
 
 **Consecutive Normal Punches**:
 The anime barrage unleashed by activating Normal Punch: ~5 seconds of accelerating
@@ -61,12 +64,12 @@ Strikes against nearby targets.
 _Avoid_: Weak Punch (when meaning one Strike)
 
 **Normal Punches in Area**:
-A composite Saitama Skill that teleports him through nearby targets and delivers
+A composite Saitama Technique that teleports him through nearby targets and delivers
 a Normal Punch Strike to each one.
 _Avoid_: Consecutive Normal Punches, normal punch army
 
 **Quick Backstab**:
-A composite Saitama Skill that acquires a distant target, teleports Saitama to
+A composite Saitama Technique that acquires a distant target, teleports Saitama to
 it and delivers one Normal Punch Strike.
 _Avoid_: Primary Attack, Weak Punch
 
@@ -75,7 +78,7 @@ Saitama's finisher bypasses every form of mitigation and defeats every eligible
 non-Saitama combat target; a Saitama target survives even another Saitama's
 Serious Punch. Creative and spectator players are outside the eligible target
 set. Its Primary Attack delivers a direct Serious Strike plus the full sequence;
-its Skill Activation releases the aimed sequence without requiring a melee
+its Technique Activation releases the aimed sequence without requiring a melee
 target.
 _Avoid_: ultimate punch
 
@@ -109,7 +112,7 @@ Form scales power, speed, mitigation and regeneration.
 _Avoid_: mode, stage
 
 **Energy**:
-Boros' resource pool for casting skills (flight, beams, CSRC). Entirely separate
+Boros' resource pool for activating Techniques (flight, beams, CSRC). Entirely separate
 from health; spending it never hurts him, emptying it Exhausts him.
 _Avoid_: mana, stamina
 
@@ -119,7 +122,7 @@ does not recover until the cooldown elapses.
 _Avoid_: out of mana, drained
 
 **Ultra Regeneration**:
-Boros' *active* healing skill: burns Energy to restore a large fraction of health
+Boros' active healing Technique: burns Energy to restore a large fraction of health
 over a few seconds, on its own cooldown.
 _Avoid_: regen (ambiguous), heal
 
