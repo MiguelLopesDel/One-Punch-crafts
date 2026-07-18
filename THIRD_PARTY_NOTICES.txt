@@ -5,17 +5,6 @@ kit and other third-party material. These terms apply only to the respective
 third-party material. They do not license the original One Punch Crafts code,
 which is governed by the repository's LICENSE file.
 
-=== Nieobie Game Icon Pack ===
-
-The technique-wheel glyphs under
-src/main/resources/assets/onepunchcrafts/textures/gui/techniques are adapted
-from the Nieobie Game Icon Pack:
-https://github.com/Nieobie/game-icon-pack
-
-The source pack is dedicated to the public domain under CC0 1.0 Universal:
-https://creativecommons.org/publicdomain/zero/1.0/
-Attribution is not required; this notice records provenance.
-
 Unless noted below, Minecraft Forge, Forge Mod Loader, and all 
 parts herein are licensed under the terms of the LGPL 2.1 found
 here http://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt and 
