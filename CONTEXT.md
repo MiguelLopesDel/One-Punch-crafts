@@ -50,8 +50,9 @@ Skills it may repeat a Strike or provide a different way to deliver the same mov
 _Avoid_: primary attack, click
 
 **Consecutive Normal Punches**:
-The anime barrage unleashed by activating Normal Punch: ~5 seconds of rapid
-Normal Punch Strikes in the aim cone. One activation is one barrage.
+The anime barrage unleashed by activating Normal Punch: ~5 seconds of accelerating
+Normal Punch Strikes across a steerable wide aim cone. Its waves pin every target
+they catch, then a final shockwave launches survivors. One activation is one barrage.
 _Avoid_: normal punch (when meaning the barrage), multiple punches
 
 **Consecutive Weak Punches**:

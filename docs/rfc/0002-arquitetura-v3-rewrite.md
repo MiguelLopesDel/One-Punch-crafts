@@ -357,10 +357,14 @@ classe de cliente: cue é um id.
 Serious emite o Strike direto e inicia a sequência comum. A seleção roteia o
 comando, mas não vira estado temporário do pipeline.
 
-**Consecutive Normal Punches:** `TimelineAbility` de 100 ticks: a cada 2
-ticks, emite `Strikes.NORMAL_PUNCH` com política de i-frame `IGNORE` +
-`cue(BARRAGE)` uma vez no início. O efeito `saitama.punched` (4 ticks,
-`onExpire` → explosão) substitui a tag + scheduler + scan global.
+**Consecutive Normal Punches:** `TimelineAbility` de 100 ticks com cadência
+acelerante (intervalo cai de 4 para 1 tick). Cada onda varre o cone de mira
+direcionável com um Strike próprio de barrage, `NORMAL_BARRAGE_STRIKE`, cuja
+política de i-frame é `IGNORE` e que não aplica explosão/knockback por hit.
+As ondas amortecem o movimento dos alvos e o último beat lança sobreviventes;
+`cue(BARRAGE)` inicia uma única apresentação sincronizada para os 100 ticks.
+O `Strikes.NORMAL_PUNCH` continua reservado ao soco individual e às skills
+compostas que realmente entregam um Normal Punch completo.
 
 **Consecutive Weak Punches:** a ativação cria uma timeline de 100 ticks que
 emite `Strikes.WEAK_PUNCH` contra alvos na área próxima. A timeline não

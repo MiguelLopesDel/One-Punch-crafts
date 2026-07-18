@@ -50,10 +50,17 @@ public final class SaitamaContent {
 
     public static final Id WEAK_STRIKE = id("strike/weak_punch");
     public static final Id NORMAL_STRIKE = id("strike/normal_punch");
+    public static final Id NORMAL_BARRAGE_STRIKE = id("strike/normal_barrage");
     public static final Id SERIOUS_STRIKE = id("strike/serious_punch");
     public static final Id WEAKENING_STRIKE = id("strike/weakening_punch");
 
+    /** Marks a hit as part of a barrage: no per-hit knockback or explosion. */
+    public static final Id TAG_BARRAGE_HIT = id("damage/barrage_hit");
+
     public static final Id CUE_BARRAGE = id("cue/saitama_barrage");
+    public static final Id CUE_WEAK_BARRAGE = id("cue/saitama_weak_barrage");
+    public static final Id CUE_BARRAGE_HIT = id("cue/saitama_barrage_hit");
+    public static final Id CUE_BARRAGE_FINISH = id("cue/saitama_barrage_finish");
     public static final Id CUE_BARRAGE_END = id("cue/saitama_barrage_end");
     public static final Id CUE_SERIOUS_WINDUP = id("cue/serious_windup");
     public static final Id CUE_DEBRIS_PULL = id("cue/debris_pull");
@@ -70,8 +77,8 @@ public final class SaitamaContent {
                 EffectSpec.StackPolicy.REFRESH, List.of(), List.of(),
                 List.of(new EffectSpec.Operation.Cue(CUE_DELAYED_EXPLOSION))));
 
-        registries.abilities.register(WEAK_PUNCH, repeatedAbility(WEAK_PUNCH, WEAK_STRIKE, false));
-        registries.abilities.register(NORMAL_PUNCH, repeatedAbility(NORMAL_PUNCH, NORMAL_STRIKE, true));
+        registries.abilities.register(WEAK_PUNCH, consecutiveWeakPunches());
+        registries.abilities.register(NORMAL_PUNCH, consecutiveNormalPunches());
         registries.abilities.register(WEAKENING_PUNCH, new DeclarativeAbility(WEAKENING_PUNCH,
                 ignored -> Optional.of(AttackPlan.strike(WEAKENING_STRIKE)), ignored -> new Ability.Activation.Instant()));
         registries.abilities.register(SERIOUS_PUNCH, seriousAbility());
@@ -114,6 +121,12 @@ public final class SaitamaContent {
         registries.strikes.register(NORMAL_STRIKE, strike(NORMAL_STRIKE, DamageTier.DRAGON, 10_000_000, false));
         registries.strikes.register(WEAKENING_STRIKE, strike(WEAKENING_STRIKE, DamageTier.ENHANCED, 100, false));
         registries.strikes.register(SERIOUS_STRIKE, strike(SERIOUS_STRIKE, DamageTier.SERIOUS, 1.0e16, true));
+        // Barrage hit: same power as a normal punch, but it ignores i-frames so
+        // every wave connects, and is tagged so the sink skips per-hit knockback
+        // and explosion — the victim is hammered in place, not flung away.
+        registries.strikes.register(NORMAL_BARRAGE_STRIKE, new StrikeDefinition(NORMAL_BARRAGE_STRIKE,
+                new DamageSpec(NORMAL_BARRAGE_STRIKE, DamageTier.DRAGON, 10_000_000, false,
+                        DamageSpec.IFramePolicy.IGNORE, Set.of(TAG_BARRAGE_HIT))));
     }
 
     private static StrikeDefinition strike(Id id, DamageTier tier, double amount, boolean unstoppable) {
@@ -122,16 +135,35 @@ public final class SaitamaContent {
                 Set.of()));
     }
 
-    private static Ability repeatedAbility(Id ability, Id strike, boolean cone) {
-        return DeclarativeAbility.strikeAndTimeline(ability, strike, ignored -> {
-            Timeline.Builder timeline = Timeline.builder(id("timeline/consecutive_" + ability.path().substring("ability/".length())), 100)
-                    .cue(0, CUE_BARRAGE).cue(100, CUE_BARRAGE_END);
-            for (int tick = 0; tick < 100; tick += cone ? 2 : 1) {
-                Timeline.Command command = cone
-                        ? new Timeline.Command.StrikeCone(strike, 10, 45)
-                        : new Timeline.Command.StrikeArea(strike, 5, 3);
-                timeline.at(tick, command);
+    /**
+     * Consecutive Normal Punches (連続普通のパンチ): left-click still throws one
+     * explosive Normal Punch; activating the skill unleashes the ~5-second
+     * barrage. The cadence accelerates into a frantic crescendo, every wave
+     * sweeps a wide cone (decent AoE, as in the anime opening), and the final
+     * beat is a launching finisher.
+     */
+    private static Ability consecutiveNormalPunches() {
+        return DeclarativeAbility.strikeAndTimeline(NORMAL_PUNCH, NORMAL_STRIKE, context -> {
+            Timeline.Builder timeline = Timeline.builder(id("timeline/consecutive_normal_punch"),
+                            ConsecutiveNormalPunches.DURATION_TICKS)
+                    .cue(0, CUE_BARRAGE);
+            for (int tick : ConsecutiveNormalPunches.WAVE_TICKS) {
+                timeline.at(tick, new Timeline.Command.StrikeCone(NORMAL_BARRAGE_STRIKE,
+                        ConsecutiveNormalPunches.RANGE, ConsecutiveNormalPunches.HALF_ANGLE_DEGREES));
+                timeline.cue(tick, CUE_BARRAGE_HIT);
             }
+            timeline.cue(ConsecutiveNormalPunches.DURATION_TICKS, CUE_BARRAGE_FINISH);
+            timeline.cue(ConsecutiveNormalPunches.DURATION_TICKS, CUE_BARRAGE_END);
+            return timeline.build();
+        });
+    }
+
+    private static Ability consecutiveWeakPunches() {
+        return DeclarativeAbility.strikeAndTimeline(WEAK_PUNCH, WEAK_STRIKE, ignored -> {
+            Timeline.Builder timeline = Timeline.builder(id("timeline/consecutive_weak_punch"), 100)
+                    .cue(0, CUE_WEAK_BARRAGE).cue(100, CUE_BARRAGE_END);
+            for (int tick = 0; tick < 100; tick++)
+                timeline.at(tick, new Timeline.Command.StrikeArea(WEAK_STRIKE, 5, 3));
             return timeline.build();
         });
     }

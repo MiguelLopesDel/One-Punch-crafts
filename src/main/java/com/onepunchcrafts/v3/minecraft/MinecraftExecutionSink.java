@@ -12,11 +12,15 @@ import com.onepunchcrafts.v3.api.ability.Timeline;
 import com.onepunchcrafts.v3.api.combat.DamageContext;
 import com.onepunchcrafts.v3.api.combat.DamageTier;
 import com.onepunchcrafts.v3.api.effect.EffectSpec;
+import com.onepunchcrafts.v3.content.ConsecutiveNormalPunches;
 import com.onepunchcrafts.v3.content.SaitamaContent;
 import com.onepunchcrafts.v3.core.PowerEngine;
 import com.onepunchcrafts.v3.core.ability.AbilityBook;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.InteractionHand;
@@ -43,14 +47,24 @@ public final class MinecraftExecutionSink implements PowerEngine.ExecutionSink {
             stripEquipment(target);
             damage = damage.withAmount(Math.min(Math.max(0, target.getHealth() - 0.0001), 100_000));
         }
+        boolean barrage = damage.tags().contains(SaitamaContent.TAG_BARRAGE_HIT);
         MinecraftDamageAdapter adapter = new MinecraftDamageAdapter(actor, target);
         var result = OnePunchV3.DAMAGE.execute(new DamageContext(actor.getStringUUID(), adapter, damage), adapter);
-        if (damage.tier() == DamageTier.DRAGON && result.hadEffect()) {
+        // Barrage hits keep the victim pinned: no knockback, no per-hit blast
+        // (the storm's presentation and the finisher own those).
+        if (damage.tier() == DamageTier.DRAGON && result.hadEffect() && !barrage) {
             MinecraftEffectRuntime.apply(target, SaitamaContent.EFFECT_PUNCHED);
-            Vec3 offset = target.position().subtract(actor.position());
+            // Vanilla knockback pushes AWAY from the passed vector, so it must
+            // point from the target to the attacker.
+            Vec3 offset = actor.position().subtract(target.position());
             target.knockback(5, offset.x, offset.z);
+            // The punch's signature blast at the victim.
+            HelpUtility.explodeWithoutKnockBackFor(actor, target.getX(), target.getY() + 0.0625D, target.getZ(), 12.0F);
+            actor.serverLevel().sendParticles(ParticleTypes.FLAME,
+                    target.getX(), target.getY(), target.getZ(), 10, 0, 0, 0, 0);
         }
-        impactCue(target, damage.tier());
+        if (barrage && result.hadEffect()) pinBarrageTarget(target);
+        if (!barrage) impactCue(target, damage.tier());
     }
 
     @Override public void timeline(AbilityBook.Emission emission) {
@@ -66,8 +80,10 @@ public final class MinecraftExecutionSink implements PowerEngine.ExecutionSink {
             actor.serverLevel().getEntitiesOfClass(LivingEntity.class, bounds,
                     target -> target != actor && target.isAlive()).forEach(target -> strike(area.strikeId(), target.getStringUUID()));
         } else if (command instanceof Timeline.Command.StrikeCone cone) {
-            Vec3 origin = origin(emission);
-            Vec3 look = look(emission);
+            // A barrage is steerable. Presentation follows the caster every
+            // frame, so gameplay must resolve against the same current aim.
+            Vec3 origin = actor.getEyePosition();
+            Vec3 look = actor.getLookAngle();
             double minimumDot = Math.cos(Math.toRadians(cone.halfAngleDegrees()));
             AABB bounds = new AABB(origin, origin.add(look.scale(cone.range()))).inflate(cone.range());
             actor.serverLevel().getEntitiesOfClass(LivingEntity.class, bounds, target -> {
@@ -93,7 +109,8 @@ public final class MinecraftExecutionSink implements PowerEngine.ExecutionSink {
             SeriousPunch.releaseSeriousVisuals(actor, actor.serverLevel(), direction);
             MinecraftDestructionSystem.startCylinder(actor, origin(emission), direction,
                     ((Timeline.Command.DestroyCylinder) command).radius(),
-                    ((Timeline.Command.DestroyCylinder) command).length());
+                    ((Timeline.Command.DestroyCylinder) command).length(),
+                    SaitamaContent.SERIOUS_STRIKE);
         } else if (command instanceof Timeline.Command.Dash dash) {
             Vec3 start = actor.getEyePosition();
             Vec3 direction = look(emission);
@@ -124,10 +141,53 @@ public final class MinecraftExecutionSink implements PowerEngine.ExecutionSink {
         } else if (cue.equals(SaitamaContent.CUE_BARRAGE)) {
             NetworkRegister.sendToAllClientsExcept(actor, new AnimationPacket(actor.getStringUUID(), "multiple_punches"));
             SaitamaVfxPacket.broadcast(actor.serverLevel(), new SaitamaVfxPacket(actor.getId(), actor.getEyePosition(),
-                    actor.getLookAngle(), 1, SaitamaVfxPacket.STYLE_BARRAGE, 100));
+                    actor.getLookAngle(), 1, SaitamaVfxPacket.STYLE_BARRAGE,
+                    ConsecutiveNormalPunches.DURATION_TICKS));
+        } else if (cue.equals(SaitamaContent.CUE_WEAK_BARRAGE)) {
+            NetworkRegister.sendToAllClientsExcept(actor, new AnimationPacket(actor.getStringUUID(), "multiple_punches"));
+            SaitamaVfxPacket.broadcast(actor.serverLevel(), new SaitamaVfxPacket(actor.getId(), actor.getEyePosition(),
+                    actor.getLookAngle(), 0.6f, SaitamaVfxPacket.STYLE_BARRAGE, 100));
+        } else if (cue.equals(SaitamaContent.CUE_BARRAGE_HIT)) {
+            float progress = ConsecutiveNormalPunches.progress(emission.step().tick());
+            actor.serverLevel().playSound(null, actor.getX(), actor.getEyeY(), actor.getZ(),
+                    SoundEvents.PLAYER_ATTACK_STRONG, SoundSource.PLAYERS,
+                    0.45f + progress * 0.2f, 0.8f + progress * 0.7f);
+        } else if (cue.equals(SaitamaContent.CUE_BARRAGE_FINISH)) {
+            barrageFinisher();
         } else if (cue.equals(SaitamaContent.CUE_BARRAGE_END)) {
             NetworkRegister.sendToAllClientsExcept(actor, new AnimationPacket(actor.getStringUUID(), "stop"));
         }
+    }
+
+    /** Final beat: launch everyone still in the cone and blow one big impact. */
+    private void barrageFinisher() {
+        Vec3 origin = actor.getEyePosition();
+        Vec3 look = actor.getLookAngle();
+        double range = ConsecutiveNormalPunches.RANGE + 1.0;
+        double minimumDot = Math.cos(Math.toRadians(ConsecutiveNormalPunches.HALF_ANGLE_DEGREES + 3.0));
+        AABB bounds = new AABB(origin, origin.add(look.scale(range))).inflate(range);
+        actor.serverLevel().getEntitiesOfClass(LivingEntity.class, bounds, target -> {
+            if (target == actor || !target.isAlive()) return false;
+            Vec3 toTarget = target.getBoundingBox().getCenter().subtract(origin);
+            return toTarget.lengthSqr() <= range * range && toTarget.normalize().dot(look) >= minimumDot;
+        }).forEach(target -> {
+            target.hasImpulse = true;
+            target.setDeltaMovement(target.getDeltaMovement().add(look.x * 3.0, 0.55, look.z * 3.0));
+            target.hurtMarked = true;
+        });
+        Vec3 burst = origin.add(look.scale(3.0));
+        SaitamaVfxPacket.broadcast(actor.serverLevel(), new SaitamaVfxPacket(actor.getId(),
+                burst, look, 2.2f, SaitamaVfxPacket.STYLE_PUNCH_IMPACT, 18));
+        actor.serverLevel().playSound(null, burst.x, burst.y, burst.z, SoundEvents.GENERIC_EXPLODE,
+                SoundSource.PLAYERS, 1.4f, 0.7f);
+    }
+
+    /** Hit-stun without teleporting: repeated waves bleed away escape motion. */
+    private void pinBarrageTarget(LivingEntity target) {
+        Vec3 movement = target.getDeltaMovement();
+        target.setDeltaMovement(movement.x * 0.2, Math.min(movement.y, 0.08), movement.z * 0.2);
+        target.hasImpulse = true;
+        target.hurtMarked = true;
     }
 
     private void impactCue(LivingEntity target, DamageTier tier) {
@@ -137,7 +197,7 @@ public final class MinecraftExecutionSink implements PowerEngine.ExecutionSink {
         if (direction.lengthSqr() > 0) direction = direction.normalize();
         SaitamaVfxPacket.broadcast(actor.serverLevel(), new SaitamaVfxPacket(actor.getId(),
                 target.position().add(0, target.getBbHeight() * 0.6, 0), direction, scale,
-                SaitamaVfxPacket.STYLE_PUNCH_IMPACT, tier == DamageTier.DRAGON ? 7 : 5));
+                SaitamaVfxPacket.STYLE_PUNCH_IMPACT, tier == DamageTier.DRAGON ? 16 : 10));
     }
 
     private void stripEquipment(LivingEntity target) {
