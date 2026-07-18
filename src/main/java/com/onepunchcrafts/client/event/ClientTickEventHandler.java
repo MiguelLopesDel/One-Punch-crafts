@@ -144,7 +144,7 @@ public class ClientTickEventHandler {
             }
         } else if (techniqueKeyWasDown) {
             if (techniqueWheelOpened) {
-                if (minecraft.screen instanceof TechniqueWheelScreen wheel) wheel.confirmAndClose();
+                if (minecraft.screen instanceof TechniqueWheelScreen wheel) wheel.releaseSelectionKey();
             } else {
                 if (state.abilities().previousTechnique() != null) {
                     OnePunchRuntime.POWERS.swapPrevious(state);

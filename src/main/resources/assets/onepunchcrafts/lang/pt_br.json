@@ -30,6 +30,7 @@
   "technique.wheel.title": "Selecionar técnica",
   "technique.wheel.page": "Página %1$s/%2$s — use o scroll",
   "technique.wheel.hint": "Solte a tecla para selecionar • centro para cancelar",
+  "technique.wheel.touchpad_hint": "Mova o cursor e clique para selecionar • Esc para cancelar",
   "technique.input.primary": "Clique — %1$s",
   "technique.input.active": "%1$s — %2$s",
   "technique.input.adjust": "Scroll — %1$s",

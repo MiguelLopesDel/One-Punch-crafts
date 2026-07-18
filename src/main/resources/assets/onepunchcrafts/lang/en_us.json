@@ -30,6 +30,7 @@
   "technique.wheel.title": "Select technique",
   "technique.wheel.page": "Page %1$s/%2$s — use the scroll wheel",
   "technique.wheel.hint": "Release the key to select • center to cancel",
+  "technique.wheel.touchpad_hint": "Move the cursor and click to select • Esc to cancel",
   "technique.input.primary": "Click — %1$s",
   "technique.input.active": "%1$s — %2$s",
   "technique.input.adjust": "Scroll — %1$s",

@@ -4,6 +4,7 @@ import com.onepunchcrafts.api.Id;
 import com.onepunchcrafts.api.PowerSetDefinition;
 import com.onepunchcrafts.api.Technique;
 import com.onepunchcrafts.client.Keybinding;
+import com.onepunchcrafts.client.input.TechniqueWheelReleasePolicy;
 import com.onepunchcrafts.client.power.TechniquePresentation;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.SelectTechniqueIntentPacket;
@@ -30,6 +31,10 @@ public final class TechniqueWheelScreen extends Screen {
     private int page;
     private int hovered = -1;
     private boolean confirmed;
+    private boolean waitingForClick;
+    private boolean pointerMoved;
+    private double openingMouseX = Double.NaN;
+    private double openingMouseY = Double.NaN;
 
     public TechniqueWheelScreen(PowerState state) {
         super(Component.translatable("technique.wheel.title"));
@@ -70,7 +75,8 @@ public final class TechniqueWheelScreen extends Screen {
 
         if (hovered >= 0) renderDetails(graphics,
                 OnePunchRuntime.REGISTRIES.techniques.require(techniques.get(hovered)), centerX, centerY - 8);
-        graphics.drawCenteredString(font, Component.translatable("technique.wheel.hint"), centerX,
+        String hint = waitingForClick ? "technique.wheel.touchpad_hint" : "technique.wheel.hint";
+        graphics.drawCenteredString(font, Component.translatable(hint), centerX,
                 height - 22, 0xFFB8B8B8);
     }
 
@@ -89,6 +95,12 @@ public final class TechniqueWheelScreen extends Screen {
     }
 
     private void updateHovered(double mouseX, double mouseY) {
+        if (Double.isNaN(openingMouseX)) {
+            openingMouseX = mouseX;
+            openingMouseY = mouseY;
+        } else if (Math.hypot(mouseX - openingMouseX, mouseY - openingMouseY) >= 4.0) {
+            pointerMoved = true;
+        }
         double dx = mouseX - width / 2.0;
         double dy = mouseY - height / 2.0;
         double distance = Math.sqrt(dx * dx + dy * dy);
@@ -125,10 +137,19 @@ public final class TechniqueWheelScreen extends Screen {
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
         if (Keybinding.INSTANCE.CHANGE_SKILL.matches(keyCode, scanCode)) {
-            confirmAndClose();
+            releaseSelectionKey();
             return true;
         }
         return super.keyReleased(keyCode, scanCode, modifiers);
+    }
+
+    public void releaseSelectionKey() {
+        if (confirmed) return;
+        switch (TechniqueWheelReleasePolicy.resolve(pointerMoved, hovered >= 0)) {
+            case CONFIRM -> confirmAndClose();
+            case CANCEL -> onClose();
+            case KEEP_OPEN -> waitingForClick = true;
+        }
     }
 
     public void confirmAndClose() {
