@@ -9,19 +9,19 @@ Miguel Lopes Santos Delmondes, `miguellopesdelmondes2@gmail.com` (the
 
 ## 1. Acceptance
 
-The Contributor accepts this Agreement by submitting a Contribution after:
+The Contributor accepts this Agreement by submitting a Contribution through
+a pull request after:
 
 1. being presented with a link to this Agreement;
-2. affirmatively accepting it in the pull request or other submission form;
-   and
-3. signing the applicable commits with a line in this form:
+2. affirmatively checking the contributor-assignment acceptance box in the
+   pull request form; and
+3. submitting the pull request from an account controlled by the Contributor.
 
-   `Signed-off-by: Full Legal Name <email@example.com>`
-
-The Contributor intends that affirmative acceptance and the `Signed-off-by`
-line constitute the Contributor's electronic signature to the maximum extent
-permitted by applicable law. Contributions made outside this process require
-a separate written agreement accepted by the Owner.
+The Contributor intends that the checked acceptance box, the pull request,
+and GitHub's associated account and timestamp records together constitute the
+Contributor's written electronic acceptance and signature to the maximum
+extent permitted by applicable law. Contributions made outside this process
+require a separate written agreement accepted by the Owner.
 
 ## 2. Contribution
 
