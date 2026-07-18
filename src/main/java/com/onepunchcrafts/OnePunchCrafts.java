@@ -11,6 +11,10 @@ import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.common.block.PortalBlock;
 import com.onepunchcrafts.common.block.entity.PortalBlockEntity;
 import com.onepunchcrafts.util.HelpUtility;
+import com.onepunchcrafts.v3.minecraft.PowerStateCodec;
+import com.onepunchcrafts.v3.OnePunchV3;
+import com.onepunchcrafts.v3.content.SaitamaContent;
+import com.onepunchcrafts.network.packet.PowerStateSnapshotPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -90,6 +94,7 @@ public class OnePunchCrafts {
             );
 
     public OnePunchCrafts() {
+        OnePunchV3.register(SaitamaContent::register);
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
         // Register the commonSetup method for modloading
@@ -127,6 +132,8 @@ public class OnePunchCrafts {
             OnePunchPlayer onePunchPlayer = player.getCapability(ONE_PLAYER_CAPABILITY).orElse(new OnePunchPlayer(WITHOUT_PACK));
             onePunchPlayer.playerRespawn(event);
             HelpUtility.syncWithPlayer((ServerPlayer) player, onePunchPlayer);
+            NetworkRegister.sendToPlayer((ServerPlayer) player,
+                    new PowerStateSnapshotPacket(PowerStateCodec.encode(onePunchPlayer.getPowerState())));
         }
     }
 
@@ -145,6 +152,7 @@ public class OnePunchCrafts {
         OnePunchPlayer playerCap = player.getCapability(OnePunchCrafts.ONE_PLAYER_CAPABILITY, null).orElse(onePunchPlayer);
         playerCap.setSkillPack(oldOnePunchPlayer.getSkillPack());
         playerCap.setCurrentSkill(oldOnePunchPlayer.getActualAbility());
+        PowerStateCodec.decodeInto(PowerStateCodec.encode(oldOnePunchPlayer.getPowerState()), playerCap.getPowerState());
     }
 
     @SubscribeEvent
@@ -169,7 +177,10 @@ public class OnePunchCrafts {
 
     @SubscribeEvent
     public void commonSetup(FMLCommonSetupEvent event) {
-        event.enqueueWork(NetworkRegister::registerMessages);
+        event.enqueueWork(() -> {
+            OnePunchV3.bootstrap();
+            NetworkRegister.registerMessages();
+        });
     }
 
     // Add the example block item to the building blocks tab

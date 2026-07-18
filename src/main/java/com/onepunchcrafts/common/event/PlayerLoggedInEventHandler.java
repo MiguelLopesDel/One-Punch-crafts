@@ -5,6 +5,8 @@ import com.onepunchcrafts.common.capability.OnePunchPlayer;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.LevelSyncPacket;
 import com.onepunchcrafts.network.packet.PlayerSyncPacket;
+import com.onepunchcrafts.network.packet.PowerStateSnapshotPacket;
+import com.onepunchcrafts.v3.minecraft.PowerStateCodec;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
@@ -39,6 +41,7 @@ public class PlayerLoggedInEventHandler {
         if (!player.level().isClientSide()) {
             OnePunchPlayer onePunchPlayer = player.getCapability(OnePunchCrafts.ONE_PLAYER_CAPABILITY).orElse(new OnePunchPlayer(WITHOUT_PACK));
             NetworkRegister.sendToPlayer(player, new PlayerSyncPacket(onePunchPlayer.getSkillPack()));
+            NetworkRegister.sendToPlayer(player, new PowerStateSnapshotPacket(PowerStateCodec.encode(onePunchPlayer.getPowerState())));
             player.level().getCapability(WORLD_RULES_CAPABILITY).ifPresent(cap -> NetworkRegister.sendToPlayer(player, new LevelSyncPacket((CompoundTag) cap.writeNBT())));
         }
     }

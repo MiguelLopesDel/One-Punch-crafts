@@ -8,6 +8,8 @@ import com.onepunchcrafts.common.skills.SkillPack;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.AnimationPacket;
 import com.onepunchcrafts.network.packet.PlayerSyncPacket;
+import com.onepunchcrafts.v3.api.Id;
+import com.onepunchcrafts.v3.content.SaitamaContent;
 import dev.kosmx.playerAnim.api.layered.IAnimation;
 import dev.kosmx.playerAnim.api.layered.ModifierLayer;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess;
@@ -172,6 +174,7 @@ public class HelpUtility {
     }
 
     public static boolean extremeSpeedActivated(Player player) {
+        if (getSkillData(player).getPowerState().tags().contains(SaitamaContent.TAG_EXTREME_SPEED)) return true;
         Optional<OnePunchPlayer> saitamaPack = getSaitamaPack(player);
         if (saitamaPack.isPresent() && saitamaPack.get().getSkillPack() instanceof SaitamaPack sai) {
             return sai.isExtremeSpeedActive();
@@ -211,7 +214,16 @@ public class HelpUtility {
     }
 
     public static boolean isSaitamaServerSide(Entity entity) {
-        return entity instanceof ServerPlayer player && getSkillData(player).getSkillPack() instanceof SaitamaPack;
+        return entity instanceof ServerPlayer player && (getSkillData(player).getSkillPack() instanceof SaitamaPack
+                || getSkillData(player).getPowerState().powerSetId().equals(SaitamaContent.POWER_SET));
+    }
+
+    public static boolean isV3Saitama(Player player) {
+        return getSkillData(player).getPowerState().powerSetId().equals(SaitamaContent.POWER_SET);
+    }
+
+    public static boolean hasV3Tag(Player player, Id tag) {
+        return getSkillData(player).getPowerState().tags().contains(tag);
     }
 
 //    public static Optional<SaitamaPack> isSaitamaServerSide(Entity entity) {

@@ -3,6 +3,7 @@ package com.onepunchcrafts.client.event;
 import com.onepunchcrafts.client.Keybinding;
 import com.onepunchcrafts.client.gui.CsrcOptionsScreen;
 import com.onepunchcrafts.client.gui.GuiDimension;
+import com.onepunchcrafts.client.v3.SaitamaClientSystem;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
 import com.onepunchcrafts.common.skills.boros.BorosPack;
 import com.onepunchcrafts.common.skills.saitama.ExtremeSpeed;
@@ -14,6 +15,9 @@ import com.onepunchcrafts.network.packet.BorosMovementInputPacket;
 import com.onepunchcrafts.network.packet.SeriousFartPacket;
 import com.onepunchcrafts.network.packet.SpecialSkillPacket;
 import com.onepunchcrafts.network.packet.TeleportPacket;
+import com.onepunchcrafts.network.packet.CastAbilityIntentPacket;
+import com.onepunchcrafts.network.packet.SelectAbilityIntentPacket;
+import com.onepunchcrafts.v3.core.state.PowerState;
 import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.util.TickClientScheduler;
 import com.onepunchcrafts.util.TickScheduler;
@@ -56,6 +60,7 @@ public class ClientTickEventHandler {
         buttonsManager(player, playerExist);
         if (event.phase == TickEvent.Phase.END) {
             sendBorosMovementInput(minecraft, player, playerExist);
+            if (playerExist) SaitamaClientSystem.tick(player);
         }
     }
 
@@ -95,18 +100,33 @@ public class ClientTickEventHandler {
             Minecraft.getInstance().setScreen(new CsrcOptionsScreen(null));
         }
         if (Keybinding.INSTANCE.OPEN_DIMENSIONS_GUI.consumeClick() && playerExist) {
-            HelpUtility.verifyIsSaitamaAndGetCapability(player).ifPresent(cap ->
-                    Minecraft.getInstance().setScreen(new GuiDimension(MutableComponent.create(new LiteralContents("Select Dimension"))))
-            );
+            if (HelpUtility.isV3Saitama(player) || HelpUtility.verifyIsSaitamaAndGetCapability(player).isPresent())
+                Minecraft.getInstance().setScreen(new GuiDimension(MutableComponent.create(new LiteralContents("Select Dimension"))));
             NetworkRegister.sendToServer(new TeleportPacket());
         }
     }
 
     private static void onKeySpecialSkillPressed() {
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player != null) {
+            PowerState state = HelpUtility.getSkillData(player).getPowerState();
+            if (!state.powerSetId().equals(PowerState.NONE)) {
+                NetworkRegister.sendToServer(new CastAbilityIntentPacket(state.abilities().selectedAbility()));
+                return;
+            }
+        }
         NetworkRegister.sendToServer(new SpecialSkillPacket());
     }
 
     private static void managerAnimation(LocalPlayer player) {
+        PowerState state = HelpUtility.getSkillData(player).getPowerState();
+        if (!state.powerSetId().equals(PowerState.NONE)
+                && (state.abilities().selectedAbility().equals(com.onepunchcrafts.v3.content.SaitamaContent.WEAK_PUNCH)
+                || state.abilities().selectedAbility().equals(com.onepunchcrafts.v3.content.SaitamaContent.NORMAL_PUNCH))) {
+            startAnimation(player, "multiple_punches");
+            tasks.add(TickClientScheduler.scheduleFromHere(Duration.of(5, ChronoUnit.SECONDS), () -> stopAnimation(player)));
+            return;
+        }
         HelpUtility.getSaitamaPack(player).ifPresent(one -> {
             if (one.getCurrentSkill() instanceof WeakPunch || one.getCurrentSkill() instanceof NormalPunch) {
                 startAnimation(player, "multiple_punches");
@@ -132,6 +152,10 @@ public class ClientTickEventHandler {
     private static void onKeySpecialChangePressed() {
         LocalPlayer player = Minecraft.getInstance().player;
         OnePunchPlayer data = HelpUtility.getSkillData(player);
+        if (!data.getPowerState().powerSetId().equals(PowerState.NONE)) {
+            NetworkRegister.sendToServer(new SelectAbilityIntentPacket(player.isShiftKeyDown() ? -1 : 1, true));
+            return;
+        }
         data.decideCurrentGroup(player);
         HelpUtility.syncDataWithServer(data);
     }
@@ -139,6 +163,10 @@ public class ClientTickEventHandler {
     private static void onKeyChangePressed() {
         LocalPlayer player = Minecraft.getInstance().player;
         OnePunchPlayer data = HelpUtility.getSkillData(player);
+        if (!data.getPowerState().powerSetId().equals(PowerState.NONE)) {
+            NetworkRegister.sendToServer(new SelectAbilityIntentPacket(player.isShiftKeyDown() ? -1 : 1, false));
+            return;
+        }
         data.decideCurrentSkill(player);
         HelpUtility.syncDataWithServer(data);
     }

@@ -1,6 +1,7 @@
 package com.onepunchcrafts.network.packet;
 
 import com.onepunchcrafts.util.HelpUtility;
+import com.onepunchcrafts.v3.content.SaitamaContent;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
@@ -24,6 +25,10 @@ public class SeriousFartPacket {
 
     public void handle(Supplier<NetworkEvent.Context> ctx) {
         ServerPlayer player = ctx.get().getSender();
+        if (player != null && HelpUtility.hasV3Tag(player, SaitamaContent.TAG_SERIOUS_FART)) {
+            player.serverLevel().explode(null, player.getX(), player.getY(), player.getZ(), 5,
+                    Level.ExplosionInteraction.MOB);
+        }
         HelpUtility.verifyIsSaitamaAndGetCapability(player).ifPresent(cap -> {
             if (cap.isSeriousFartActive())
                 player.serverLevel().explode(null, player.getX(), player.getY(), player.getZ(), 5,

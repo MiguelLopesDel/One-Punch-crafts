@@ -1,5 +1,6 @@
 package com.onepunchcrafts.common.mixin;
 
+import com.onepunchcrafts.v3.minecraft.MinecraftPowerDispatcher;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.resources.ResourceLocation;
@@ -67,6 +68,8 @@ public abstract class MixinPlayer extends LivingEntity implements net.minecraftf
      */
     @Overwrite
     public void attack(Entity pTarget) {
+        if ((Object) this instanceof net.minecraft.server.level.ServerPlayer serverPlayer
+                && MinecraftPowerDispatcher.primaryAttack(serverPlayer, pTarget)) return;
         if (!ForgeHooks.onPlayerAttackTarget((Player) (Object )this, pTarget)) return;
         if (pTarget.isAttackable()) {
             if (!pTarget.skipAttackInteraction(this)) {

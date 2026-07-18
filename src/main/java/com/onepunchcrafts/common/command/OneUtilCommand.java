@@ -14,6 +14,11 @@ import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.LevelSyncPacket;
 import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.util.TickScheduler;
+import com.onepunchcrafts.v3.OnePunchV3;
+import com.onepunchcrafts.v3.content.SaitamaContent;
+import com.onepunchcrafts.v3.core.state.PowerState;
+import com.onepunchcrafts.v3.minecraft.PowerStateCodec;
+import com.onepunchcrafts.network.packet.PowerStateSnapshotPacket;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
@@ -117,14 +122,17 @@ public class OneUtilCommand {
             CommandSourceStack source = arguments.getSource();
             boolean isSaitama = arguments.getArgument("isSaitama", Boolean.class);
             ServerPlayer player = arguments.getArgument(target, EntitySelector.class).findSinglePlayer(source);
-            SkillPack skillPack = isSaitama ? new SaitamaPack() : WITHOUT_PACK;
+            SkillPack skillPack = WITHOUT_PACK;
             OnePunchPlayer cap = player.getCapability(ONE_PLAYER_CAPABILITY).orElse(new OnePunchPlayer(skillPack));
             cap.setSkillPack(skillPack);
+            if (isSaitama) OnePunchV3.POWERS.assign(cap.getPowerState(), SaitamaContent.POWER_SET);
+            else OnePunchV3.POWERS.clear(cap.getPowerState());
             if (!isSaitama) {
                 HelpUtility.setAttributesToDefault(player);
                 removeSaitamaEffectsSet(player);
             }
             HelpUtility.syncWithPlayer(player, cap);
+            NetworkRegister.sendToPlayer(player, new PowerStateSnapshotPacket(PowerStateCodec.encode(cap.getPowerState())));
             source.sendSuccess(() -> MutableComponent.create(new LiteralContents("sucess")), false);
             return 1;
         };
@@ -138,6 +146,7 @@ public class OneUtilCommand {
             SkillPack skillPack = isBoros ? new BorosPack() : WITHOUT_PACK;
             OnePunchPlayer cap = HelpUtility.getSkillData(player);
             cap.setSkillPack(skillPack);
+            OnePunchV3.POWERS.clear(cap.getPowerState());
             if (!isBoros) {
                 HelpUtility.setAttributesToDefault(player);
                 player.getAttribute(Attributes.MAX_HEALTH).setBaseValue(20);

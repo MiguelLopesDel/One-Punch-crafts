@@ -10,6 +10,11 @@ import com.onepunchcrafts.common.capability.OnePunchPlayer;
 import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
 import com.onepunchcrafts.common.skills.SkillPack;
 import com.onepunchcrafts.util.HelpUtility;
+import com.onepunchcrafts.network.NetworkRegister;
+import com.onepunchcrafts.network.packet.PowerStateSnapshotPacket;
+import com.onepunchcrafts.v3.OnePunchV3;
+import com.onepunchcrafts.v3.content.SaitamaContent;
+import com.onepunchcrafts.v3.minecraft.PowerStateCodec;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -79,10 +84,13 @@ public class GamerUtilCommand {
             }
             chall.poll();
             ServerPlayer player = arguments.getArgument(target, EntitySelector.class).findSinglePlayer(source);
-            SkillPack skillPack = isSaitama ? new SaitamaPack() : WITHOUT_PACK;
+            SkillPack skillPack = WITHOUT_PACK;
             OnePunchPlayer cap = HelpUtility.getSkillDataOr(player, skillPack);
             cap.setSkillPack(skillPack);
+            if (isSaitama) OnePunchV3.POWERS.assign(cap.getPowerState(), SaitamaContent.POWER_SET);
+            else OnePunchV3.POWERS.clear(cap.getPowerState());
             HelpUtility.syncWithPlayer(player, cap);
+            NetworkRegister.sendToPlayer(player, new PowerStateSnapshotPacket(PowerStateCodec.encode(cap.getPowerState())));
             source.sendSuccess(() -> MutableComponent.create(new LiteralContents("sucess")), false);
             return 1;
         };

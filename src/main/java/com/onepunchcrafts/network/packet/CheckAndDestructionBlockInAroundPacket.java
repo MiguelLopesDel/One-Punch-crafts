@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static com.onepunchcrafts.common.event.PlayerInteractEventhandler.everyDrop;
+import com.onepunchcrafts.v3.content.SaitamaContent;
 
 public class CheckAndDestructionBlockInAroundPacket {
 
@@ -41,20 +42,26 @@ public class CheckAndDestructionBlockInAroundPacket {
     public void handle(Supplier<NetworkEvent.Context> ctx) {
         ServerPlayer player = ctx.get().getSender();
         ctx.get().enqueueWork(() -> {
+            if (player != null && HelpUtility.hasV3Tag(player, SaitamaContent.TAG_EXTREME_SPEED))
+                destroy(player);
             HelpUtility.verifyIsSaitamaAndGetCapability(player).ifPresent(cap -> {
-                final Level level = player.level();
-                blocksPos.stream()
-                        .filter(b -> b.distSqr(player.getOnPos()) <= 25)
-                        .sorted(Comparator.comparingDouble(a -> a.distSqr(player.getOnPos())))
-                        .forEach(pos -> {
-                            if (level.isLoaded(pos) && !level.getBlockState(pos).isAir()) {
-                                BlockState state = level.getBlockState(pos);
-                                everyDrop(state, level, pos, player);
-                                level.setBlock(pos, Blocks.AIR.defaultBlockState(), 2 | 16);
-                            }
-                        });
+                destroy(player);
             });
         });
         ctx.get().setPacketHandled(true);
+    }
+
+    private void destroy(ServerPlayer player) {
+        final Level level = player.level();
+        blocksPos.stream()
+                .filter(b -> b.distSqr(player.getOnPos()) <= 25)
+                .sorted(Comparator.comparingDouble(a -> a.distSqr(player.getOnPos())))
+                .forEach(pos -> {
+                    if (level.isLoaded(pos) && !level.getBlockState(pos).isAir()) {
+                        BlockState state = level.getBlockState(pos);
+                        everyDrop(state, level, pos, player);
+                        level.setBlock(pos, Blocks.AIR.defaultBlockState(), 2 | 16);
+                    }
+                });
     }
 }

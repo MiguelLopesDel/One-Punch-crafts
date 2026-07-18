@@ -2,6 +2,7 @@ package com.onepunchcrafts.common.event;
 
 import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
 import com.onepunchcrafts.util.HelpUtility;
+import com.onepunchcrafts.v3.minecraft.MinecraftPowerDispatcher;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -27,6 +28,8 @@ public class PlayerTickEventHandler {
     @SubscribeEvent
     public static void tickPlayer(TickEvent.PlayerTickEvent event) {
         Player player = event.player;
+        if (event.phase == TickEvent.Phase.END && player instanceof ServerPlayer serverPlayer)
+            MinecraftPowerDispatcher.tick(serverPlayer);
         HelpUtility.getSkillData(player).getSkillPack().tick(event);
     }
 }

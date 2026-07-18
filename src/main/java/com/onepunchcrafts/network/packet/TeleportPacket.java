@@ -47,23 +47,28 @@ public class TeleportPacket {
 
     public void handle(Supplier<NetworkEvent.Context> ctx) {
         ServerPlayer player = ctx.get().getSender();
+        if (player != null && HelpUtility.isV3Saitama(player)) teleport(player);
         HelpUtility.verifyIsSaitamaAndGetCapability(player).ifPresent(cap -> {
-            if (dimension == null) {
-                HelpUtility.teleportPlayerToTarget(player);
-            } else if (IMMERSIVE_PORTALS_MOD.isPresent() && isValidDimension(player, dimension)) {
-                ImmersivePortalsCompat.placeByWayBiFacedPortalOrDestroy(player, dimension);
-            } else if (isValidDimension(player, dimension)) {
-                ServerLevel serverLevel = player.serverLevel();
-                BlockPos pos = HelpUtility.getFrontBlockPosition(player, 2);
-                if (serverLevel.getBlockEntity(pos) instanceof PortalBlockEntity)
-                    serverLevel.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
-                else {
-                    serverLevel.setBlockAndUpdate(pos, PORTAL_BLOCK.get().defaultBlockState());
-                    ((PortalBlockEntity) serverLevel.getBlockEntity(pos)).setDimension(dimension);
-                }
-            }
+            teleport(player);
         });
         ctx.get().setPacketHandled(true);
+    }
+
+    private void teleport(ServerPlayer player) {
+        if (dimension == null) {
+            HelpUtility.teleportPlayerToTarget(player);
+        } else if (IMMERSIVE_PORTALS_MOD.isPresent() && isValidDimension(player, dimension)) {
+            ImmersivePortalsCompat.placeByWayBiFacedPortalOrDestroy(player, dimension);
+        } else if (isValidDimension(player, dimension)) {
+            ServerLevel serverLevel = player.serverLevel();
+            BlockPos pos = HelpUtility.getFrontBlockPosition(player, 2);
+            if (serverLevel.getBlockEntity(pos) instanceof PortalBlockEntity)
+                serverLevel.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+            else {
+                serverLevel.setBlockAndUpdate(pos, PORTAL_BLOCK.get().defaultBlockState());
+                ((PortalBlockEntity) serverLevel.getBlockEntity(pos)).setDimension(dimension);
+            }
+        }
     }
 
     private boolean isValidDimension(ServerPlayer player, ResourceKey<Level> dimension) {

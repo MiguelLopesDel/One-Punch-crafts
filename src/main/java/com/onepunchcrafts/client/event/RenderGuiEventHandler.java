@@ -4,6 +4,9 @@ import com.onepunchcrafts.common.skills.SkillPack;
 import com.onepunchcrafts.common.skills.boros.BorosConfig;
 import com.onepunchcrafts.common.skills.boros.BorosPack;
 import com.onepunchcrafts.util.HelpUtility;
+import com.onepunchcrafts.v3.api.Id;
+import com.onepunchcrafts.v3.content.SaitamaContent;
+import com.onepunchcrafts.v3.core.state.PowerState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -30,12 +33,50 @@ public class RenderGuiEventHandler {
         GuiGraphics guiGraphics = event.getGuiGraphics();
         Font font = instance.font;
 
+        PowerState state = HelpUtility.getSkillData(player).getPowerState();
+        if (!state.powerSetId().equals(PowerState.NONE)) {
+            renderV3Ability(state, width, height, font, guiGraphics);
+            return;
+        }
         SkillPack pack = HelpUtility.getSkillData(player).getSkillPack();
         pack.renderSkills(width, height, font, guiGraphics);
 
         if (pack instanceof BorosPack boros) {
             renderBorosEnergy(boros, width, height, font, guiGraphics);
         }
+    }
+
+    private static void renderV3Ability(PowerState state, int width, int height, Font font, GuiGraphics graphics) {
+        Id ability = state.abilities().selectedAbility();
+        String key = ability.equals(SaitamaContent.WEAK_PUNCH) ? "skill.saitama.weak_punch"
+                : ability.equals(SaitamaContent.NORMAL_PUNCH) ? "skill.saitama.normal_punch"
+                : ability.equals(SaitamaContent.SERIOUS_PUNCH) ? "skill.saitama.serious_punch"
+                : ability.equals(SaitamaContent.WEAKENING_PUNCH) ? "skill.saitama.weakening_punch"
+                : ability.equals(SaitamaContent.QUICK_BACKSTAB) ? "skill.saitama.quick_backstab"
+                : ability.equals(SaitamaContent.NORMAL_PUNCHES_IN_AREA) ? "skill.saitama.normalpuncharmy"
+                : ability.equals(SaitamaContent.DASH) ? "skill.saitama.dash"
+                : ability.equals(SaitamaContent.SERIOUS_FART) ? "skill.saitama.serious_fart"
+                : ability.equals(SaitamaContent.SPEED) ? "skill.saitama.super_speed"
+                : ability.equals(SaitamaContent.BREAK_BLOCKS) ? "skill.saitama.break_blocks_quickly"
+                : ability.equals(SaitamaContent.WEIGHT) ? "skill.saitama.set_weight"
+                : ability.equals(SaitamaContent.KNOCKBACK_RESISTANCE) ? "skill.saitama.knockback_resistance"
+                : ability.equals(SaitamaContent.ATTACK_KNOCKBACK) ? "skill.saitama.attack_knockback"
+                : ability.equals(SaitamaContent.SWIM_SPEED) ? "skill.saitama.swim_speed"
+                : ability.equals(SaitamaContent.EXTREME_SPEED) ? "skill.saitama.extreme_speed"
+                : "skill.saitama.extreme_jump";
+        Id attribute = ability.equals(SaitamaContent.SPEED) ? SaitamaContent.ATTR_SPEED
+                : ability.equals(SaitamaContent.WEIGHT) ? SaitamaContent.ATTR_WEIGHT
+                : ability.equals(SaitamaContent.KNOCKBACK_RESISTANCE) ? SaitamaContent.ATTR_KNOCKBACK_RESISTANCE
+                : ability.equals(SaitamaContent.ATTACK_KNOCKBACK) ? SaitamaContent.ATTR_ATTACK_KNOCKBACK
+                : ability.equals(SaitamaContent.SWIM_SPEED) ? SaitamaContent.ATTR_SWIM_SPEED : null;
+        Component text = attribute == null ? Component.translatable(key)
+                : Component.translatable(key, (int) state.attributes().base(attribute));
+        boolean disabledToggle = (ability.equals(SaitamaContent.SERIOUS_FART) && !state.tags().contains(SaitamaContent.TAG_SERIOUS_FART))
+                || (ability.equals(SaitamaContent.BREAK_BLOCKS) && !state.tags().contains(SaitamaContent.TAG_BREAK_BLOCKS))
+                || (ability.equals(SaitamaContent.EXTREME_SPEED) && !state.tags().contains(SaitamaContent.TAG_EXTREME_SPEED))
+                || (ability.equals(SaitamaContent.EXTREME_JUMP) && !state.tags().contains(SaitamaContent.TAG_EXTREME_JUMP));
+        graphics.drawString(font, text, width / 2 - (int) (width * 0.05),
+                height / 2 + (int) (height * 0.25), disabledToggle ? 0xFF0000 : 0x00FF00, false);
     }
 
     private static void renderBorosEnergy(BorosPack boros, int width, int height, Font font, GuiGraphics guiGraphics) {

@@ -4,6 +4,10 @@ import com.onepunchcrafts.common.skills.Skill;
 import com.onepunchcrafts.common.skills.boros.BorosPack;
 import com.onepunchcrafts.common.skills.saitama.SaitamaPack;
 import com.onepunchcrafts.common.skills.SkillPack;
+import com.onepunchcrafts.v3.core.state.PowerState;
+import com.onepunchcrafts.v3.minecraft.PowerStateCodec;
+import com.onepunchcrafts.v3.OnePunchV3;
+import com.onepunchcrafts.v3.content.SaitamaContent;
 import it.unimi.dsi.fastutil.shorts.ShortConsumer;
 import lombok.Data;
 import lombok.NonNull;
@@ -26,13 +30,16 @@ public class OnePunchPlayer {
     @NonNull
     @Setter
     private SkillPack skillPack;
+    private final PowerState powerState = new PowerState();
 
     public OnePunchPlayer(@NotNull SkillPack skillPack) {
         this.skillPack = skillPack;
     }
 
     public Tag writeNBT() {
-        return skillPack.writeNBT();
+        CompoundTag nbt = (CompoundTag) skillPack.writeNBT();
+        nbt.put("v3", PowerStateCodec.encode(powerState));
+        return nbt;
     }
 
     public void firstReadNBT(Tag tag) {
@@ -43,6 +50,13 @@ public class OnePunchPlayer {
             default -> WITHOUT_PACK;
         };
         readNBT(nbt);
+        if (nbt.contains("v3", Tag.TAG_COMPOUND)) {
+            PowerStateCodec.decodeInto(nbt.getCompound("v3"), powerState);
+            if (powerState.powerSetId().equals(SaitamaContent.POWER_SET)) skillPack = WITHOUT_PACK;
+        } else if (skillPack instanceof SaitamaPack) {
+            OnePunchV3.POWERS.assign(powerState, SaitamaContent.POWER_SET);
+            skillPack = WITHOUT_PACK;
+        }
     }
 
     public void readNBT(Tag tag) {

@@ -2,7 +2,9 @@ package com.onepunchcrafts.network;
 
 import com.onepunchcrafts.network.packet.*;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
@@ -84,6 +86,41 @@ public class NetworkRegister {
                 .decoder(BorosBeamVfxPacket::new)
                 .consumerMainThread(BorosBeamVfxPacket::handle)
                 .add();
+        INSTANCE.messageBuilder(SaitamaVfxPacket.class, ++id, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(SaitamaVfxPacket::encode)
+                .decoder(SaitamaVfxPacket::new)
+                .consumerMainThread(SaitamaVfxPacket::handle)
+                .add();
+        INSTANCE.messageBuilder(SeriousPunchVfxPacket.class, ++id, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(SeriousPunchVfxPacket::encode)
+                .decoder(SeriousPunchVfxPacket::new)
+                .consumerMainThread(SeriousPunchVfxPacket::handle)
+                .add();
+        INSTANCE.messageBuilder(PowerStateSnapshotPacket.class, ++id, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(PowerStateSnapshotPacket::encode)
+                .decoder(PowerStateSnapshotPacket::new)
+                .consumerMainThread(PowerStateSnapshotPacket::handle)
+                .add();
+        INSTANCE.messageBuilder(SelectAbilityIntentPacket.class, ++id, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(SelectAbilityIntentPacket::encode)
+                .decoder(SelectAbilityIntentPacket::new)
+                .consumerMainThread(SelectAbilityIntentPacket::handle)
+                .add();
+        INSTANCE.messageBuilder(CastAbilityIntentPacket.class, ++id, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(CastAbilityIntentPacket::encode)
+                .decoder(CastAbilityIntentPacket::new)
+                .consumerMainThread(CastAbilityIntentPacket::handle)
+                .add();
+        INSTANCE.messageBuilder(PowerComponentDeltaPacket.class, ++id, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(PowerComponentDeltaPacket::encode)
+                .decoder(PowerComponentDeltaPacket::new)
+                .consumerMainThread(PowerComponentDeltaPacket::handle)
+                .add();
+        INSTANCE.messageBuilder(AdjustPowerIntentPacket.class, ++id, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(AdjustPowerIntentPacket::encode)
+                .decoder(AdjustPowerIntentPacket::new)
+                .consumerMainThread(AdjustPowerIntentPacket::handle)
+                .add();
     }
 
     public static void sendToServer(Object msg) {
@@ -96,6 +133,16 @@ public class NetworkRegister {
 
     public static void sendToAllClients(Object msg) {
         INSTANCE.send(PacketDistributor.ALL.noArg(), msg);
+    }
+
+    /** Send to every client of the level within {@code range} blocks of {@code pos}. */
+    public static void sendToNearby(ServerLevel level, Vec3 pos, double range, Object msg) {
+        double rangeSqr = range * range;
+        for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {
+            if (player.level() == level && player.distanceToSqr(pos.x, pos.y, pos.z) <= rangeSqr) {
+                sendToPlayer(player, msg);
+            }
+        }
     }
 
     public static void sendToAllClientsExcept(ServerPlayer player, Object msg) {

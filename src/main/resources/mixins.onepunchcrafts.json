@@ -4,6 +4,7 @@
   "refmap": "mixins.onepunchcrafts.refmap.json",
   "mixins": [
     "MixinBlockBehaviour",
+    "MixinLivingEntity",
     "MixinPlayer",
     "MixinServerGamePacketListenerImpl"
   ],
