@@ -59,31 +59,37 @@ public class RenderGuiEventHandler {
         Component name = TechniquePresentation.name(technique, state);
         var primary = TechniquePresentation.primary(technique);
         var active = TechniquePresentation.active(technique);
+        int lines = 1 + (primary.isPresent() ? 1 : 0) + (active.isPresent() ? 1 : 0);
         int textWidth = font.width(name);
         if (primary.isPresent()) textWidth = Math.max(textWidth, font.width(primary.orElseThrow()));
         if (active.isPresent()) textWidth = Math.max(textWidth, font.width(active.orElseThrow()));
 
-        int panelWidth = Math.max(112, textWidth + 42);
-        int lines = 1 + (primary.isPresent() ? 1 : 0) + (active.isPresent() ? 1 : 0);
-        int panelHeight = Math.max(34, 8 + lines * (font.lineHeight + 1));
-        int x = width / 2 - panelWidth / 2;
+        int iconBox = 32;
+        int contentWidth = iconBox + 6 + textWidth;
+        int contentHeight = Math.max(iconBox, lines * (font.lineHeight + 1));
+        int x = width / 2 - contentWidth / 2;
         int y = height / 2 + (int) (height * 0.21);
-        int background = TechniquePresentation.disabledToggle(technique, state) ? 0xD9803030 : 0xD9E9E4D8;
-        graphics.fill(x - 1, y - 1, x + panelWidth + 1, y + panelHeight + 1, 0xE6000000);
-        graphics.fill(x, y, x + panelWidth, y + panelHeight, background);
+
+        // Keep only a compact icon badge in the world view. Text uses Minecraft's
+        // own shadow instead of sitting inside a large opaque rectangle.
+        int badge = TechniquePresentation.disabledToggle(technique, state) ? 0xE0B94B4B : 0xE0F1B75E;
+        graphics.fill(x + 4, y, x + iconBox - 4, y + iconBox, 0xD0000000);
+        graphics.fill(x, y + 4, x + iconBox, y + iconBox - 4, 0xD0000000);
+        graphics.fill(x + 5, y + 2, x + iconBox - 5, y + iconBox - 2, badge);
+        graphics.fill(x + 2, y + 5, x + iconBox - 2, y + iconBox - 5, badge);
 
         Id icon = technique.presentation().icon();
-        graphics.blit(new ResourceLocation(icon.namespace(), icon.path()), x + 4, y + (panelHeight - 28) / 2,
-                0, 0, 28, 28, 64, 64);
-        int textX = x + 36;
-        int lineY = y + 4;
-        graphics.drawString(font, name, textX, lineY, 0xFF090909, false);
+        graphics.blit(new ResourceLocation(icon.namespace(), icon.path()), x + 4, y + 4,
+                0, 0, 24, 24, 64, 64);
+        int textX = x + iconBox + 6;
+        int lineY = y + (contentHeight - lines * (font.lineHeight + 1)) / 2;
+        graphics.drawString(font, name, textX, lineY, 0xFFFFD27A, true);
         lineY += font.lineHeight + 1;
         if (primary.isPresent()) {
-            graphics.drawString(font, primary.orElseThrow(), textX, lineY, 0xFF303030, false);
+            graphics.drawString(font, primary.orElseThrow(), textX, lineY, 0xFFFFFFFF, true);
             lineY += font.lineHeight + 1;
         }
-        if (active.isPresent()) graphics.drawString(font, active.orElseThrow(), textX, lineY, 0xFF303030, false);
+        if (active.isPresent()) graphics.drawString(font, active.orElseThrow(), textX, lineY, 0xFFD8D8D8, true);
     }
 
     private static void renderBorosEnergy(BorosPack boros, int width, int height, Font font, GuiGraphics guiGraphics) {

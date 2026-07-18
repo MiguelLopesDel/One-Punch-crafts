@@ -1,9 +1,11 @@
 package com.onepunchcrafts.client.event;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.onepunchcrafts.client.Keybinding;
 import com.onepunchcrafts.client.gui.CsrcOptionsScreen;
 import com.onepunchcrafts.client.gui.GuiDimension;
 import com.onepunchcrafts.client.gui.TechniqueWheelScreen;
+import com.onepunchcrafts.client.input.TechniqueSelectorKeyState;
 import com.onepunchcrafts.client.power.SaitamaClientSystem;
 import com.onepunchcrafts.common.capability.OnePunchPlayer;
 import com.onepunchcrafts.common.skills.boros.BorosPack;
@@ -39,6 +41,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import org.lwjgl.glfw.GLFW;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -123,7 +126,10 @@ public class ClientTickEventHandler {
         }
 
         while (Keybinding.INSTANCE.CHANGE_SKILL.consumeClick()) { /* edge is represented by isDown below */ }
-        boolean down = Keybinding.INSTANCE.CHANGE_SKILL.isDown();
+        boolean down = TechniqueSelectorKeyState.resolve(
+                Keybinding.INSTANCE.CHANGE_SKILL.isDown(),
+                minecraft.screen instanceof TechniqueWheelScreen,
+                isTechniqueKeyPhysicallyDown(minecraft));
         if (down) {
             if (!techniqueKeyWasDown) {
                 techniqueKeyHeldTicks = 0;
@@ -149,6 +155,23 @@ public class ClientTickEventHandler {
             resetTechniqueKey();
         }
         techniqueKeyWasDown = down;
+    }
+
+    private static boolean isTechniqueKeyPhysicallyDown(Minecraft minecraft) {
+        InputConstants.Key key = Keybinding.INSTANCE.CHANGE_SKILL.getKey();
+        long window = minecraft.getWindow().getWindow();
+        if (key.getType() == InputConstants.Type.MOUSE)
+            return GLFW.glfwGetMouseButton(window, key.getValue()) == GLFW.GLFW_PRESS;
+        if (key.getType() == InputConstants.Type.KEYSYM)
+            return InputConstants.isKeyDown(window, key.getValue());
+        if (key.getType() == InputConstants.Type.SCANCODE) {
+            for (int keyCode = GLFW.GLFW_KEY_SPACE; keyCode <= GLFW.GLFW_KEY_LAST; keyCode++) {
+                if (GLFW.glfwGetKeyScancode(keyCode) == key.getValue())
+                    return GLFW.glfwGetKey(window, keyCode) == GLFW.GLFW_PRESS;
+            }
+            return false;
+        }
+        return false;
     }
 
     private static void resetTechniqueKey() {
