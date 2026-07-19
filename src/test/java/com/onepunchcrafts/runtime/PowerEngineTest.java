@@ -96,6 +96,20 @@ class PowerEngineTest {
     }
 
     @Test
+    void absoluteWheelAdjustmentIsClampedAndSnappedByTheDomain() {
+        PowerRegistries registries = new PowerRegistries();
+        SaitamaContent.register(registries);
+        registries.freeze();
+        PowerEngine engine = new PowerEngine(registries);
+        PowerState state = new PowerState();
+        engine.assign(state, SaitamaContent.POWER_SET);
+
+        assertEquals(237, engine.setAdjustment(state, SaitamaContent.SPEED, 237.4));
+        assertEquals(500, engine.setAdjustment(state, SaitamaContent.SPEED, 900));
+        assertEquals(0, engine.setAdjustment(state, SaitamaContent.SPEED, -20));
+    }
+
+    @Test
     void consecutiveNormalPunchesAccelerateAcrossTheWholeAoeCone() {
         PowerRegistries registries = new PowerRegistries();
         SaitamaContent.register(registries);

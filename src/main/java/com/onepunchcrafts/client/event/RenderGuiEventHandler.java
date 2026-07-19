@@ -4,6 +4,7 @@ import com.onepunchcrafts.common.skills.SkillPack;
 import com.onepunchcrafts.common.skills.boros.BorosConfig;
 import com.onepunchcrafts.common.skills.boros.BorosPack;
 import com.onepunchcrafts.client.power.TechniquePresentation;
+import com.onepunchcrafts.client.gui.TechniqueIconRenderer;
 import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.api.Id;
 import com.onepunchcrafts.api.Technique;
@@ -14,7 +15,6 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -74,8 +74,7 @@ public class RenderGuiEventHandler {
         int frame = TechniquePresentation.disabledToggle(technique, state) ? 0xFFB94B4B : 0xFFF1B75E;
         graphics.fill(x - 1, y - 1, x + iconBox + 1, y + iconBox + 1, 0xD0000000);
         graphics.fill(x, y, x + iconBox, y + iconBox, frame);
-        graphics.blit(new ResourceLocation(icon.namespace(), icon.path()), x + 2, y + 2,
-                0, 0, iconBox - 4, iconBox - 4, 64, 64);
+        TechniqueIconRenderer.draw(graphics, icon, x + 2, y + 2, iconBox - 4);
         int textX = x + iconBox + 6;
         int lineY = y + (contentHeight - lines * (font.lineHeight + 1)) / 2;
         graphics.drawString(font, name, textX, lineY, 0xFFFFD27A, true);

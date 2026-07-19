@@ -104,8 +104,18 @@ public final class PowerEngine {
         Technique technique = requireOwnedTechnique(state, techniqueId);
         if (!(technique.activeAction() instanceof Technique.ActiveAction.Adjust adjustable)) return Double.NaN;
         double current = state.attributes().base(adjustable.attribute());
+        return setAdjustment(state, techniqueId, current + Integer.signum(direction) * adjustable.step());
+    }
+
+    /** Applies an absolute slider intent, clamped and snapped to the Technique's declared range. */
+    public double setAdjustment(PowerState state, Id techniqueId, double requestedValue) {
+        Technique technique = requireOwnedTechnique(state, techniqueId);
+        if (!(technique.activeAction() instanceof Technique.ActiveAction.Adjust adjustable)
+                || !Double.isFinite(requestedValue)) return Double.NaN;
+        double bounded = Math.max(adjustable.minimum(), Math.min(adjustable.maximum(), requestedValue));
+        double steps = Math.round((bounded - adjustable.minimum()) / adjustable.step());
         double next = Math.max(adjustable.minimum(), Math.min(adjustable.maximum(),
-                current + Integer.signum(direction) * adjustable.step()));
+                adjustable.minimum() + steps * adjustable.step()));
         state.attributes().setBase(adjustable.attribute(), next);
         return next;
     }
