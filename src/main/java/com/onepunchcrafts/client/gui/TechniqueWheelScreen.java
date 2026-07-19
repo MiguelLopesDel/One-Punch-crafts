@@ -63,8 +63,8 @@ public final class TechniqueWheelScreen extends Screen {
             graphics.fill(slotX - 2, slotY - 2, slotX + SLOT_SIZE + 2, slotY + SLOT_SIZE + 2, COLOR_BORDER);
             graphics.fill(slotX, slotY, slotX + SLOT_SIZE, slotY + SLOT_SIZE, color);
             Id icon = technique.presentation().icon();
-            graphics.blit(new ResourceLocation(icon.namespace(), icon.path()), slotX + 5, slotY + 5,
-                    0, 0, 34, 34, 64, 64);
+            graphics.blit(new ResourceLocation(icon.namespace(), icon.path()), slotX + 2, slotY + 2,
+                    0, 0, 40, 40, 64, 64);
         }
 
         PowerSetDefinition.TechniquePage currentPage = powerSet.techniquePages().get(page);

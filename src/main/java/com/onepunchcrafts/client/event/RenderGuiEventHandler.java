@@ -70,17 +70,12 @@ public class RenderGuiEventHandler {
         int x = width / 2 - contentWidth / 2;
         int y = height / 2 + (int) (height * 0.21);
 
-        // Keep only a compact icon badge in the world view. Text uses Minecraft's
-        // own shadow instead of sitting inside a large opaque rectangle.
-        int badge = TechniquePresentation.disabledToggle(technique, state) ? 0xE0B94B4B : 0xE0F1B75E;
-        graphics.fill(x + 4, y, x + iconBox - 4, y + iconBox, 0xD0000000);
-        graphics.fill(x, y + 4, x + iconBox, y + iconBox - 4, 0xD0000000);
-        graphics.fill(x + 5, y + 2, x + iconBox - 5, y + iconBox - 2, badge);
-        graphics.fill(x + 2, y + 5, x + iconBox - 2, y + iconBox - 5, badge);
-
         Id icon = technique.presentation().icon();
-        graphics.blit(new ResourceLocation(icon.namespace(), icon.path()), x + 4, y + 4,
-                0, 0, 24, 24, 64, 64);
+        int frame = TechniquePresentation.disabledToggle(technique, state) ? 0xFFB94B4B : 0xFFF1B75E;
+        graphics.fill(x - 1, y - 1, x + iconBox + 1, y + iconBox + 1, 0xD0000000);
+        graphics.fill(x, y, x + iconBox, y + iconBox, frame);
+        graphics.blit(new ResourceLocation(icon.namespace(), icon.path()), x + 2, y + 2,
+                0, 0, iconBox - 4, iconBox - 4, 64, 64);
         int textX = x + iconBox + 6;
         int lineY = y + (contentHeight - lines * (font.lineHeight + 1)) / 2;
         graphics.drawString(font, name, textX, lineY, 0xFFFFD27A, true);
