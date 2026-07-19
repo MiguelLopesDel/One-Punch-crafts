@@ -16,10 +16,11 @@ public record PowerStateSnapshotPacket(CompoundTag state) {
     public PowerStateSnapshotPacket(FriendlyByteBuf buffer) { this(buffer.readNbt()); }
     public void encode(FriendlyByteBuf buffer) { buffer.writeNbt(state); }
     public void handle(Supplier<NetworkEvent.Context> supplier) {
-        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+        NetworkEvent.Context context = supplier.get();
+        context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
             if (Minecraft.getInstance().player != null && state != null)
                 PowerStateCodec.decodeInto(state, HelpUtility.getSkillData(Minecraft.getInstance().player).getPowerState());
-        });
-        supplier.get().setPacketHandled(true);
+        }));
+        context.setPacketHandled(true);
     }
 }

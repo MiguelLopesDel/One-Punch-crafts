@@ -45,12 +45,14 @@ public class PlayerSyncPacket {
     }
 
     public void handle(Supplier<NetworkEvent.Context> ctx) {
-        if (ctx.get().getDirection().getReceptionSide().isServer()) {
-            serverLogic(ctx);
+        NetworkEvent.Context context = ctx.get();
+        if (context.getDirection().getReceptionSide().isServer()) {
+            context.enqueueWork(() -> serverLogic(ctx));
         } else {
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> HandlerClientPacket.playerSyncLogic(data));
+            context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
+                    () -> () -> HandlerClientPacket.playerSyncLogic(data)));
         }
-        ctx.get().setPacketHandled(true);
+        context.setPacketHandled(true);
     }
 
     private void serverLogic(Supplier<NetworkEvent.Context> ctx) {

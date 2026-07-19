@@ -9,6 +9,7 @@ import com.onepunchcrafts.api.Id;
 import com.onepunchcrafts.content.BorosContent;
 import com.onepunchcrafts.content.SaitamaContent;
 import com.onepunchcrafts.constant.NbtBooleanValues;
+import com.onepunchcrafts.runtime.combat.BorosMitigationInterceptor;
 import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.util.TickScheduler;
 import lombok.Getter;
@@ -78,7 +79,7 @@ public class BorosPack extends SyncableSkillPack {
     private short swimSpeed;
 
     @Getter
-    private final float MAX_HEALTH = 150_000_000f;
+    private final float MAX_HEALTH = (float) BorosMitigationInterceptor.MAX_HEALTH;
     private final double BASE_ATTACK_DAMAGE = 100_000.0;
     // Anything above this is Serious Punch territory and bypasses Boros' durability.
     private static final float SERIOUS_DAMAGE_THRESHOLD = 1.0e12f;

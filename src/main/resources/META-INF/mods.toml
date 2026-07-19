@@ -60,6 +60,12 @@ description='''${mod_description}'''
     versionRange="[0,)"
     ordering="NONE"
     side="BOTH"
+[[dependencies.onepunchcrafts]]
+    modId="attributefix"
+    mandatory=true
+    versionRange="[21.0.4,)"
+    ordering="AFTER"
+    side="BOTH"
 # Here's another dependency
 [[dependencies.${mod_id}]]
     modId="minecraft"

@@ -12,6 +12,7 @@ import com.onepunchcrafts.common.block.PortalBlock;
 import com.onepunchcrafts.common.block.entity.PortalBlockEntity;
 import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.minecraft.PowerStateCodec;
+import com.onepunchcrafts.minecraft.MinecraftAttributeScale;
 import com.onepunchcrafts.runtime.OnePunchRuntime;
 import com.onepunchcrafts.content.SaitamaContent;
 import com.onepunchcrafts.content.BorosContent;
@@ -39,6 +40,7 @@ import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.OptionalMod;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.event.lifecycle.FMLLoadCompleteEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -101,6 +103,7 @@ public class OnePunchCrafts {
 
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);
+        modEventBus.addListener(this::loadComplete);
         BLOCKS.register(modEventBus);
         BLOCK_ENTITIES.register(FMLJavaModLoadingContext.get().getModEventBus());
 
@@ -183,6 +186,12 @@ public class OnePunchCrafts {
             OnePunchRuntime.bootstrap();
             NetworkRegister.registerMessages();
         });
+    }
+
+    private void loadComplete(FMLLoadCompleteEvent event) {
+        // AttributeFix applies its JSON during this lifecycle event. Queuing our
+        // requirement makes it run afterwards without overwriting larger user values.
+        event.enqueueWork(MinecraftAttributeScale::applyRequiredBounds);
     }
 
     // Add the example block item to the building blocks tab
