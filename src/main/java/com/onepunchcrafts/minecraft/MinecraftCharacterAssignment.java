@@ -8,6 +8,7 @@ import com.onepunchcrafts.network.packet.PowerStateSnapshotPacket;
 import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.runtime.OnePunchRuntime;
 import com.onepunchcrafts.content.SaitamaContent;
+import com.onepunchcrafts.content.BorosContent;
 import com.onepunchcrafts.runtime.character.CharacterIdentity;
 import com.onepunchcrafts.runtime.character.CharacterTransition;
 import net.minecraft.server.level.ServerPlayer;
@@ -59,6 +60,7 @@ public final class MinecraftCharacterAssignment {
         public void installBoros() {
             BorosPack boros = new BorosPack();
             capability.setSkillPack(boros);
+            OnePunchRuntime.POWERS.assign(capability.getPowerState(), BorosContent.POWER_SET);
             player.getAttribute(Attributes.MAX_HEALTH).setBaseValue(boros.getMAX_HEALTH());
             player.setHealth(boros.getMAX_HEALTH());
         }

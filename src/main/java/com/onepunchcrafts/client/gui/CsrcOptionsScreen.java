@@ -32,14 +32,9 @@ public class CsrcOptionsScreen extends Screen {
         int x = width / 2 - 100;
         int y = height / 6 + 4;
 
-        addRenderableWidget(CycleButton.<ClientConfig.SaitamaVfxProfile>builder(profile ->
-                        Component.translatable("gui.onepunchcrafts.vfx_options.saitama_profile."
-                                + profile.name().toLowerCase()))
-                .withValues(ClientConfig.SaitamaVfxProfile.values())
-                .withInitialValue(ClientConfig.SAITAMA_VFX_PROFILE.get())
-                .create(x, y, 200, 20,
-                        Component.translatable("gui.onepunchcrafts.vfx_options.saitama_profile"),
-                        (button, value) -> ClientConfig.SAITAMA_VFX_PROFILE.set(value)));
+        addRenderableWidget(Button.builder(Component.translatable("gui.onepunchcrafts.vfx_options.saitama_per_skill"),
+                button -> minecraft.setScreen(new SaitamaVfxOptionsScreen(this)))
+                .bounds(x, y, 200, 20).build());
         y += 28;
 
         addRenderableWidget(CycleButton.onOffBuilder(ClientConfig.CSRC_CASTER_BEAM_VIEW.get())

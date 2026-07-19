@@ -1,6 +1,6 @@
 package com.onepunchcrafts.client.render;
 
-import com.onepunchcrafts.client.ClientConfig;
+import com.onepunchcrafts.api.presentation.VfxProfile;
 import com.onepunchcrafts.client.event.ScreenEffectHandler;
 import com.onepunchcrafts.network.packet.SaitamaVfxPacket;
 import com.onepunchcrafts.content.ConsecutiveNormalPunches;
@@ -49,17 +49,19 @@ public final class SaitamaVfxRenderer {
     private static long lastBarrageShakeTick = Long.MIN_VALUE;
 
     private record VfxEffect(int casterId, Vec3 pos, Vec3 direction, float scale,
-                             int style, int lifeTicks, long createdTick) {}
+                             int style, int lifeTicks, long createdTick, VfxProfile profile) {}
 
     private static final List<VfxEffect> EFFECTS = new CopyOnWriteArrayList<>();
 
     private SaitamaVfxRenderer() {}
 
-    public static void addEffect(int casterId, Vec3 pos, Vec3 direction, float scale, int style, int lifeTicks) {
+    public static void addEffect(int casterId, Vec3 pos, Vec3 direction, float scale, int style,
+                                 int lifeTicks, VfxProfile profile) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) return;
         Vec3 dir = direction.lengthSqr() < 1.0e-4 ? new Vec3(0, 0, 1) : direction.normalize();
-        EFFECTS.add(new VfxEffect(casterId, pos, dir, scale, style, lifeTicks, minecraft.level.getGameTime()));
+        EFFECTS.add(new VfxEffect(casterId, pos, dir, scale, style, lifeTicks,
+                minecraft.level.getGameTime(), profile));
 
         // Hit-stop feel: a short distance-attenuated kick when a punch lands.
         if (style == SaitamaVfxPacket.STYLE_PUNCH_IMPACT && scale >= 0.75f) {
@@ -99,7 +101,7 @@ public final class SaitamaVfxRenderer {
             if (effect.style != SaitamaVfxPacket.STYLE_PUNCH_IMPACT) continue;
             long age = now - effect.createdTick;
             if (age >= 0 && age <= effect.lifeTicks && camera.distanceToSqr(effect.pos) < 96.0 * 96.0) {
-                if (newProfile()) emitPhysicalImpactParticles(minecraft, effect, age, impacts);
+                if (newProfile(effect)) emitPhysicalImpactParticles(minecraft, effect, age, impacts);
                 else emitImpactParticles(minecraft, effect, age, impacts);
             }
         }
@@ -206,14 +208,17 @@ public final class SaitamaVfxRenderer {
             if (age < 0 || age > effect.lifeTicks) continue;
             switch (effect.style) {
                 case SaitamaVfxPacket.STYLE_BARRAGE -> {
-                    if (!newProfile()) renderBarrage(batch, minecraft, effect, age);
+                    if (!newProfile(effect)) renderBarrage(batch, minecraft, effect, age);
                     else if (effect.scale < 0.9f) renderWeakBarrageNew(batch, minecraft, effect, age);
                     else renderNormalBarrageNew(batch, minecraft, effect, age);
                 }
                 case SaitamaVfxPacket.STYLE_DASH -> renderDash(batch, effect, age);
-                case SaitamaVfxPacket.STYLE_SPEED_TRAIL -> renderSpeedTrail(batch, effect, age);
+                case SaitamaVfxPacket.STYLE_SPEED_TRAIL -> {
+                    if (newProfile(effect)) renderSpeedTrailNew(batch, effect, age);
+                    else renderSpeedTrailOriginal(batch, effect, age);
+                }
                 default -> {
-                    if (!newProfile()) renderPunchImpact(batch, effect, age);
+                    if (!newProfile(effect)) renderPunchImpact(batch, effect, age);
                     else if (effect.scale < 0.75f) renderWeakPunchNew(batch, effect, age);
                     else renderNormalPunchNew(batch, effect, age);
                 }
@@ -223,8 +228,8 @@ public final class SaitamaVfxRenderer {
         batch.close();
     }
 
-    private static boolean newProfile() {
-        return ClientConfig.SAITAMA_VFX_PROFILE.get() == ClientConfig.SaitamaVfxProfile.NEW;
+    private static boolean newProfile(VfxEffect effect) {
+        return effect.profile == VfxProfile.NEW;
     }
 
     /** Small, controlled contact: a weak punch disturbs the air but does not explode. */
@@ -695,7 +700,7 @@ public final class SaitamaVfxRenderer {
     }
 
     /** Speed control: physical afterimages and air displacement scaled by actual movement. */
-    private static void renderSpeedTrail(VfxQuadBatch batch,
+    private static void renderSpeedTrailNew(VfxQuadBatch batch,
                                          VfxEffect effect, float age) {
         float progress = age / Math.max(1.0f, effect.lifeTicks);
         float fade = 1.0f - progress;
@@ -727,6 +732,27 @@ public final class SaitamaVfxRenderer {
             batch.ring(effect.pos.add(back.scale(0.4)), side, up, 0.35f + age * 0.24f * speed, 18,
                     WHITE[0], WHITE[1], WHITE[2], 0.22f * fade, 0);
         }
+    }
+
+    /** Preserved pre-overhaul speed trail. */
+    private static void renderSpeedTrailOriginal(VfxQuadBatch batch, VfxEffect effect, float age) {
+        float progress = age / Math.max(1.0f, effect.lifeTicks);
+        float fade = 1.0f - progress;
+        float speed = Math.min(effect.scale, 3.0f);
+        Vec3 back = effect.direction.scale(-1);
+        Vec3 side = stableSide(effect.direction);
+        Vec3 up = side.cross(effect.direction).normalize();
+        for (int i = 0; i < 4; i++) {
+            int seed = (int) (effect.createdTick % 1000) * 13 + i * 29;
+            Vec3 offset = side.scale((hash(seed) - 0.5) * 0.9)
+                    .add(up.scale((hash(seed + 1) - 0.5) * 1.2));
+            Vec3 from = effect.pos.add(offset);
+            Vec3 to = from.add(back.scale(1.2 + speed * (0.8 + hash(seed + 2) * 0.8)));
+            float[] color = i % 2 == 0 ? WHITE : YELLOW;
+            batch.strip(from, to, 0.06f, color[0], color[1], color[2], 0.45f * fade);
+        }
+        batch.billboard(effect.pos, 0.5f + speed * 0.15f,
+                WHITE[0], WHITE[1], WHITE[2], 0.18f * fade);
     }
 
 

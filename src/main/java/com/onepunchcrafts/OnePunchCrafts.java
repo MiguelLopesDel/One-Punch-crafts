@@ -14,6 +14,7 @@ import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.minecraft.PowerStateCodec;
 import com.onepunchcrafts.runtime.OnePunchRuntime;
 import com.onepunchcrafts.content.SaitamaContent;
+import com.onepunchcrafts.content.BorosContent;
 import com.onepunchcrafts.network.packet.PowerStateSnapshotPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -95,6 +96,7 @@ public class OnePunchCrafts {
 
     public OnePunchCrafts() {
         OnePunchRuntime.register(SaitamaContent::register);
+        OnePunchRuntime.register(BorosContent::register);
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
         // Register the commonSetup method for modloading

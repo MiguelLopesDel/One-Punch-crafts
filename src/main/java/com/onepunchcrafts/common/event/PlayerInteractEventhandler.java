@@ -3,6 +3,7 @@ package com.onepunchcrafts.common.event;
 import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.content.SaitamaContent;
 import com.onepunchcrafts.network.packet.SaitamaTechniqueVfxPacket;
+import com.onepunchcrafts.api.presentation.VfxProfile;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
@@ -33,7 +34,9 @@ public class PlayerInteractEventhandler {
                 Level level = event.getLevel();
                 BlockPos pos = event.getPos();
                 BlockState state = level.getBlockState(pos);
-                blockBreakVfx(player, pos, state);
+                if (HelpUtility.getSkillData(player).getPowerState().vfxPreferences()
+                        .get(SaitamaContent.BREAK_BLOCKS) == VfxProfile.NEW)
+                    blockBreakVfx(player, pos, state);
                 everyDrop(state, level, pos, player);
                 level.destroyBlock(pos, false);
                 return;

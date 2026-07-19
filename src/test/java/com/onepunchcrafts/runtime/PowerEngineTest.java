@@ -9,6 +9,8 @@ import com.onepunchcrafts.api.combat.DamageSpec;
 import com.onepunchcrafts.api.effect.EffectSpec;
 import com.onepunchcrafts.content.ConsecutiveNormalPunches;
 import com.onepunchcrafts.content.SaitamaContent;
+import com.onepunchcrafts.content.BorosContent;
+import com.onepunchcrafts.api.presentation.VfxProfile;
 import com.onepunchcrafts.runtime.ability.AbilityBook;
 import com.onepunchcrafts.runtime.state.PowerState;
 import org.junit.jupiter.api.Test;
@@ -23,6 +25,43 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PowerEngineTest {
+    @Test
+    void borosUsesWheelPagesAndTechniqueIdsWithoutMutatingLegacySelection() {
+        PowerRegistries registries = new PowerRegistries();
+        BorosContent.register(registries);
+        registries.freeze();
+        PowerEngine engine = new PowerEngine(registries);
+        PowerState state = new PowerState();
+        engine.assign(state, BorosContent.POWER_SET);
+        RecordingSink sink = new RecordingSink();
+
+        Ability.Activation activation = engine.activate(state, BorosContent.ENERGY_PROJECTION,
+                context(state), sink);
+
+        assertInstanceOf(Ability.Activation.Scheduled.class, activation);
+        assertEquals(2, registries.powerSets.require(BorosContent.POWER_SET).techniquePages().size());
+        assertTrue(registries.powerSets.require(BorosContent.POWER_SET).techniquePages().stream()
+                .allMatch(page -> page.techniques().size() <= 8));
+        assertTrue(sink.emissions.stream().anyMatch(emission -> emission.step().command()
+                instanceof Timeline.Command.Cue cue && cue.cueId().equals(BorosContent.ENERGY_PROJECTION)));
+    }
+
+    @Test
+    void vfxPreferencesArePerTechniqueAndSurviveCharacterAssignment() {
+        PowerRegistries registries = new PowerRegistries();
+        SaitamaContent.register(registries);
+        BorosContent.register(registries);
+        registries.freeze();
+        PowerEngine engine = new PowerEngine(registries);
+        PowerState state = new PowerState();
+        state.vfxPreferences().set(SaitamaContent.NORMAL_PUNCH, VfxProfile.ORIGINAL);
+
+        engine.assign(state, SaitamaContent.POWER_SET);
+        engine.assign(state, BorosContent.POWER_SET);
+
+        assertEquals(VfxProfile.ORIGINAL, state.vfxPreferences().get(SaitamaContent.NORMAL_PUNCH));
+        assertEquals(VfxProfile.NEW, state.vfxPreferences().get(SaitamaContent.DASH));
+    }
     @Test
     void selectionRoutesPrimaryButNeverBecomesStrikeIdentity() {
         PowerRegistries registries = new PowerRegistries();

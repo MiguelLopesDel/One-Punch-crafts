@@ -2,6 +2,7 @@ package com.onepunchcrafts.network.packet;
 
 import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.content.SaitamaContent;
+import com.onepunchcrafts.api.presentation.VfxProfile;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
@@ -44,7 +45,8 @@ public class SeriousFartPacket {
                 legacyActive[0] = true;
             }
         });
-        if (active || legacyActive[0]) {
+        if ((active || legacyActive[0]) && HelpUtility.getSkillData(player).getPowerState()
+                .vfxPreferences().get(SaitamaContent.SERIOUS_FART) == VfxProfile.NEW) {
             Vec3 direction = player.getLookAngle();
             SaitamaTechniqueVfxPacket.broadcast(player.serverLevel(), new SaitamaTechniqueVfxPacket(
                     player.getId(), player.position().add(0, 0.75, 0), direction, 1.0f,

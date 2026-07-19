@@ -135,7 +135,7 @@ public class SeriousPunch implements Skill {
                 () -> dragDebris(serverLevel, player, fist, lookVec, true));
 
         TickScheduler.scheduleFromHere(Duration.of(WINDUP_TICKS * 50L, ChronoUnit.MILLIS), () -> {
-            releaseSeriousPunch(player, serverLevel, lookVec, fist, blockPos);
+            releaseSeriousPunch(player, serverLevel, lookVec, fist, cylinderStartPos, blockPos);
         });
     }
 
@@ -146,7 +146,7 @@ public class SeriousPunch implements Skill {
         ArrayList<BlockPos> blockPos = markBlocksToClear(serverLevel, 15, 1000,
                 (int) Math.floor(cylinderStartPos.x), (int) Math.floor(cylinderStartPos.y),
                 (int) Math.floor(cylinderStartPos.z), lookVec);
-        releaseSeriousPunch(player, serverLevel, lookVec, fist, blockPos);
+        releaseSeriousPunch(player, serverLevel, lookVec, fist, cylinderStartPos, blockPos);
     }
 
     /** Release-only presentation; the power runtime owns destruction/damage as explicit jobs. */
@@ -157,10 +157,11 @@ public class SeriousPunch implements Skill {
     }
 
     private static void releaseSeriousPunch(ServerPlayer player, ServerLevel serverLevel, Vec3 lookVec,
-                                            Vec3 fist, ArrayList<BlockPos> blockPos) {
+                                            Vec3 fist, Vec3 cylinderStartPos, ArrayList<BlockPos> blockPos) {
         final TickUtilities tickU = new TickUtilities();
         TickScheduler.scheduleWithCondition(Duration.of(50, ChronoUnit.MILLIS),
-                () -> tickU.fillCylinderAndEmuleEffects(player, serverLevel, 1000, blockPos));
+                () -> tickU.fillCylinderAndEmuleEffects(player, serverLevel, 1000, blockPos,
+                        cylinderStartPos, lookVec, 15.0f));
         carveGroundCracks(serverLevel, player, lookVec);
         dragDebris(serverLevel, player, fist, lookVec, false);
     }

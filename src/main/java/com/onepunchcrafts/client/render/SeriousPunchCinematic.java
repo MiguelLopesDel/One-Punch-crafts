@@ -14,6 +14,9 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Random;
 
 import static com.onepunchcrafts.OnePunchCrafts.MODID;
@@ -55,6 +58,26 @@ public final class SeriousPunchCinematic {
     private static final double LINE_RANGE = 260.0;
     private static final Random RANDOM = new Random();
 
+    /**
+     * Live destruction front, fed by {@code STYLE_SERIOUS_FRONT} updates from
+     * the server. The punch keeps carving the world for many seconds after the
+     * cinematic timeline ends, so fronts live independently of {@link #active}
+     * and follow the real destruction wherever it currently is.
+     */
+    private static final class Front {
+        Vec3 prevPos, lastPos;
+        long prevTime, lastTime;
+        Vec3 direction = new Vec3(0, 0, 1);
+        float radius = 15.0f;
+        long lastSeen;
+        boolean ending;
+        boolean quiet;
+        long endStart;
+        Vec3 endPos;
+    }
+
+    private static final Map<Integer, Front> FRONTS = new HashMap<>();
+
     private static boolean active;
     private static int casterId;
     private static Vec3 origin = Vec3.ZERO;
@@ -80,6 +103,46 @@ public final class SeriousPunchCinematic {
                 SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 0.8f, 0.55f, false);
     }
 
+    /** Server told us where the destruction front actually is right now. */
+    public static void updateFront(int caster, Vec3 pos, Vec3 dir, float radius) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null) return;
+        long now = minecraft.level.getGameTime();
+        Front front = FRONTS.computeIfAbsent(caster, id -> new Front());
+        if (front.ending) {
+            // A new punch started while the previous burst was still fading.
+            front = new Front();
+            FRONTS.put(caster, front);
+        }
+        if (front.lastPos == null) {
+            front.prevPos = pos;
+            front.prevTime = now;
+            front.lastPos = pos;
+            front.lastTime = now;
+        } else if (now > front.lastTime) {
+            front.prevPos = front.lastPos;
+            front.prevTime = front.lastTime;
+            front.lastPos = pos;
+            front.lastTime = now;
+        } else {
+            front.lastPos = pos;
+        }
+        if (dir.lengthSqr() > 1.0e-4) front.direction = dir.normalize();
+        if (radius > 0.5f) front.radius = radius;
+        front.lastSeen = now;
+    }
+
+    /** The destruction reached its end — burst once, then let the front die. */
+    public static void endFront(int caster, Vec3 pos) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null) return;
+        Front front = FRONTS.computeIfAbsent(caster, id -> new Front());
+        front.ending = true;
+        front.quiet = false;
+        front.endPos = pos;
+        front.endStart = minecraft.level.getGameTime();
+    }
+
     /** Timeline state consumed by {@link SeriousPostChainHandler}. */
     public record State(int casterId, Vec3 origin, Vec3 direction, float age, int windupTicks) {}
 
@@ -93,12 +156,15 @@ public final class SeriousPunchCinematic {
 
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || !active) return;
+        if (event.phase != TickEvent.Phase.END) return;
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) {
             active = false;
+            FRONTS.clear();
             return;
         }
+        tickFronts(minecraft);
+        if (!active) return;
 
         long age = minecraft.level.getGameTime() - startTick;
         if (age > windupTicks + TAIL_TICKS) {
@@ -150,6 +216,61 @@ public final class SeriousPunchCinematic {
         }
     }
 
+    /** Timeouts, ambient dust around the front and a rumble when it passes close. */
+    private static void tickFronts(Minecraft minecraft) {
+        if (FRONTS.isEmpty()) return;
+        long now = minecraft.level.getGameTime();
+        Vec3 camera = minecraft.gameRenderer.getMainCamera().getPosition();
+
+        Iterator<Front> iterator = FRONTS.values().iterator();
+        while (iterator.hasNext()) {
+            Front front = iterator.next();
+            if (front.ending) {
+                if (now - front.endStart > 40) iterator.remove();
+                continue;
+            }
+            if (now - front.lastSeen > 60) {
+                // Updates stopped without an end burst (unloaded chunks, caster
+                // logged off): fade out quietly where we last saw it.
+                front.ending = true;
+                front.quiet = true;
+                front.endPos = frontPositionAt(front, now);
+                front.endStart = now;
+                continue;
+            }
+
+            Vec3 pos = frontPositionAt(front, now);
+            double camDist = camera.distanceTo(pos);
+            if (camDist < 140.0) {
+                Vec3 side = stableSide(front.direction);
+                Vec3 up = side.cross(front.direction).normalize();
+                for (int i = 0; i < 3; i++) {
+                    double angle = RANDOM.nextDouble() * Math.PI * 2.0;
+                    Vec3 radial = side.scale(Math.cos(angle)).add(up.scale(Math.sin(angle)));
+                    Vec3 p = pos.add(radial.scale(front.radius * (0.8 + RANDOM.nextDouble() * 0.4)));
+                    Vec3 v = front.direction.scale(0.4).add(radial.scale(0.2));
+                    minecraft.level.addParticle(ParticleTypes.CLOUD, p.x, p.y, p.z, v.x, v.y, v.z);
+                }
+            }
+            if (camDist < 56.0 && now % 5 == 0) {
+                ScreenEffectHandler.addEffect((float) Math.min(2.5, 2.5 * 24.0 / (camDist + 10.0)), 6, 0.7f);
+            }
+        }
+    }
+
+    /**
+     * Where the front is right now: the last server update extrapolated at the
+     * observed speed, clamped so packet loss never shoots it past the truth.
+     */
+    private static Vec3 frontPositionAt(Front front, float now) {
+        if (front.lastPos == null) return front.endPos != null ? front.endPos : Vec3.ZERO;
+        Vec3 velocity = front.lastTime > front.prevTime
+                ? front.lastPos.subtract(front.prevPos).scale(1.0 / (front.lastTime - front.prevTime))
+                : front.direction.scale(1.2);
+        float ahead = Mth.clamp(now - front.lastTime, 0.0f, 6.0f);
+        return front.lastPos.add(velocity.scale(ahead));
+    }
+
     /** Windup squeeze and impact kick — subtle, but it sells the pressure. */
     @SubscribeEvent
     public static void onComputeFov(ViewportEvent.ComputeFov event) {
@@ -170,28 +291,116 @@ public final class SeriousPunchCinematic {
     @SubscribeEvent
     public static void onRenderLevel(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
-        State state = state(event.getPartialTick());
-        if (state == null) return;
-
         Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null) return;
+        State state = state(event.getPartialTick());
+        if (state == null && FRONTS.isEmpty()) return;
+
         VfxQuadBatch batch = VfxQuadBatch.begin(event);
 
-        float age = state.age();
-        int windup = state.windupTicks();
-        Vec3 side = stableSide(direction);
-        Vec3 up = side.cross(direction).normalize();
+        if (state != null) {
+            float age = state.age();
+            int windup = state.windupTicks();
+            Vec3 side = stableSide(direction);
+            Vec3 up = side.cross(direction).normalize();
 
-        if (age < windup) {
-            renderWindup(batch, side, up, age / windup, age);
-        } else {
-            float sinceImpact = age - windup;
-            renderLineAndCone(batch, side, up, sinceImpact);
-            renderImpact(batch, side, up, sinceImpact);
-            renderSkyTear(batch, minecraft, sinceImpact);
-            renderAftermath(batch, side, up, sinceImpact);
+            if (age < windup) {
+                renderWindup(batch, side, up, age / windup, age);
+            } else {
+                float sinceImpact = age - windup;
+                renderLineAndCone(batch, side, up, sinceImpact);
+                renderImpact(batch, side, up, sinceImpact);
+                renderSkyTear(batch, minecraft, sinceImpact);
+                renderAftermath(batch, side, up, sinceImpact);
+            }
+        }
+
+        if (!FRONTS.isEmpty()) {
+            float now = minecraft.level.getGameTime() + event.getPartialTick();
+            for (Front front : FRONTS.values()) {
+                if (front.ending) renderFrontEnd(batch, front, now);
+                else renderFront(batch, front, now);
+            }
         }
 
         batch.close();
+    }
+
+    /**
+     * The travelling shockwave riding the destruction front: a bright shock
+     * disc at the tip, compressed air ahead of it, the hot tunnel rim cooling
+     * off behind, and speed streaks hugging the edge.
+     */
+    private static void renderFront(VfxQuadBatch batch, Front front, float now) {
+        Vec3 pos = frontPositionAt(front, now);
+        Vec3 dir = front.direction;
+        Vec3 side = stableSide(dir);
+        Vec3 up = side.cross(dir).normalize();
+        float r = front.radius;
+        float spin = now * 0.12f;
+
+        // Leading shock disc.
+        batch.billboard(pos, r * 0.40f + r * 0.05f * (float) Math.sin(now * 0.9),
+                WHITE[0], WHITE[1], WHITE[2], 0.40f);
+        batch.ring(pos.add(dir.scale(0.8)), side, up, r * 1.02f, 0.9f, 30,
+                WHITE[0], WHITE[1], WHITE[2], 0.50f, spin);
+        batch.ring(pos.add(dir.scale(0.3)), side, up, r * 1.18f, 0.55f, 30,
+                YELLOW[0], YELLOW[1], YELLOW[2], 0.28f, -spin * 0.7f);
+        batch.ring(pos, side, up, r * 1.34f, 0.35f, 28,
+                RED[0], RED[1], RED[2], 0.14f, spin * 0.5f);
+
+        // Air being squeezed just ahead of the disc.
+        batch.ring(pos.add(dir.scale(5)), side, up, r * 0.78f, 24,
+                WHITE[0], WHITE[1], WHITE[2], 0.14f, -spin);
+        batch.ring(pos.add(dir.scale(11)), side, up, r * 0.50f, 20,
+                WHITE[0], WHITE[1], WHITE[2], 0.07f, spin * 1.3f);
+
+        // The tunnel rim still glowing behind the front, cooling with distance.
+        float[] offsets = {6, 14, 24, 38, 56, 78};
+        for (int i = 0; i < offsets.length; i++) {
+            float alpha = 0.26f * (float) Math.exp(-offsets[i] / 34.0);
+            float[] color = i < 2 ? YELLOW : WHITE;
+            batch.ring(pos.subtract(dir.scale(offsets[i])), side, up,
+                    r * (1.02f + offsets[i] * 0.003f), 26,
+                    color[0], color[1], color[2], alpha, spin * (i % 2 == 0 ? 0.4f : -0.3f) + i);
+        }
+
+        // Speed streaks hugging the rim, constantly overtaken by the front.
+        for (int i = 0; i < 12; i++) {
+            double angle = Math.PI * 2.0 * i / 12 + hash(i * 31) * 0.5;
+            Vec3 radial = side.scale(Math.cos(angle)).add(up.scale(Math.sin(angle)));
+            float cycle = (hash(i * 47) + now * 0.06f) % 1.0f;
+            Vec3 from = pos.add(radial.scale(r * (0.88 + 0.18 * hash(i * 53))))
+                    .subtract(dir.scale(2.0 + cycle * 6.0));
+            Vec3 to = from.add(dir.scale(5.0 + hash(i * 59) * 4.0));
+            batch.strip(from, to, 0.14f,
+                    WHITE[0], WHITE[1], WHITE[2], 0.40f * (1.0f - cycle * 0.6f));
+        }
+    }
+
+    /** Terminal bloom where the punch spent itself; quiet fade on timeout. */
+    private static void renderFrontEnd(VfxQuadBatch batch, Front front, float now) {
+        Vec3 pos = front.endPos != null ? front.endPos : frontPositionAt(front, now);
+        float age = Math.max(0.0f, now - front.endStart);
+        float fade = 1.0f - Mth.clamp(age / 30.0f, 0.0f, 1.0f);
+        if (fade <= 0.01f) return;
+        Vec3 dir = front.direction;
+        Vec3 side = stableSide(dir);
+        Vec3 up = side.cross(dir).normalize();
+        float r = front.radius;
+
+        if (front.quiet) {
+            batch.ring(pos, side, up, r * 1.05f, 28,
+                    WHITE[0], WHITE[1], WHITE[2], 0.25f * fade, age * 0.1f);
+            return;
+        }
+        float flash = (float) Math.exp(-age * 0.45);
+        batch.billboard(pos, r * (0.8f + age * 0.25f),
+                WHITE[0], WHITE[1], WHITE[2], 0.85f * flash);
+        batch.ring(pos, side, up, r * (1.0f + age * 0.9f), 32,
+                WHITE[0], WHITE[1], WHITE[2], 0.50f * fade, age * 0.2f);
+        batch.ring(pos, side, up, r * (1.3f + age * 1.4f), 32,
+                YELLOW[0], YELLOW[1], YELLOW[2], 0.25f * fade, -age * 0.15f);
     }
 
     /** Space folding inward: rings collapsing into the fist, a growing point of light. */

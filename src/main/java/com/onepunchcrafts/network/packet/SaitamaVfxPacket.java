@@ -1,7 +1,9 @@
 package com.onepunchcrafts.network.packet;
 
 import com.onepunchcrafts.client.render.SaitamaVfxRenderer;
+import com.onepunchcrafts.client.render.SeriousPunchCinematic;
 import com.onepunchcrafts.network.NetworkRegister;
+import com.onepunchcrafts.api.presentation.VfxProfile;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.phys.Vec3;
@@ -23,6 +25,10 @@ public class SaitamaVfxPacket {
     // style 2 was the old Serious Punch quad burst, superseded by SeriousPunchCinematic
     public static final int STYLE_DASH = 3;
     public static final int STYLE_SPEED_TRAIL = 4;
+    /** Position update of the travelling Serious Punch destruction front. */
+    public static final int STYLE_SERIOUS_FRONT = 5;
+    /** Terminal burst where the destruction front spends itself. */
+    public static final int STYLE_SERIOUS_FRONT_END = 6;
 
     private static final double BROADCAST_RANGE = 256.0D;
 
@@ -32,14 +38,21 @@ public class SaitamaVfxPacket {
     private final float scale;
     private final int style;
     private final int lifeTicks;
+    private final VfxProfile profile;
 
     public SaitamaVfxPacket(int casterId, Vec3 pos, Vec3 direction, float scale, int style, int lifeTicks) {
+        this(casterId, pos, direction, scale, style, lifeTicks, VfxProfile.ORIGINAL);
+    }
+
+    public SaitamaVfxPacket(int casterId, Vec3 pos, Vec3 direction, float scale, int style,
+                            int lifeTicks, VfxProfile profile) {
         this.casterId = casterId;
         this.pos = pos;
         this.direction = direction;
         this.scale = scale;
         this.style = style;
         this.lifeTicks = lifeTicks;
+        this.profile = profile;
     }
 
     public SaitamaVfxPacket(FriendlyByteBuf buf) {
@@ -49,6 +62,7 @@ public class SaitamaVfxPacket {
         this.scale = buf.readFloat();
         this.style = buf.readByte();
         this.lifeTicks = buf.readInt();
+        this.profile = buf.readEnum(VfxProfile.class);
     }
 
     public void encode(FriendlyByteBuf buf) {
@@ -62,12 +76,19 @@ public class SaitamaVfxPacket {
         buf.writeFloat(scale);
         buf.writeByte(style);
         buf.writeInt(lifeTicks);
+        buf.writeEnum(profile);
     }
 
     public static void handle(SaitamaVfxPacket msg, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
+        ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+            if (msg.style == STYLE_SERIOUS_FRONT)
+                SeriousPunchCinematic.updateFront(msg.casterId, msg.pos, msg.direction, msg.scale);
+            else if (msg.style == STYLE_SERIOUS_FRONT_END)
+                SeriousPunchCinematic.endFront(msg.casterId, msg.pos);
+            else
                 SaitamaVfxRenderer.addEffect(msg.casterId, msg.pos, msg.direction, msg.scale,
-                        msg.style, msg.lifeTicks)));
+                        msg.style, msg.lifeTicks, msg.profile);
+        }));
         ctx.get().setPacketHandled(true);
     }
 

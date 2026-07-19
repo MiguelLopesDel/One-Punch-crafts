@@ -21,7 +21,7 @@ import static com.brandon3055.draconicevolution.entity.guardian.DraconicGuardian
 
 public class DraconicCompat {
 
-    static void hurtDraconicCrystals(ServerLevel level, AABB pArea, DamageSource damageSource) {
+    public static void hurtDraconicCrystals(ServerLevel level, AABB pArea, DamageSource damageSource) {
         level.getEntitiesOfClass(GuardianCrystalEntity.class, pArea).forEach(entity -> {
             entity.setInvulnerable(false);
             entity.setSecondsOnFire(60);

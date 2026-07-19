@@ -17,6 +17,7 @@ public final class PowerState {
     private final TagSet tags = new TagSet();
     private final EffectContainer effects = new EffectContainer();
     private final AbilityBook abilities = new AbilityBook();
+    private final VfxPreferenceMap vfxPreferences = new VfxPreferenceMap();
     private boolean identityDirty;
 
     public Id powerSetId() { return powerSetId; }
@@ -26,6 +27,7 @@ public final class PowerState {
     public TagSet tags() { return tags; }
     public EffectContainer effects() { return effects; }
     public AbilityBook abilities() { return abilities; }
+    public VfxPreferenceMap vfxPreferences() { return vfxPreferences; }
 
     public void reset() {
         powerSetId(NONE);

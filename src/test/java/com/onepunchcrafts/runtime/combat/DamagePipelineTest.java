@@ -12,9 +12,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import com.onepunchcrafts.runtime.combat.BorosMitigationInterceptor;
 
 class DamagePipelineTest {
     private static final Id SERIOUS = Id.parse("onepunchcrafts:strike/serious_punch");
+    private static final Id NORMAL = Id.parse("onepunchcrafts:strike/normal_punch");
+    private static final Id BOROS = Id.parse("onepunchcrafts:identity/boros");
 
     @Test
     void seriousEscalatesWhenNormalApplicationIsDenied() {
@@ -35,6 +39,36 @@ class DamagePipelineTest {
 
         assertEquals(DamageApplier.Method.CANON_IMMUNE, result.method());
         assertEquals(20, target.health());
+    }
+
+    @Test
+    void armoredBorosSurvivesOneNormalPunch() {
+        FakeTarget target = new FakeTarget(150_000_000);
+        target.tags.add(BOROS);
+        DamagePipeline pipeline = new DamagePipeline();
+        DamageContext hit = new DamageContext("saitama", target,
+                new DamageSpec(NORMAL, DamageTier.DRAGON, 10_000_000, false,
+                        DamageSpec.IFramePolicy.RESPECT, Set.of()));
+
+        DamageApplier.ApplyResult result = pipeline.execute(hit, new FakeApplier(target, false));
+
+        assertTrue(result.alive(), "one Normal Punch must not kill Armored Boros");
+        assertEquals(144_500_000, result.healthAfter(), 0.01,
+                "Armored Form receives 55% of a Normal Punch");
+    }
+
+    @Test
+    void borosPerHitCapAndFormsUseAbsoluteBalanceValues() {
+        FakeTarget target = new FakeTarget(150_000_000);
+        target.tags.add(BOROS);
+        target.tags.add(BorosMitigationInterceptor.METEORIC);
+        DamageContext hit = new DamageContext("attacker", target,
+                new DamageSpec(NORMAL, DamageTier.DRAGON, 100_000_000, false,
+                        DamageSpec.IFramePolicy.RESPECT, Set.of()));
+
+        DamageApplier.ApplyResult result = new DamagePipeline().execute(hit, new FakeApplier(target, false));
+
+        assertEquals(138_000_000, result.healthAfter(), 0.01, "non-Serious hits cap at 8% max health");
     }
 
     private static DamageContext context(FakeTarget target) {

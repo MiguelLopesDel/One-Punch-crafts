@@ -3,6 +3,7 @@ package com.onepunchcrafts.common.event;
 import com.onepunchcrafts.content.SaitamaContent;
 import com.onepunchcrafts.network.packet.SaitamaTechniqueVfxPacket;
 import com.onepunchcrafts.util.HelpUtility;
+import com.onepunchcrafts.api.presentation.VfxProfile;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.living.LivingKnockBackEvent;
@@ -19,6 +20,7 @@ public final class SaitamaPresentationEventHandler {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         var state = HelpUtility.getSkillData(player).getPowerState();
         if (!state.powerSetId().equals(SaitamaContent.POWER_SET)) return;
+        if (state.vfxPreferences().get(SaitamaContent.KNOCKBACK_RESISTANCE) != VfxProfile.NEW) return;
         double resistance = state.attributes().value(SaitamaContent.ATTR_KNOCKBACK_RESISTANCE);
         if (resistance <= 0 || event.getOriginalStrength() <= 0) return;
 

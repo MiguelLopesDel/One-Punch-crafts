@@ -39,6 +39,8 @@ public class RenderGuiEventHandler {
         PowerState state = HelpUtility.getSkillData(player).getPowerState();
         if (!state.powerSetId().equals(PowerState.NONE)) {
             renderTechnique(state, width, height, font, guiGraphics);
+            if (HelpUtility.getSkillData(player).getSkillPack() instanceof BorosPack boros)
+                renderBorosEnergy(boros, width, height, font, guiGraphics);
             return;
         }
         SkillPack pack = HelpUtility.getSkillData(player).getSkillPack();

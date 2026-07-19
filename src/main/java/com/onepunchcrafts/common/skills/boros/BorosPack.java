@@ -5,6 +5,9 @@ import com.onepunchcrafts.common.skills.*;
 import com.onepunchcrafts.common.skills.sync.SyncStrategy;
 import com.onepunchcrafts.common.skills.sync.Syncable;
 import com.onepunchcrafts.common.skills.sync.SyncableSkillPack;
+import com.onepunchcrafts.api.Id;
+import com.onepunchcrafts.content.BorosContent;
+import com.onepunchcrafts.content.SaitamaContent;
 import com.onepunchcrafts.constant.NbtBooleanValues;
 import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.util.TickScheduler;
@@ -31,6 +34,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.event.TickEvent;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import org.jetbrains.annotations.NotNull;
@@ -74,8 +78,11 @@ public class BorosPack extends SyncableSkillPack {
     private short swimSpeed;
 
     @Getter
-    private final float MAX_HEALTH = 1_000_000_000f;
+    private final float MAX_HEALTH = 150_000_000f;
     private final double BASE_ATTACK_DAMAGE = 100_000.0;
+    // Anything above this is Serious Punch territory and bypasses Boros' durability.
+    private static final float SERIOUS_DAMAGE_THRESHOLD = 1.0e12f;
+    private static final float MAX_DAMAGE_FRACTION_PER_HIT = 0.08f;
 
     @Setter
     @Getter
@@ -121,7 +128,8 @@ public class BorosPack extends SyncableSkillPack {
 
     // Variáveis internas para controle da regeneração (não precisam de sync pois o efeito é no servidor)
     private int activeRegenTicks = 0;
-    private final float REGEN_TOTAL_AMOUNT = 200_000f;
+    // Canon: Boros reassembles his whole body in seconds — restores 25% of max HP over 5s.
+    private final float REGEN_TOTAL_AMOUNT = MAX_HEALTH * 0.25f;
 
     // === Sistema de Movimentação Adaptativa ===
     private int ticksInPit = 0;
@@ -183,6 +191,19 @@ public class BorosPack extends SyncableSkillPack {
             case 2 -> 10.0f;
             default -> 1.0f;
         };
+    }
+
+    /** Adapter used by the new radial Technique IDs; it does not mutate legacy selection. */
+    public void executeTechnique(Id technique, Player player) {
+        if (technique.equals(BorosContent.REGENERATION)) skills.get(0).get(0).execute(player);
+        else if (technique.equals(BorosContent.ENERGY_PROJECTION)) skills.get(0).get(1).execute(player);
+        else if (technique.equals(BorosContent.FLIGHT)) skills.get(0).get(2).execute(player);
+        else if (technique.equals(BorosContent.DESTRUCTIVE_MOVEMENT)) skills.get(0).get(3).execute(player);
+        else if (technique.equals(BorosContent.DASH)) skills.get(0).get(4).execute(player);
+        else if (technique.equals(BorosContent.FORM)) skills.get(1).get(0).execute(player);
+        else if (technique.equals(BorosContent.METEORIC_BURST)) skills.get(1).get(1).execute(player);
+        else if (technique.equals(BorosContent.ROARING_CANNON)) skills.get(2).get(0).execute(player);
+        else if (technique.equals(BorosContent.CSRC)) skills.get(2).get(1).execute(player);
     }
 
     public boolean consumeEnergy(float amount) {
@@ -879,7 +900,7 @@ public class BorosPack extends SyncableSkillPack {
 
     private void handleUltraRegenerationTick(ServerPlayer player) {
         if (activeRegenTicks > 0) {
-            player.heal(REGEN_TOTAL_AMOUNT / 100f); // 200.000 / 100 = 2.000 por tick
+            player.heal(REGEN_TOTAL_AMOUNT / 100f); // 25% da vida em 100 ticks
             activeRegenTicks--;
         }
     }
@@ -890,14 +911,14 @@ public class BorosPack extends SyncableSkillPack {
 
             // Cálculo: Vida Total / (Minutos * 60 segundos * 20 ticks)
             switch (currentForm) {
-                case 0: // Armadura: 20 minutos (24000 ticks)
-                    healAmount = MAX_HEALTH / 24000f;
-                    break;
-                case 1: // Liberado: 10 minutos (12000 ticks)
+                case 0: // Armadura: 10 minutos (12000 ticks)
                     healAmount = MAX_HEALTH / 12000f;
                     break;
-                case 2: // Meteoric Burst: 3 minutos (3600 ticks)
-                    healAmount = MAX_HEALTH / 3600f;
+                case 1: // Liberado: 4 minutos (4800 ticks)
+                    healAmount = MAX_HEALTH / 4800f;
+                    break;
+                case 2: // Meteoric Burst: 1 minuto (1200 ticks)
+                    healAmount = MAX_HEALTH / 1200f;
                     break;
             }
 
@@ -1025,7 +1046,35 @@ public class BorosPack extends SyncableSkillPack {
         player.getAttribute(Attributes.ATTACK_SPEED).setBaseValue(50F);
     }
 
+    /**
+     * Boros' anime-grade durability: each form soaks a large share of incoming
+     * damage and no single hit (short of a Serious Punch) can take more than a
+     * slice of his health bar. Runs at LOWEST priority, after Saitama's punch
+     * multipliers have been applied.
+     */
     @Override
     public void manageFlux(LivingEvent event) {
+        if (!(event instanceof LivingDamageEvent damageEvent)) return;
+        if (!(damageEvent.getEntity() instanceof ServerPlayer target)) return;
+        if (HelpUtility.getSkillData(target).getSkillPack() != this) return;
+        // Saitama Strikes already crossed BorosMitigationInterceptor before
+        // Minecraft's hurt() emitted this compatibility event.
+        if (damageEvent.getSource().getEntity() instanceof ServerPlayer attacker
+                && HelpUtility.getSkillData(attacker).getPowerState().powerSetId().equals(SaitamaContent.POWER_SET))
+            return;
+
+        float amount = damageEvent.getAmount();
+        // Serious Punch territory — nothing in Boros' arsenal stops it (canon).
+        if (amount >= SERIOUS_DAMAGE_THRESHOLD) return;
+
+        // Tuned so a plain Normal Punch (10M) kills in ~20-30 hits per form.
+        float taken = switch (currentForm) {
+            case 0 -> 0.55f; // Armored: the armor soaks part of the blow
+            case 1 -> 0.75f; // Released: armor gone, raw vitality only
+            case 2 -> 0.65f; // Meteoric Burst: life force flooding the body
+            default -> 0.75f;
+        };
+        float cap = MAX_HEALTH * MAX_DAMAGE_FRACTION_PER_HIT;
+        damageEvent.setAmount(Math.min(amount * taken, cap));
     }
 }

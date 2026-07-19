@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.onepunchcrafts.common.event.PlayerInteractEventhandler.everyDrop;
 import com.onepunchcrafts.content.SaitamaContent;
+import com.onepunchcrafts.api.presentation.VfxProfile;
 
 public class CheckAndDestructionBlockInAroundPacket {
 
@@ -67,7 +68,9 @@ public class CheckAndDestructionBlockInAroundPacket {
                             serverLevel.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, state),
                                     pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
                                     5, 0.25, 0.25, 0.25, 0.12);
-                            if (sentVfx.compareAndSet(false, true)) {
+                            if (sentVfx.compareAndSet(false, true)
+                                    && HelpUtility.getSkillData(player).getPowerState().vfxPreferences()
+                                    .get(SaitamaContent.EXTREME_SPEED) == VfxProfile.NEW) {
                                 SaitamaTechniqueVfxPacket.broadcast(serverLevel, new SaitamaTechniqueVfxPacket(
                                         player.getId(), net.minecraft.world.phys.Vec3.atCenterOf(pos),
                                         player.getLookAngle(), 1.4f,

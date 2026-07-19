@@ -143,6 +143,12 @@ impact, barrage, dash, speed trail). Stateless: one packet spawns it, it plays
 out and expires.
 _Avoid_: particle effect, animation
 
+**VFX Profile**:
+The Original/New presentation selected independently for each Technique by its
+performer. The server attaches that choice to emitted VFX, so every observer
+sees the author's selection rather than substituting their own local setting.
+_Avoid_: global Saitama VFX setting, observer preference
+
 **Cinematic**:
 A scripted, phased presentation sequence that temporarily owns the screen —
 camera, field of view, sound beats and full-screen treatment — driven by a

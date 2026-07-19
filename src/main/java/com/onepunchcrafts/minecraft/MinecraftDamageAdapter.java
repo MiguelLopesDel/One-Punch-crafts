@@ -16,6 +16,8 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import com.onepunchcrafts.common.skills.boros.BorosPack;
+import com.onepunchcrafts.runtime.combat.BorosMitigationInterceptor;
 
 /** VanillaOutbound Adapter: the sole runtime owner of hurt()/fallback mutation. */
 public final class MinecraftDamageAdapter implements DamageTarget, DamageApplier {
@@ -31,7 +33,13 @@ public final class MinecraftDamageAdapter implements DamageTarget, DamageApplier
     @Override public double health() { return target.getHealth(); }
     @Override public boolean alive() { return target.isAlive(); }
     @Override public boolean hasTag(Id tag) {
-        return target instanceof ServerPlayer player && HelpUtility.getSkillData(player).getPowerState().tags().contains(tag);
+        if (!(target instanceof ServerPlayer player)) return false;
+        var data = HelpUtility.getSkillData(player);
+        if (data.getPowerState().tags().contains(tag)) return true;
+        if (!(data.getSkillPack() instanceof BorosPack boros)) return false;
+        if (tag.equals(BorosMitigationInterceptor.BOROS_TARGET)) return true;
+        if (tag.equals(BorosMitigationInterceptor.RELEASED)) return boros.getCurrentForm() == 1;
+        return tag.equals(BorosMitigationInterceptor.METEORIC) && boros.getCurrentForm() == 2;
     }
 
     @Override public ApplyResult apply(DamageContext context) {

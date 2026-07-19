@@ -9,12 +9,15 @@ import com.onepunchcrafts.network.packet.AnimationPacket;
 import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.runtime.OnePunchRuntime;
 import com.onepunchcrafts.api.Id;
+import com.onepunchcrafts.api.presentation.VfxProfile;
 import com.onepunchcrafts.api.ability.Timeline;
 import com.onepunchcrafts.api.combat.DamageContext;
 import com.onepunchcrafts.api.combat.DamageTier;
 import com.onepunchcrafts.api.effect.EffectSpec;
 import com.onepunchcrafts.content.ConsecutiveNormalPunches;
 import com.onepunchcrafts.content.SaitamaContent;
+import com.onepunchcrafts.content.BorosContent;
+import com.onepunchcrafts.common.skills.boros.BorosPack;
 import com.onepunchcrafts.runtime.PowerEngine;
 import com.onepunchcrafts.runtime.ability.AbilityBook;
 import net.minecraft.core.particles.ParticleTypes;
@@ -82,9 +85,12 @@ public final class MinecraftExecutionSink implements PowerEngine.ExecutionSink {
                 int style = emission.timelineId().equals(SaitamaContent.TIMELINE_QUICK_BACKSTAB)
                         ? SaitamaTechniqueVfxPacket.QUICK_BACKSTAB
                         : SaitamaTechniqueVfxPacket.AREA_ROUTE;
-                SaitamaTechniqueVfxPacket.broadcast(actor.serverLevel(), new SaitamaTechniqueVfxPacket(
-                        actor.getId(), from, travel.lengthSqr() == 0 ? actor.getLookAngle() : travel.normalize(),
-                        (float) travel.length(), style, 8));
+                Id technique = style == SaitamaTechniqueVfxPacket.QUICK_BACKSTAB
+                        ? SaitamaContent.QUICK_BACKSTAB : SaitamaContent.NORMAL_PUNCHES_IN_AREA;
+                if (profile(technique) == VfxProfile.NEW)
+                    SaitamaTechniqueVfxPacket.broadcast(actor.serverLevel(), new SaitamaTechniqueVfxPacket(
+                            actor.getId(), from, travel.lengthSqr() == 0 ? actor.getLookAngle() : travel.normalize(),
+                            (float) travel.length(), style, 8));
                 actor.teleportTo(target.getX(), target.getY(), target.getZ());
             }
         } else if (command instanceof Timeline.Command.StrikeArea area) {
@@ -130,9 +136,13 @@ public final class MinecraftExecutionSink implements PowerEngine.ExecutionSink {
             Vec3 hit = actor.serverLevel().clip(new ClipContext(start, end, ClipContext.Block.COLLIDER,
                     ClipContext.Fluid.NONE, actor)).getLocation().subtract(direction);
             actor.teleportTo(hit.x, hit.y - actor.getEyeHeight(), hit.z);
-            SaitamaTechniqueVfxPacket.broadcast(actor.serverLevel(), new SaitamaTechniqueVfxPacket(
-                    actor.getId(), start, direction, (float) start.distanceTo(hit),
-                    SaitamaTechniqueVfxPacket.DASH, 12));
+            if (profile(SaitamaContent.DASH) == VfxProfile.NEW)
+                SaitamaTechniqueVfxPacket.broadcast(actor.serverLevel(), new SaitamaTechniqueVfxPacket(
+                        actor.getId(), start, direction, (float) start.distanceTo(hit),
+                        SaitamaTechniqueVfxPacket.DASH, 12));
+            else
+                SaitamaVfxPacket.broadcast(actor.serverLevel(), new SaitamaVfxPacket(actor.getId(), start, direction,
+                        (float) start.distanceTo(hit), SaitamaVfxPacket.STYLE_DASH, 12, VfxProfile.ORIGINAL));
         }
     }
 
@@ -146,20 +156,26 @@ public final class MinecraftExecutionSink implements PowerEngine.ExecutionSink {
     }
 
     private void cue(Id cue, AbilityBook.Emission emission) {
+        if (BorosContent.TECHNIQUES.contains(cue)) {
+            if (HelpUtility.getSkillData(actor).getSkillPack() instanceof BorosPack boros)
+                boros.executeTechnique(cue, actor);
+            return;
+        }
         if (cue.equals(SaitamaContent.CUE_SERIOUS_WINDUP)) {
             HelpUtility.clientEffects(actor);
             SeriousPunchVfxPacket.broadcast(actor.serverLevel(), new SeriousPunchVfxPacket(
                     actor.getId(), origin(emission).add(0, actor.getEyeHeight(), 0).add(look(emission).scale(1.2)),
-                    look(emission), SeriousPunch.WINDUP_TICKS));
+                    look(emission), SeriousPunch.WINDUP_TICKS, profile(SaitamaContent.SERIOUS_PUNCH)));
         } else if (cue.equals(SaitamaContent.CUE_BARRAGE)) {
             NetworkRegister.sendToAllClientsExcept(actor, new AnimationPacket(actor.getStringUUID(), "multiple_punches"));
             SaitamaVfxPacket.broadcast(actor.serverLevel(), new SaitamaVfxPacket(actor.getId(), actor.getEyePosition(),
                     actor.getLookAngle(), 1, SaitamaVfxPacket.STYLE_BARRAGE,
-                    ConsecutiveNormalPunches.DURATION_TICKS));
+                    ConsecutiveNormalPunches.DURATION_TICKS, profile(SaitamaContent.NORMAL_PUNCH)));
         } else if (cue.equals(SaitamaContent.CUE_WEAK_BARRAGE)) {
             NetworkRegister.sendToAllClientsExcept(actor, new AnimationPacket(actor.getStringUUID(), "multiple_punches"));
             SaitamaVfxPacket.broadcast(actor.serverLevel(), new SaitamaVfxPacket(actor.getId(), actor.getEyePosition(),
-                    actor.getLookAngle(), 0.6f, SaitamaVfxPacket.STYLE_BARRAGE, 100));
+                    actor.getLookAngle(), 0.6f, SaitamaVfxPacket.STYLE_BARRAGE, 100,
+                    profile(SaitamaContent.WEAK_PUNCH)));
         } else if (cue.equals(SaitamaContent.CUE_BARRAGE_HIT)) {
             float progress = ConsecutiveNormalPunches.progress(emission.step().tick());
             actor.serverLevel().playSound(null, actor.getX(), actor.getEyeY(), actor.getZ(),
@@ -190,7 +206,8 @@ public final class MinecraftExecutionSink implements PowerEngine.ExecutionSink {
         });
         Vec3 burst = origin.add(look.scale(3.0));
         SaitamaVfxPacket.broadcast(actor.serverLevel(), new SaitamaVfxPacket(actor.getId(),
-                burst, look, 2.2f, SaitamaVfxPacket.STYLE_PUNCH_IMPACT, 18));
+                burst, look, 2.2f, SaitamaVfxPacket.STYLE_PUNCH_IMPACT, 18,
+                profile(SaitamaContent.NORMAL_PUNCH)));
         actor.serverLevel().playSound(null, burst.x, burst.y, burst.z, SoundEvents.GENERIC_EXPLODE,
                 SoundSource.PLAYERS, 1.4f, 0.7f);
     }
@@ -210,19 +227,24 @@ public final class MinecraftExecutionSink implements PowerEngine.ExecutionSink {
         if (direction.lengthSqr() > 0) direction = direction.normalize();
         Vec3 contact = target.position().add(0, target.getBbHeight() * 0.6, 0);
         if (strikeId.equals(SaitamaContent.WEAKENING_STRIKE)) {
-            SaitamaTechniqueVfxPacket.broadcast(actor.serverLevel(), new SaitamaTechniqueVfxPacket(
-                    actor.getId(), contact, direction, scale,
-                    SaitamaTechniqueVfxPacket.WEAKENING, 12));
+            if (profile(SaitamaContent.WEAKENING_PUNCH) == VfxProfile.NEW)
+                SaitamaTechniqueVfxPacket.broadcast(actor.serverLevel(), new SaitamaTechniqueVfxPacket(
+                        actor.getId(), contact, direction, scale,
+                        SaitamaTechniqueVfxPacket.WEAKENING, 12));
             return;
         }
+        Id technique = strikeId.equals(SaitamaContent.WEAK_STRIKE)
+                ? SaitamaContent.WEAK_PUNCH : SaitamaContent.NORMAL_PUNCH;
         SaitamaVfxPacket.broadcast(actor.serverLevel(), new SaitamaVfxPacket(actor.getId(),
                 contact, direction, scale,
-                SaitamaVfxPacket.STYLE_PUNCH_IMPACT, tier == DamageTier.DRAGON ? 16 : 10));
+                SaitamaVfxPacket.STYLE_PUNCH_IMPACT, tier == DamageTier.DRAGON ? 16 : 10,
+                profile(technique)));
         double knockback = state().attributes().value(SaitamaContent.ATTR_ATTACK_KNOCKBACK);
         if (knockback > 0) {
-            SaitamaTechniqueVfxPacket.broadcast(actor.serverLevel(), new SaitamaTechniqueVfxPacket(
-                    actor.getId(), contact, direction, (float) Math.min(6.0, 0.5 + knockback / 20.0),
-                    SaitamaTechniqueVfxPacket.ATTACK_KNOCKBACK, 12));
+            if (profile(SaitamaContent.ATTACK_KNOCKBACK) == VfxProfile.NEW)
+                SaitamaTechniqueVfxPacket.broadcast(actor.serverLevel(), new SaitamaTechniqueVfxPacket(
+                        actor.getId(), contact, direction, (float) Math.min(6.0, 0.5 + knockback / 20.0),
+                        SaitamaTechniqueVfxPacket.ATTACK_KNOCKBACK, 12));
         }
     }
 
@@ -272,4 +294,6 @@ public final class MinecraftExecutionSink implements PowerEngine.ExecutionSink {
     private com.onepunchcrafts.runtime.state.PowerState state() {
         return HelpUtility.getSkillData(actor).getPowerState();
     }
+
+    private VfxProfile profile(Id technique) { return state().vfxPreferences().get(technique); }
 }

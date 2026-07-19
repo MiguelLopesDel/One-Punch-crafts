@@ -2,6 +2,7 @@ package com.onepunchcrafts.util;
 
 import com.onepunchcrafts.common.damage.DamageSourceMod;
 import com.onepunchcrafts.common.damage.DamagesRegistry;
+import com.onepunchcrafts.common.vfx.SeriousPunchFront;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
@@ -13,6 +14,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
 
@@ -29,10 +31,12 @@ public class TickUtilities {
     //e pode se dizer que não tem profundidade é 2D não tem um eixo Z pois só ocupa 1 bloco do eixo Z
     //Então eu preciso pegar esse circulo e extender ele ao logo do eixo Z ou seja dar a ele profundidade
     //para isso posso pegar meu vetor e escalar ele.
-    public boolean fillCylinderAndEmuleEffects(ServerPlayer player, final ServerLevel level, int breakBlocksPerTick, List<BlockPos> blocksPos) {
+    public boolean fillCylinderAndEmuleEffects(ServerPlayer player, final ServerLevel level, int breakBlocksPerTick,
+                                               List<BlockPos> blocksPos, Vec3 axisOrigin, Vec3 direction, float radius) {
         int currentIteration = 0;
         if (blocksPos.isEmpty() || startIndex >= blocksPos.size())
             return true;
+        SeriousPunchFront.advance(level, player, blocksPos, startIndex, axisOrigin, direction, radius);
         BlockPos pStart = blocksPos.get(startIndex);
         int i = 15;
         AABB pArea = new AABB(new BlockPos(pStart.getX() - i, pStart.getY() - i, pStart.getZ() - i),
@@ -74,6 +78,7 @@ public class TickUtilities {
             if (currentIteration % breakBlocksPerTick == 0)
                 return false;
         }
+        SeriousPunchFront.finish(level, player, blocksPos, axisOrigin, direction, radius);
         return true;
     }
 }

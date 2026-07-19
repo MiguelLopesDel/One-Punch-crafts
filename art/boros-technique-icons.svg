@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <defs>
+    <radialGradient id="paper"><stop offset="0" stop-color="#f5d77b"/><stop offset=".72" stop-color="#d89a31"/><stop offset="1" stop-color="#22110d"/></radialGradient>
+    <radialGradient id="void"><stop offset="0" stop-color="#ef63ff"/><stop offset=".35" stop-color="#702070"/><stop offset="1" stop-color="#0b0710"/></radialGradient>
+    <filter id="rough"><feTurbulence baseFrequency=".12" numOctaves="2" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.2"/></filter>
+    <g id="seal"><rect width="64" height="64" fill="url(#paper)"/><circle cx="32" cy="32" r="27" fill="none" stroke="#160d0a" stroke-width="3"/><circle cx="32" cy="32" r="23" fill="none" stroke="#522117" stroke-width="1" stroke-dasharray="3 2"/></g>
+  </defs>
+
+  <!-- regeneration: Boros' eye reforming inside a cellular spiral -->
+  <g transform="translate(0 0)"><use href="#seal"/><g fill="none" stroke="#100a0a" stroke-width="3" stroke-linecap="round" filter="url(#rough)"><path d="M12 35c5-19 31-28 42-9 9 17-12 33-28 25-12-6-8-22 3-26 10-4 19 8 11 15-6 6-15-1-10-7"/><path d="M16 20l6 5M47 14l-4 7M51 45l-8-2M18 50l5-6"/></g><ellipse cx="33" cy="34" rx="6" ry="3" fill="#8c187d" stroke="#100a0a" stroke-width="2"/></g>
+
+  <!-- energy projection: palm and straight energy lance -->
+  <g transform="translate(64 0)"><use href="#seal"/><g stroke="#100a0a" stroke-linecap="round" stroke-linejoin="round"><path d="M10 36L31 29l9 5-9 6z" fill="#161018" stroke-width="2"/><path d="M29 27l1-12M34 28l5-13M38 30l8-10M27 31l-7-9" fill="none" stroke-width="3"/><path d="M39 34L58 27 47 34l11 7z" fill="#f2dc91" stroke-width="2"/><circle cx="39" cy="34" r="5" fill="#b92bc9" stroke-width="2"/></g></g>
+
+  <!-- burst step: eye/figure split into speed slashes -->
+  <g transform="translate(128 0)"><use href="#seal"/><g fill="none" stroke="#100a0a" stroke-linecap="round" filter="url(#rough)"><path d="M9 44l25-25M16 50l28-28M30 50l24-24" stroke-width="5"/><path d="M11 20h18M8 28h14M39 45h16" stroke-width="2"/></g><path d="M31 18c8 2 14 8 15 16-8-6-14-4-20 1 3-8 3-12 5-17z" fill="#7e197c" stroke="#100a0a" stroke-width="2"/></g>
+
+  <!-- roaring cannon: open mouth/eye firing a turbulent beam -->
+  <g transform="translate(0 64)"><use href="#seal"/><path d="M10 36c8-15 20-18 30-7l-7 13c-9 4-17 2-23-6z" fill="#140d13"/><path d="M18 35c6-5 11-5 16 0-5 5-10 5-16 0z" fill="#d14add"/><path d="M35 34c9-7 17-6 23-2-8 2-11 4-20 8z" fill="#f3dc8c" stroke="#120b0b" stroke-width="2"/><path d="M39 29l17-8M40 40l16 6" stroke="#120b0b" stroke-width="3"/></g>
+
+  <!-- CSRC: star core splitting a planet -->
+  <g transform="translate(64 64)"><rect width="64" height="64" fill="url(#void)"/><circle cx="32" cy="32" r="28" fill="none" stroke="#120813" stroke-width="4"/><path d="M7 36c13-7 36-10 51-2M10 44c15-5 29-4 45 1" fill="none" stroke="#edca70" stroke-width="2"/><path d="M32 7l4 18 17-9-13 15 17 8-19-2 3 19-9-17-12 16 6-19-19 1 18-7-13-14 17 8z" fill="#f7e9b3" stroke="#140b13" stroke-width="2"/></g>
+
+  <!-- flight: upward one-eyed silhouette with pressure wings -->
+  <g transform="translate(128 64)"><use href="#seal"/><path d="M32 10l8 17-5 23h-7l-4-23z" fill="#161018"/><ellipse cx="32" cy="21" rx="4" ry="2" fill="#d243dc"/><path d="M25 28C16 24 10 19 7 13c3 14 8 25 20 31M39 28c9-4 15-9 18-15-3 14-8 25-20 31" fill="none" stroke="#110b0b" stroke-width="4"/><path d="M32 52v8M25 51l-5 7M39 51l5 7" stroke="#8b237f" stroke-width="3"/></g>
+
+  <!-- destructive movement: footfall cracking the world -->
+  <g transform="translate(0 128)"><use href="#seal"/><path d="M17 12c10 4 18 13 19 24l-8 7-15-5c-3-11-2-19 4-26z" fill="#181013" stroke="#0c0808" stroke-width="2"/><path d="M30 42l-6 15M33 43l7 14M26 47l-12 6M37 47l14 6M32 44v15" fill="none" stroke="#100a0a" stroke-width="3"/><path d="M10 40c14 4 30 4 45-1" fill="none" stroke="#66221f" stroke-width="2"/></g>
+
+  <!-- form change: armor shell breaking around Boros' eye -->
+  <g transform="translate(64 128)"><use href="#seal"/><path d="M15 14l17-6 17 7 5 20-9 18-13 5-14-6-8-17z" fill="#161016" stroke="#090707" stroke-width="2"/><path d="M32 9l-4 15 8 8-6 10 3 15M14 27l14-3M36 32l17-5M30 42l-12 10" fill="none" stroke="#e4bb61" stroke-width="2"/><path d="M22 31c7-6 14-6 21 0-7 8-14 8-21 0z" fill="#8c188b" stroke="#e5ca78" stroke-width="2"/><circle cx="32" cy="32" r="3" fill="#f5e7b3"/></g>
+
+  <!-- meteoric burst: one-eyed comet body and explosive corona -->
+  <g transform="translate(128 128)"><rect width="64" height="64" fill="url(#void)"/><circle cx="32" cy="32" r="28" fill="none" stroke="#e2b85e" stroke-width="3"/><path d="M31 8l4 13 9-10-4 14 14-3-12 8 13 7-15-2 5 14-10-11-4 17-3-17-12 11 7-15-15 3 13-9-12-7 15 3z" fill="#d774e1" stroke="#130a13" stroke-width="2"/><path d="M25 25c5-6 12-6 17 0-4 8-12 8-17 0z" fill="#100a12"/><ellipse cx="34" cy="25" rx="3" ry="2" fill="#f8e7aa"/></g>
+</svg>

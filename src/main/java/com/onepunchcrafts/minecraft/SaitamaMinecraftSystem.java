@@ -2,6 +2,7 @@ package com.onepunchcrafts.minecraft;
 
 import com.onepunchcrafts.network.packet.SaitamaVfxPacket;
 import com.onepunchcrafts.network.packet.SaitamaTechniqueVfxPacket;
+import com.onepunchcrafts.api.presentation.VfxProfile;
 import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.content.SaitamaContent;
 import net.minecraft.server.level.ServerPlayer;
@@ -84,18 +85,23 @@ public final class SaitamaMinecraftSystem {
 
         if (gameTime % 2 == 0 && speed >= 0.5) {
             Vec3 trailOrigin = current.add(0, 0.9, 0).subtract(horizontalDirection.scale(0.6));
-            if (state.tags().contains(SaitamaContent.TAG_EXTREME_SPEED)) {
+            if (state.tags().contains(SaitamaContent.TAG_EXTREME_SPEED)
+                    && state.vfxPreferences().get(SaitamaContent.EXTREME_SPEED) == VfxProfile.NEW) {
                 SaitamaTechniqueVfxPacket.broadcast(player.serverLevel(), new SaitamaTechniqueVfxPacket(
                         player.getId(), trailOrigin, horizontalDirection, (float) speed,
                         SaitamaTechniqueVfxPacket.EXTREME_SPEED, 6));
             } else {
+                VfxProfile selected = state.tags().contains(SaitamaContent.TAG_EXTREME_SPEED)
+                        ? state.vfxPreferences().get(SaitamaContent.EXTREME_SPEED)
+                        : state.vfxPreferences().get(SaitamaContent.SPEED);
                 SaitamaVfxPacket.broadcast(player.serverLevel(), new SaitamaVfxPacket(player.getId(),
                         trailOrigin, horizontalDirection, (float) speed,
-                        SaitamaVfxPacket.STYLE_SPEED_TRAIL, 6));
+                        SaitamaVfxPacket.STYLE_SPEED_TRAIL, 6, selected));
             }
         }
 
-        if (gameTime % 2 == 0 && player.isInWater() && movement.lengthSqr() > 0.02) {
+        if (gameTime % 2 == 0 && player.isInWater() && movement.lengthSqr() > 0.02
+                && state.vfxPreferences().get(SaitamaContent.SWIM_SPEED) == VfxProfile.NEW) {
             Vec3 swimDirection = movement.lengthSqr() < 1.0e-4 ? player.getLookAngle() : movement.normalize();
             float swimScale = (float) Math.min(5.0, Math.max(0.5,
                     value(state, SaitamaContent.ATTR_SWIM_SPEED)));
@@ -105,13 +111,15 @@ public final class SaitamaMinecraftSystem {
         }
 
         double weight = value(state, SaitamaContent.ATTR_WEIGHT);
-        if (!wasOnGround && onGround) {
+        if (!wasOnGround && onGround
+                && state.vfxPreferences().get(SaitamaContent.WEIGHT) == VfxProfile.NEW) {
             float force = (float) Math.min(6.0, Math.max(0.7,
                     Math.abs(previousVertical == null ? verticalSpeed : previousVertical) * 2.5 + weight / 60.0));
             SaitamaTechniqueVfxPacket.broadcast(player.serverLevel(), new SaitamaTechniqueVfxPacket(
                     player.getId(), current.add(0, 0.06, 0), new Vec3(0, 1, 0), force,
                     SaitamaTechniqueVfxPacket.WEIGHT, 16));
-        } else if (onGround && speed > 0.08 && weight > 1 && gameTime % 6 == 0) {
+        } else if (onGround && speed > 0.08 && weight > 1 && gameTime % 6 == 0
+                && state.vfxPreferences().get(SaitamaContent.WEIGHT) == VfxProfile.NEW) {
             float force = (float) Math.min(2.5, 0.25 + weight / 120.0);
             SaitamaTechniqueVfxPacket.broadcast(player.serverLevel(), new SaitamaTechniqueVfxPacket(
                     player.getId(), current.add(0, 0.04, 0), horizontalDirection, force,
@@ -120,6 +128,7 @@ public final class SaitamaMinecraftSystem {
 
         if (wasOnGround && !onGround && verticalSpeed > 0.05
                 && state.tags().contains(SaitamaContent.TAG_EXTREME_JUMP)) {
+            if (state.vfxPreferences().get(SaitamaContent.EXTREME_JUMP) != VfxProfile.NEW) return;
             Vec3 jumpDirection = movement.lengthSqr() < 1.0e-4 ? new Vec3(0, 1, 0) : movement.normalize();
             SaitamaTechniqueVfxPacket.broadcast(player.serverLevel(), new SaitamaTechniqueVfxPacket(
                     player.getId(), previous.add(0, 0.06, 0), jumpDirection,
@@ -127,6 +136,7 @@ public final class SaitamaMinecraftSystem {
                     SaitamaTechniqueVfxPacket.EXTREME_JUMP, 18));
         }
     }
+
 
     private static double value(com.onepunchcrafts.runtime.state.PowerState state, com.onepunchcrafts.api.Id id) {
         return state.attributes().value(id);

@@ -38,6 +38,11 @@ public final class SaitamaContent {
     public static final Id SWIM_SPEED = id("control/swim_speed");
     public static final Id EXTREME_SPEED = id("control/extreme_speed");
     public static final Id EXTREME_JUMP = id("control/extreme_jump");
+    public static final List<Id> VFX_TECHNIQUES = List.of(
+            WEAK_PUNCH, NORMAL_PUNCH, SERIOUS_PUNCH, WEAKENING_PUNCH,
+            QUICK_BACKSTAB, NORMAL_PUNCHES_IN_AREA, DASH, SERIOUS_FART,
+            SPEED, WEIGHT, KNOCKBACK_RESISTANCE, ATTACK_KNOCKBACK,
+            SWIM_SPEED, BREAK_BLOCKS, EXTREME_SPEED, EXTREME_JUMP);
 
     public static final Id TAG_SERIOUS_FART = id("state/serious_fart");
     public static final Id TAG_BREAK_BLOCKS = id("state/break_blocks_quickly");

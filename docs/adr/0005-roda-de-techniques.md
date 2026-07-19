@@ -24,3 +24,7 @@ O cliente envia intents com o ID escolhido e, nos sliders, o valor solicitado.
 O servidor valida posse, faixa e passo, mantém a seleção e seu histórico e
 devolve o delta autoritativo. Isso evita índices persistidos, pacotes de direção
 dependentes da ordem do loadout e corridas entre seleção e uso.
+
+Boros usa a mesma roda e IDs persistentes em duas páginas (`Combate` e `Formas e
+controle`). Durante a migração, as Techniques roteiam para um Adapter do
+`BorosPack` legado; a roda nunca altera o índice legado para executar uma ação.

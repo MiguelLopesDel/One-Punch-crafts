@@ -2,7 +2,7 @@ package com.onepunchcrafts.network.packet;
 
 import com.onepunchcrafts.client.render.SeriousPunchCinematic;
 import com.onepunchcrafts.client.render.NewSeriousPunchCinematic;
-import com.onepunchcrafts.client.ClientConfig;
+import com.onepunchcrafts.api.presentation.VfxProfile;
 import com.onepunchcrafts.network.NetworkRegister;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerLevel;
@@ -26,12 +26,18 @@ public class SeriousPunchVfxPacket {
     private final Vec3 origin;
     private final Vec3 direction;
     private final int windupTicks;
+    private final VfxProfile profile;
 
     public SeriousPunchVfxPacket(int casterId, Vec3 origin, Vec3 direction, int windupTicks) {
+        this(casterId, origin, direction, windupTicks, VfxProfile.ORIGINAL);
+    }
+
+    public SeriousPunchVfxPacket(int casterId, Vec3 origin, Vec3 direction, int windupTicks, VfxProfile profile) {
         this.casterId = casterId;
         this.origin = origin;
         this.direction = direction;
         this.windupTicks = windupTicks;
+        this.profile = profile;
     }
 
     public SeriousPunchVfxPacket(FriendlyByteBuf buf) {
@@ -39,6 +45,7 @@ public class SeriousPunchVfxPacket {
         this.origin = new Vec3(buf.readDouble(), buf.readDouble(), buf.readDouble());
         this.direction = new Vec3(buf.readDouble(), buf.readDouble(), buf.readDouble());
         this.windupTicks = buf.readInt();
+        this.profile = buf.readEnum(VfxProfile.class);
     }
 
     public void encode(FriendlyByteBuf buf) {
@@ -50,11 +57,12 @@ public class SeriousPunchVfxPacket {
         buf.writeDouble(direction.y);
         buf.writeDouble(direction.z);
         buf.writeInt(windupTicks);
+        buf.writeEnum(profile);
     }
 
     public static void handle(SeriousPunchVfxPacket msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
-            if (ClientConfig.SAITAMA_VFX_PROFILE.get() == ClientConfig.SaitamaVfxProfile.NEW)
+            if (msg.profile == VfxProfile.NEW)
                 NewSeriousPunchCinematic.start(msg.casterId, msg.origin, msg.direction, msg.windupTicks);
             else
                 SeriousPunchCinematic.start(msg.casterId, msg.origin, msg.direction, msg.windupTicks);

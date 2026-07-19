@@ -22,6 +22,10 @@ public final class DamagePipeline {
     private final Map<DamageStage, List<DamageInterceptor>> interceptors = new EnumMap<>(DamageStage.class);
     private final Map<DamageStage, List<DamageObserver>> observers = new EnumMap<>(DamageStage.class);
 
+    public DamagePipeline() {
+        register(new BorosMitigationInterceptor());
+    }
+
     public void register(DamageInterceptor interceptor) {
         if (interceptor.stage() == DamageStage.APPLY || interceptor.stage() == DamageStage.POST_APPLY
                 || interceptor.stage() == DamageStage.VERIFY || interceptor.stage() == DamageStage.TARGET_POLICY)

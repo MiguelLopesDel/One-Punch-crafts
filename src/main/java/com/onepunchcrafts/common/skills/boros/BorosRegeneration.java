@@ -32,8 +32,8 @@ public class BorosRegeneration implements Skill {
 
         if (pack.consumeEnergy(BorosConfig.ACTIVE_REGEN_COST)) {
             pack.startUltraRegeneration();
-            // Define o cooldown de 20 minutos (24000 ticks)
-            pack.setTicksToUseUltraRegeneration(24_000);
+            // Define o cooldown de 5 minutos (6000 ticks)
+            pack.setTicksToUseUltraRegeneration(6_000);
             player.sendSystemMessage(Component.translatable("skill.boros.regeneration.active"));
             if (player.level() instanceof ServerLevel serverLevel) {
                 serverLevel.sendParticles(ParticleTypes.HAPPY_VILLAGER, player.getX(), player.getY() + 1, player.getZ(), 20, 0.5, 1.0, 0.5, 0.1);

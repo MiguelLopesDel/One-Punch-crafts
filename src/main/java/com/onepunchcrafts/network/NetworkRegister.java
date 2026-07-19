@@ -15,7 +15,7 @@ import static com.onepunchcrafts.OnePunchCrafts.MODID;
 public class NetworkRegister {
 
     private static int id = 0;
-    private static final String PROTOCOL_VERSION = "4";
+    private static final String PROTOCOL_VERSION = "5";
     private static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, "main"),
             () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals
     );
@@ -135,6 +135,16 @@ public class NetworkRegister {
                 .encoder(SaitamaTechniqueVfxPacket::encode)
                 .decoder(SaitamaTechniqueVfxPacket::new)
                 .consumerMainThread(SaitamaTechniqueVfxPacket::handle)
+                .add();
+        INSTANCE.messageBuilder(SetVfxPreferenceIntentPacket.class, ++id, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(SetVfxPreferenceIntentPacket::encode)
+                .decoder(SetVfxPreferenceIntentPacket::new)
+                .consumerMainThread(SetVfxPreferenceIntentPacket::handle)
+                .add();
+        INSTANCE.messageBuilder(VfxPreferenceDeltaPacket.class, ++id, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(VfxPreferenceDeltaPacket::encode)
+                .decoder(VfxPreferenceDeltaPacket::new)
+                .consumerMainThread(VfxPreferenceDeltaPacket::handle)
                 .add();
     }
 
