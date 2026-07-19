@@ -1,6 +1,7 @@
 package com.onepunchcrafts.minecraft;
 
 import com.onepunchcrafts.network.packet.SaitamaVfxPacket;
+import com.onepunchcrafts.network.packet.SaitamaTechniqueVfxPacket;
 import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.content.SaitamaContent;
 import net.minecraft.server.level.ServerPlayer;
@@ -20,6 +21,8 @@ import java.util.UUID;
 public final class SaitamaMinecraftSystem {
     private static final Map<UUID, Integer> SHIFT_HOLD = new HashMap<>();
     private static final Map<UUID, Vec3> PREVIOUS = new HashMap<>();
+    private static final Map<UUID, Boolean> PREVIOUS_GROUND = new HashMap<>();
+    private static final Map<UUID, Double> PREVIOUS_VERTICAL_SPEED = new HashMap<>();
 
     private SaitamaMinecraftSystem() {}
 
@@ -27,6 +30,8 @@ public final class SaitamaMinecraftSystem {
     public static void clear(ServerPlayer player) {
         SHIFT_HOLD.remove(player.getUUID());
         PREVIOUS.remove(player.getUUID());
+        PREVIOUS_GROUND.remove(player.getUUID());
+        PREVIOUS_VERTICAL_SPEED.remove(player.getUUID());
     }
 
     public static void tick(ServerPlayer player) {
@@ -59,20 +64,68 @@ public final class SaitamaMinecraftSystem {
                 player.addEffect(new MobEffectInstance(MobEffects.JUMP, 1, Math.min(held, 127)));
             } else SHIFT_HOLD.remove(player.getUUID());
         }
-        speedTrail(player);
+        movementVfx(player, state);
     }
 
-    private static void speedTrail(ServerPlayer player) {
+    private static void movementVfx(ServerPlayer player, com.onepunchcrafts.runtime.state.PowerState state) {
         Vec3 current = player.position();
         Vec3 previous = PREVIOUS.put(player.getUUID(), current);
-        if (previous == null || player.level().getGameTime() % 2 != 0 || player.isSpectator()) return;
+        boolean onGround = player.onGround();
+        Boolean wasOnGround = PREVIOUS_GROUND.put(player.getUUID(), onGround);
+        double verticalSpeed = player.getDeltaMovement().y;
+        Double previousVertical = PREVIOUS_VERTICAL_SPEED.put(player.getUUID(), verticalSpeed);
+        if (previous == null || wasOnGround == null || player.isSpectator()) return;
+
         Vec3 movement = current.subtract(previous);
         double speed = movement.horizontalDistance();
-        if (speed < 0.5) return;
-        Vec3 direction = new Vec3(movement.x, 0, movement.z).normalize();
-        SaitamaVfxPacket.broadcast(player.serverLevel(), new SaitamaVfxPacket(player.getId(),
-                current.add(0, 0.9, 0).subtract(direction.scale(0.6)), direction, (float) speed,
-                SaitamaVfxPacket.STYLE_SPEED_TRAIL, 6));
+        Vec3 horizontalDirection = speed < 1.0e-4 ? player.getLookAngle()
+                : new Vec3(movement.x, 0, movement.z).normalize();
+        long gameTime = player.level().getGameTime();
+
+        if (gameTime % 2 == 0 && speed >= 0.5) {
+            Vec3 trailOrigin = current.add(0, 0.9, 0).subtract(horizontalDirection.scale(0.6));
+            if (state.tags().contains(SaitamaContent.TAG_EXTREME_SPEED)) {
+                SaitamaTechniqueVfxPacket.broadcast(player.serverLevel(), new SaitamaTechniqueVfxPacket(
+                        player.getId(), trailOrigin, horizontalDirection, (float) speed,
+                        SaitamaTechniqueVfxPacket.EXTREME_SPEED, 6));
+            } else {
+                SaitamaVfxPacket.broadcast(player.serverLevel(), new SaitamaVfxPacket(player.getId(),
+                        trailOrigin, horizontalDirection, (float) speed,
+                        SaitamaVfxPacket.STYLE_SPEED_TRAIL, 6));
+            }
+        }
+
+        if (gameTime % 2 == 0 && player.isInWater() && movement.lengthSqr() > 0.02) {
+            Vec3 swimDirection = movement.lengthSqr() < 1.0e-4 ? player.getLookAngle() : movement.normalize();
+            float swimScale = (float) Math.min(5.0, Math.max(0.5,
+                    value(state, SaitamaContent.ATTR_SWIM_SPEED)));
+            SaitamaTechniqueVfxPacket.broadcast(player.serverLevel(), new SaitamaTechniqueVfxPacket(
+                    player.getId(), current.add(0, player.getBbHeight() * 0.5, 0), swimDirection,
+                    swimScale, SaitamaTechniqueVfxPacket.SWIM_WAKE, 7));
+        }
+
+        double weight = value(state, SaitamaContent.ATTR_WEIGHT);
+        if (!wasOnGround && onGround) {
+            float force = (float) Math.min(6.0, Math.max(0.7,
+                    Math.abs(previousVertical == null ? verticalSpeed : previousVertical) * 2.5 + weight / 60.0));
+            SaitamaTechniqueVfxPacket.broadcast(player.serverLevel(), new SaitamaTechniqueVfxPacket(
+                    player.getId(), current.add(0, 0.06, 0), new Vec3(0, 1, 0), force,
+                    SaitamaTechniqueVfxPacket.WEIGHT, 16));
+        } else if (onGround && speed > 0.08 && weight > 1 && gameTime % 6 == 0) {
+            float force = (float) Math.min(2.5, 0.25 + weight / 120.0);
+            SaitamaTechniqueVfxPacket.broadcast(player.serverLevel(), new SaitamaTechniqueVfxPacket(
+                    player.getId(), current.add(0, 0.04, 0), horizontalDirection, force,
+                    SaitamaTechniqueVfxPacket.WEIGHT, 8));
+        }
+
+        if (wasOnGround && !onGround && verticalSpeed > 0.05
+                && state.tags().contains(SaitamaContent.TAG_EXTREME_JUMP)) {
+            Vec3 jumpDirection = movement.lengthSqr() < 1.0e-4 ? new Vec3(0, 1, 0) : movement.normalize();
+            SaitamaTechniqueVfxPacket.broadcast(player.serverLevel(), new SaitamaTechniqueVfxPacket(
+                    player.getId(), previous.add(0, 0.06, 0), jumpDirection,
+                    (float) Math.min(6.0, 1.5 + verticalSpeed * 2.0),
+                    SaitamaTechniqueVfxPacket.EXTREME_JUMP, 18));
+        }
     }
 
     private static double value(com.onepunchcrafts.runtime.state.PowerState state, com.onepunchcrafts.api.Id id) {

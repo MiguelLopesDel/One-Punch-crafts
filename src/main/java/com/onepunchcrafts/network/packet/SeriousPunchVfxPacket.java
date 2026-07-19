@@ -1,6 +1,8 @@
 package com.onepunchcrafts.network.packet;
 
 import com.onepunchcrafts.client.render.SeriousPunchCinematic;
+import com.onepunchcrafts.client.render.NewSeriousPunchCinematic;
+import com.onepunchcrafts.client.ClientConfig;
 import com.onepunchcrafts.network.NetworkRegister;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerLevel;
@@ -51,8 +53,12 @@ public class SeriousPunchVfxPacket {
     }
 
     public static void handle(SeriousPunchVfxPacket msg, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
-                SeriousPunchCinematic.start(msg.casterId, msg.origin, msg.direction, msg.windupTicks)));
+        ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+            if (ClientConfig.SAITAMA_VFX_PROFILE.get() == ClientConfig.SaitamaVfxProfile.NEW)
+                NewSeriousPunchCinematic.start(msg.casterId, msg.origin, msg.direction, msg.windupTicks);
+            else
+                SeriousPunchCinematic.start(msg.casterId, msg.origin, msg.direction, msg.windupTicks);
+        }));
         ctx.get().setPacketHandled(true);
     }
 

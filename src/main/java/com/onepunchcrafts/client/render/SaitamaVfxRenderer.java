@@ -1,5 +1,6 @@
 package com.onepunchcrafts.client.render;
 
+import com.onepunchcrafts.client.ClientConfig;
 import com.onepunchcrafts.client.event.ScreenEffectHandler;
 import com.onepunchcrafts.network.packet.SaitamaVfxPacket;
 import com.onepunchcrafts.content.ConsecutiveNormalPunches;
@@ -39,6 +40,7 @@ public final class SaitamaVfxRenderer {
     private static final float[] YELLOW = {1.0f, 0.83f, 0.35f};
     private static final float[] RED = {0.96f, 0.24f, 0.18f};
     private static final float[] DUST = {0.84f, 0.80f, 0.73f};
+    private static final float[] GRAY = {0.58f, 0.60f, 0.62f};
 
     private static final java.util.Random RANDOM = new java.util.Random();
 
@@ -96,8 +98,10 @@ public final class SaitamaVfxRenderer {
         for (VfxEffect effect : EFFECTS) {
             if (effect.style != SaitamaVfxPacket.STYLE_PUNCH_IMPACT) continue;
             long age = now - effect.createdTick;
-            if (age >= 0 && age <= effect.lifeTicks && camera.distanceToSqr(effect.pos) < 96.0 * 96.0)
-                emitImpactParticles(minecraft, effect, age, impacts);
+            if (age >= 0 && age <= effect.lifeTicks && camera.distanceToSqr(effect.pos) < 96.0 * 96.0) {
+                if (newProfile()) emitPhysicalImpactParticles(minecraft, effect, age, impacts);
+                else emitImpactParticles(minecraft, effect, age, impacts);
+            }
         }
     }
 
@@ -201,14 +205,183 @@ public final class SaitamaVfxRenderer {
             float age = gameTime - effect.createdTick + event.getPartialTick();
             if (age < 0 || age > effect.lifeTicks) continue;
             switch (effect.style) {
-                case SaitamaVfxPacket.STYLE_BARRAGE -> renderBarrage(batch, minecraft, effect, age);
+                case SaitamaVfxPacket.STYLE_BARRAGE -> {
+                    if (!newProfile()) renderBarrage(batch, minecraft, effect, age);
+                    else if (effect.scale < 0.9f) renderWeakBarrageNew(batch, minecraft, effect, age);
+                    else renderNormalBarrageNew(batch, minecraft, effect, age);
+                }
                 case SaitamaVfxPacket.STYLE_DASH -> renderDash(batch, effect, age);
                 case SaitamaVfxPacket.STYLE_SPEED_TRAIL -> renderSpeedTrail(batch, effect, age);
-                default -> renderPunchImpact(batch, effect, age);
+                default -> {
+                    if (!newProfile()) renderPunchImpact(batch, effect, age);
+                    else if (effect.scale < 0.75f) renderWeakPunchNew(batch, effect, age);
+                    else renderNormalPunchNew(batch, effect, age);
+                }
             }
         }
 
         batch.close();
+    }
+
+    private static boolean newProfile() {
+        return ClientConfig.SAITAMA_VFX_PROFILE.get() == ClientConfig.SaitamaVfxProfile.NEW;
+    }
+
+    /** Small, controlled contact: a weak punch disturbs the air but does not explode. */
+    private static void renderWeakPunchNew(VfxQuadBatch batch, VfxEffect effect, float age) {
+        float p = age / Math.max(1.0f, effect.lifeTicks);
+        float fade = (1.0f - p) * (1.0f - p);
+        Vec3 side = stableSide(effect.direction);
+        Vec3 up = side.cross(effect.direction).normalize();
+        Vec3 contact = effect.pos;
+        float radius = effect.scale * (0.22f + age * 0.18f);
+
+        batch.ring(contact, side, up, radius, 18,
+                WHITE[0], WHITE[1], WHITE[2], 0.72f * fade, age * 0.1f);
+        batch.ring(contact.add(effect.direction.scale(0.04)), side, up, radius * 0.66f, 14,
+                GRAY[0], GRAY[1], GRAY[2], 0.38f * fade, -age * 0.14f);
+        if (age < 2.2f) {
+            float snap = 1.0f - age / 2.2f;
+            batch.strip(contact.subtract(effect.direction.scale(0.45)),
+                    contact.add(effect.direction.scale(0.85 + age * 0.18)), 0.055f,
+                    WHITE[0], WHITE[1], WHITE[2], 0.75f * snap);
+            batch.billboard(contact, effect.scale * (0.22f + age * 0.06f),
+                    WHITE[0], WHITE[1], WHITE[2], 0.5f * snap);
+        }
+    }
+
+    /** OPM-style physical normal punch: compressed-air disc and pressure cone through the target. */
+    private static void renderNormalPunchNew(VfxQuadBatch batch, VfxEffect effect, float age) {
+        float life = Math.max(1.0f, effect.lifeTicks);
+        float p = age / life;
+        float fade = (1.0f - p) * (1.0f - p);
+        Vec3 dir = effect.direction;
+        Vec3 side = stableSide(dir);
+        Vec3 up = side.cross(dir).normalize();
+        Vec3 contact = effect.pos;
+
+        if (age < 2.0f) {
+            float frame = 1.0f - age / 2.0f;
+            batch.billboard(contact, effect.scale * (1.15f + age * 0.45f),
+                    WHITE[0], WHITE[1], WHITE[2], 0.72f * frame);
+            for (int i = 0; i < 4; i++) {
+                double a = Math.PI * i / 4.0 + hash((int) effect.createdTick + i) * 0.4;
+                Vec3 axis = side.scale(Math.cos(a)).add(up.scale(Math.sin(a)));
+                batch.strip(contact.subtract(axis.scale(2.6 * effect.scale)),
+                        contact.add(axis.scale(2.6 * effect.scale)), 0.07f * effect.scale,
+                        WHITE[0], WHITE[1], WHITE[2], 0.82f * frame);
+            }
+        }
+
+        // A thin air disc crosses the target; the force then expands behind it.
+        batch.ring(contact.add(dir.scale(age * 0.55)), side, up,
+                effect.scale * (0.38f + age * 0.48f), effect.scale * 0.10f, 28,
+                WHITE[0], WHITE[1], WHITE[2], 0.62f * fade, 0);
+        for (int i = 0; i < 7; i++) {
+            float lane = (i - 3) / 3.0f;
+            Vec3 offset = side.scale(lane * (0.35 + age * 0.11) * effect.scale)
+                    .add(up.scale((hash(i * 37 + (int) effect.createdTick) - 0.5) * effect.scale));
+            Vec3 from = contact.add(dir.scale(0.3 + age * 0.9)).add(offset);
+            Vec3 to = from.add(dir.scale(effect.scale * (2.0 + age * 0.7)));
+            batch.strip(from, to, 0.045f * effect.scale,
+                    i % 3 == 0 ? DUST[0] : WHITE[0],
+                    i % 3 == 0 ? DUST[1] : WHITE[1],
+                    i % 3 == 0 ? DUST[2] : WHITE[2], 0.42f * fade);
+        }
+    }
+
+    /** Close-range, alternating weak punches around the caster instead of a distant fist wall. */
+    private static void renderWeakBarrageNew(VfxQuadBatch batch, Minecraft minecraft,
+                                              VfxEffect effect, float age) {
+        Vec3 origin = trackedOrigin(minecraft, effect, 0.66);
+        Vec3 dir = trackedDirection(minecraft, effect);
+        Vec3 side = stableSide(dir);
+        Vec3 up = side.cross(dir).normalize();
+        float fade = 1.0f - Mth.clamp(age / Math.max(1.0f, effect.lifeTicks), 0, 1);
+        int beat = (int) age;
+
+        for (int i = 0; i < 10; i++) {
+            int seed = beat * 53 + i * 17;
+            double hand = (i & 1) == 0 ? -1 : 1;
+            double reach = 0.9 + hash(seed) * 2.1;
+            Vec3 punchDir = dir.add(side.scale(hand * (0.18 + hash(seed + 1) * 0.3)))
+                    .add(up.scale((hash(seed + 2) - 0.5) * 0.45)).normalize();
+            Vec3 root = origin.add(side.scale(hand * 0.32)).subtract(punchDir.scale(0.15));
+            Vec3 tip = origin.add(punchDir.scale(reach));
+            batch.strip(root, tip, 0.075f, WHITE[0], WHITE[1], WHITE[2], 0.40f * fade);
+            batch.ring(tip, stableSide(punchDir), stableSide(punchDir).cross(punchDir).normalize(),
+                    0.16f + hash(seed + 3) * 0.14f, 12,
+                    GRAY[0], GRAY[1], GRAY[2], 0.34f * fade, 0);
+        }
+    }
+
+    /** Dense two-handed pressure wall with several impact loci across the full AoE cone. */
+    private static void renderNormalBarrageNew(VfxQuadBatch batch, Minecraft minecraft,
+                                                VfxEffect effect, float age) {
+        Vec3 origin = trackedOrigin(minecraft, effect, 0.72);
+        Vec3 dir = trackedDirection(minecraft, effect);
+        Vec3 side = stableSide(dir);
+        Vec3 up = side.cross(dir).normalize();
+        float progress = age / Math.max(1.0f, effect.lifeTicks);
+        float fade = 1.0f - Mth.clamp((progress - 0.88f) / 0.12f, 0, 1);
+        float crescendo = Mth.clamp(0.25f + progress * 1.2f, 0.25f, 1.0f);
+        int beat = (int) age;
+        int fists = 20 + Math.round(24 * crescendo);
+
+        for (int i = 0; i < fists; i++) {
+            int seed = beat * 149 + i * 31;
+            double hand = (i & 1) == 0 ? -1 : 1;
+            double yaw = hand * (0.08 + hash(seed) * 0.47 * crescendo);
+            double pitch = (hash(seed + 1) - 0.5) * 0.7 * crescendo;
+            Vec3 punch = dir.add(side.scale(yaw)).add(up.scale(pitch)).normalize();
+            double reach = 1.4 + hash(seed + 2) * (4.8 + 4.2 * crescendo);
+            Vec3 root = origin.add(side.scale(hand * 0.30)).subtract(punch.scale(0.25));
+            Vec3 elbow = root.add(punch.scale(reach * 0.55));
+            Vec3 tip = root.add(punch.scale(reach));
+            batch.strip(root, elbow, 0.13f, GRAY[0], GRAY[1], GRAY[2], 0.30f * fade);
+            batch.strip(elbow, tip, 0.065f, WHITE[0], WHITE[1], WHITE[2], 0.68f * fade);
+            batch.billboard(tip, 0.12f + 0.12f * hash(seed + 3),
+                    WHITE[0], WHITE[1], WHITE[2], 0.42f * fade);
+        }
+
+        // Several focal points make the broad cone visibly hit a horde, not only its center.
+        for (int i = -2; i <= 2; i++) {
+            Vec3 focus = origin.add(dir.scale(5.0 + (i & 1) * 1.4)).add(side.scale(i * 1.15));
+            float pulse = (age % 3.0f) / 3.0f;
+            batch.ring(focus, side, up, 0.25f + pulse * (0.8f + crescendo), 16,
+                    WHITE[0], WHITE[1], WHITE[2], 0.34f * (1.0f - pulse) * fade, 0);
+        }
+    }
+
+    private static Vec3 trackedOrigin(Minecraft minecraft, VfxEffect effect, double heightRatio) {
+        Entity caster = minecraft.level == null ? null : minecraft.level.getEntity(effect.casterId);
+        if (caster == null) return effect.pos;
+        float partial = minecraft.getPartialTick();
+        return new Vec3(Mth.lerp(partial, caster.xo, caster.getX()),
+                Mth.lerp(partial, caster.yo, caster.getY()) + caster.getBbHeight() * heightRatio,
+                Mth.lerp(partial, caster.zo, caster.getZ()));
+    }
+
+    private static Vec3 trackedDirection(Minecraft minecraft, VfxEffect effect) {
+        Entity caster = minecraft.level == null ? null : minecraft.level.getEntity(effect.casterId);
+        return caster == null ? effect.direction : caster.getViewVector(minecraft.getPartialTick()).normalize();
+    }
+
+    private static void emitPhysicalImpactParticles(Minecraft minecraft, VfxEffect effect,
+                                                    long age, int activeImpacts) {
+        int budget = Math.max(1, 5 / Math.max(1, activeImpacts));
+        if (age == 0 && effect.scale >= 0.75f)
+            minecraft.level.addParticle(ParticleTypes.POOF, effect.pos.x, effect.pos.y, effect.pos.z, 0, 0, 0);
+        if (age > 5 || effect.scale < 0.75f) return;
+        Vec3 side = stableSide(effect.direction);
+        for (int i = 0; i < budget; i++) {
+            double along = 0.5 + RANDOM.nextDouble() * 3.5;
+            Vec3 spawn = effect.pos.add(effect.direction.scale(along))
+                    .add(side.scale((RANDOM.nextDouble() - 0.5) * along));
+            Vec3 velocity = effect.direction.scale(0.18 + RANDOM.nextDouble() * 0.25);
+            minecraft.level.addParticle(i == 0 ? ParticleTypes.CLOUD : ParticleTypes.POOF,
+                    spawn.x, spawn.y, spawn.z, velocity.x, velocity.y, velocity.z);
+        }
     }
 
     /**
@@ -521,7 +694,7 @@ public final class SaitamaVfxRenderer {
                 RED[0], RED[1], RED[2], 0.25f * fade, -age * 0.3f);
     }
 
-    /** High-speed run: short streaks whipped out behind the runner. */
+    /** Speed control: physical afterimages and air displacement scaled by actual movement. */
     private static void renderSpeedTrail(VfxQuadBatch batch,
                                          VfxEffect effect, float age) {
         float progress = age / Math.max(1.0f, effect.lifeTicks);
@@ -532,19 +705,28 @@ public final class SaitamaVfxRenderer {
         Vec3 side = stableSide(effect.direction);
         Vec3 up = side.cross(effect.direction).normalize();
 
-        int streaks = 4;
+        int streaks = 4 + Math.round(speed * 2.0f);
         for (int i = 0; i < streaks; i++) {
             int seed = (int) (effect.createdTick % 1000) * 13 + i * 29;
             Vec3 offset = side.scale((hash(seed) - 0.5) * 0.9).add(up.scale((hash(seed + 1) - 0.5) * 1.2));
             Vec3 from = effect.pos.add(offset);
             Vec3 to = from.add(back.scale(1.2 + speed * (0.8 + hash(seed + 2) * 0.8)));
-            float[] color = i % 2 == 0 ? WHITE : YELLOW;
+            float[] color = i % 3 == 0 ? GRAY : WHITE;
             batch.strip(from, to, 0.06f,
                     color[0], color[1], color[2], 0.45f * fade);
         }
 
-        batch.billboard(effect.pos, 0.5f + speed * 0.15f,
-                WHITE[0], WHITE[1], WHITE[2], 0.18f * fade);
+        // Body-sized skips are visible only at meaningful speed; there is no idle aura.
+        int ghosts = Math.min(4, Math.max(1, Math.round(speed)));
+        for (int i = 0; i < ghosts; i++) {
+            Vec3 ghost = effect.pos.add(back.scale((i + 1) * (0.45 + speed * 0.28)));
+            batch.billboard(ghost, 0.45f + speed * 0.12f,
+                    WHITE[0], WHITE[1], WHITE[2], (0.16f - i * 0.025f) * fade);
+        }
+        if (speed > 1.2f) {
+            batch.ring(effect.pos.add(back.scale(0.4)), side, up, 0.35f + age * 0.24f * speed, 18,
+                    WHITE[0], WHITE[1], WHITE[2], 0.22f * fade, 0);
+        }
     }
 
 

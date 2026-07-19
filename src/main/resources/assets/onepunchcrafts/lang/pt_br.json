@@ -6,7 +6,7 @@
   "key.onepunchcrafts.use_teleport" : "Tecla para se teletransporta (caso seja o saitama)",
   "key.onepunchcrafts.special_change_skill" : "Tecla para trocar entre grupos de habilidade",
   "key.onepunchcrafts.use_dimensions_gui" : "Tecla para teletransporte entre dimensões",
-  "key.onepunchcrafts.open_csrc_options" : "Abrir opções do CSRC",
+  "key.onepunchcrafts.open_csrc_options" : "Abrir opções de VFX",
 
   "skill.saitama.weak_punch" : "Soco Fraco",
   "skill.saitama.normal_punch": "Soco Normal",
@@ -101,6 +101,10 @@
   "gui.onepunchcrafts.csrc_options.voice.portuguese": "Português",
   "gui.onepunchcrafts.csrc_options.voice_volume": "Volume da voz: %1$s%%",
   "gui.onepunchcrafts.csrc_options.music_volume": "Volume da trilha: %1$s%%",
+  "gui.onepunchcrafts.vfx_options.title": "Opções de efeitos visuais",
+  "gui.onepunchcrafts.vfx_options.saitama_profile": "VFX do Saitama",
+  "gui.onepunchcrafts.vfx_options.saitama_profile.original": "Original",
+  "gui.onepunchcrafts.vfx_options.saitama_profile.new": "Novo",
   "subtitles.onepunchcrafts.csrc_shout": "Boros ruge seu golpe final",
   "subtitles.onepunchcrafts.csrc_charge": "O coração de Boros dispara"
 }

@@ -6,7 +6,7 @@
   "key.onepunchcrafts.use_teleport" : "key to use teleport (be saitama)",
   "key.onepunchcrafts.special_change_skill" : "Key to switch between skill groups",
   "key.onepunchcrafts.use_dimensions_gui" : "Key for teleportation between dimensions",
-  "key.onepunchcrafts.open_csrc_options" : "Open CSRC options",
+  "key.onepunchcrafts.open_csrc_options" : "Open VFX options",
 
   "skill.saitama.weak_punch": "Weak Punch",
   "skill.saitama.normal_punch": "Normal Punch",
@@ -101,6 +101,10 @@
   "gui.onepunchcrafts.csrc_options.voice.portuguese": "Portuguese",
   "gui.onepunchcrafts.csrc_options.voice_volume": "Voice volume: %1$s%%",
   "gui.onepunchcrafts.csrc_options.music_volume": "Soundtrack volume: %1$s%%",
+  "gui.onepunchcrafts.vfx_options.title": "Visual Effects Options",
+  "gui.onepunchcrafts.vfx_options.saitama_profile": "Saitama VFX",
+  "gui.onepunchcrafts.vfx_options.saitama_profile.original": "Original",
+  "gui.onepunchcrafts.vfx_options.saitama_profile.new": "New",
   "subtitles.onepunchcrafts.csrc_shout": "Boros roars his ultimate attack",
   "subtitles.onepunchcrafts.csrc_charge": "Boros' heart pounds"
 }

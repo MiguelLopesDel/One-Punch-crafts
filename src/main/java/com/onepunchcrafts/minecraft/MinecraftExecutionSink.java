@@ -3,6 +3,7 @@ package com.onepunchcrafts.minecraft;
 import com.onepunchcrafts.common.skills.saitama.SeriousPunch;
 import com.onepunchcrafts.network.packet.SaitamaVfxPacket;
 import com.onepunchcrafts.network.packet.SeriousPunchVfxPacket;
+import com.onepunchcrafts.network.packet.SaitamaTechniqueVfxPacket;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.AnimationPacket;
 import com.onepunchcrafts.util.HelpUtility;
@@ -64,7 +65,7 @@ public final class MinecraftExecutionSink implements PowerEngine.ExecutionSink {
                     target.getX(), target.getY(), target.getZ(), 10, 0, 0, 0, 0);
         }
         if (barrage && result.hadEffect()) pinBarrageTarget(target);
-        if (!barrage) impactCue(target, damage.tier());
+        if (!barrage) impactCue(target, damage.tier(), strikeId);
     }
 
     @Override public void timeline(AbilityBook.Emission emission) {
@@ -74,7 +75,18 @@ public final class MinecraftExecutionSink implements PowerEngine.ExecutionSink {
             strike(strike.strikeId(), resolveTarget(strike.target(), emission));
         else if (command instanceof Timeline.Command.TeleportToTarget teleport) {
             LivingEntity target = living(resolveTarget(teleport.target(), emission));
-            if (target != null) actor.teleportTo(target.getX(), target.getY(), target.getZ());
+            if (target != null) {
+                Vec3 from = actor.position().add(0, actor.getBbHeight() * 0.55, 0);
+                Vec3 to = target.position().add(0, target.getBbHeight() * 0.55, 0);
+                Vec3 travel = to.subtract(from);
+                int style = emission.timelineId().equals(SaitamaContent.TIMELINE_QUICK_BACKSTAB)
+                        ? SaitamaTechniqueVfxPacket.QUICK_BACKSTAB
+                        : SaitamaTechniqueVfxPacket.AREA_ROUTE;
+                SaitamaTechniqueVfxPacket.broadcast(actor.serverLevel(), new SaitamaTechniqueVfxPacket(
+                        actor.getId(), from, travel.lengthSqr() == 0 ? actor.getLookAngle() : travel.normalize(),
+                        (float) travel.length(), style, 8));
+                actor.teleportTo(target.getX(), target.getY(), target.getZ());
+            }
         } else if (command instanceof Timeline.Command.StrikeArea area) {
             AABB bounds = actor.getBoundingBox().inflate(area.horizontalRadius(), area.verticalRadius(), area.horizontalRadius());
             actor.serverLevel().getEntitiesOfClass(LivingEntity.class, bounds,
@@ -118,8 +130,9 @@ public final class MinecraftExecutionSink implements PowerEngine.ExecutionSink {
             Vec3 hit = actor.serverLevel().clip(new ClipContext(start, end, ClipContext.Block.COLLIDER,
                     ClipContext.Fluid.NONE, actor)).getLocation().subtract(direction);
             actor.teleportTo(hit.x, hit.y - actor.getEyeHeight(), hit.z);
-            SaitamaVfxPacket.broadcast(actor.serverLevel(), new SaitamaVfxPacket(actor.getId(), start, direction,
-                    (float) start.distanceTo(hit), SaitamaVfxPacket.STYLE_DASH, 12));
+            SaitamaTechniqueVfxPacket.broadcast(actor.serverLevel(), new SaitamaTechniqueVfxPacket(
+                    actor.getId(), start, direction, (float) start.distanceTo(hit),
+                    SaitamaTechniqueVfxPacket.DASH, 12));
         }
     }
 
@@ -190,14 +203,27 @@ public final class MinecraftExecutionSink implements PowerEngine.ExecutionSink {
         target.hurtMarked = true;
     }
 
-    private void impactCue(LivingEntity target, DamageTier tier) {
+    private void impactCue(LivingEntity target, DamageTier tier, Id strikeId) {
         if (tier == DamageTier.SERIOUS) return;
         float scale = tier == DamageTier.DRAGON ? 1.0f : 0.5f;
         Vec3 direction = target.position().subtract(actor.position());
         if (direction.lengthSqr() > 0) direction = direction.normalize();
+        Vec3 contact = target.position().add(0, target.getBbHeight() * 0.6, 0);
+        if (strikeId.equals(SaitamaContent.WEAKENING_STRIKE)) {
+            SaitamaTechniqueVfxPacket.broadcast(actor.serverLevel(), new SaitamaTechniqueVfxPacket(
+                    actor.getId(), contact, direction, scale,
+                    SaitamaTechniqueVfxPacket.WEAKENING, 12));
+            return;
+        }
         SaitamaVfxPacket.broadcast(actor.serverLevel(), new SaitamaVfxPacket(actor.getId(),
-                target.position().add(0, target.getBbHeight() * 0.6, 0), direction, scale,
+                contact, direction, scale,
                 SaitamaVfxPacket.STYLE_PUNCH_IMPACT, tier == DamageTier.DRAGON ? 16 : 10));
+        double knockback = state().attributes().value(SaitamaContent.ATTR_ATTACK_KNOCKBACK);
+        if (knockback > 0) {
+            SaitamaTechniqueVfxPacket.broadcast(actor.serverLevel(), new SaitamaTechniqueVfxPacket(
+                    actor.getId(), contact, direction, (float) Math.min(6.0, 0.5 + knockback / 20.0),
+                    SaitamaTechniqueVfxPacket.ATTACK_KNOCKBACK, 12));
+        }
     }
 
     private void stripEquipment(LivingEntity target) {

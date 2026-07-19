@@ -15,6 +15,12 @@ public final class ClientConfig {
         PORTUGUESE
     }
 
+    /** Selects the implementation used by Saitama effects that have an A/B version. */
+    public enum SaitamaVfxProfile {
+        ORIGINAL,
+        NEW
+    }
+
     public static final ForgeConfigSpec SPEC;
     public static final ForgeConfigSpec.EnumValue<CsrcVoice> CSRC_VOICE;
     public static final ForgeConfigSpec.BooleanValue CSRC_CASTER_BEAM_VIEW;
@@ -22,6 +28,7 @@ public final class ClientConfig {
     public static final ForgeConfigSpec.BooleanValue CSRC_REDUCED_FLASHES;
     public static final ForgeConfigSpec.DoubleValue CSRC_VOICE_VOLUME;
     public static final ForgeConfigSpec.DoubleValue CSRC_MUSIC_VOLUME;
+    public static final ForgeConfigSpec.EnumValue<SaitamaVfxProfile> SAITAMA_VFX_PROFILE;
 
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -50,6 +57,13 @@ public final class ClientConfig {
         CSRC_MUSIC_VOLUME = builder
                 .comment("Volume multiplier for the CSRC charge soundtrack/heartbeat (client-side).")
                 .defineInRange("csrcMusicVolume", 1.0, 0.0, 2.0);
+        builder.pop();
+        builder.push("saitama");
+        SAITAMA_VFX_PROFILE = builder
+                .comment("Visual implementation for Saitama's punches and barrages.",
+                        "ORIGINAL preserves the existing effects; NEW enables the physical,",
+                        "world-reaction-driven VFX. Can be changed live in the H menu.")
+                .defineEnum("vfxProfile", SaitamaVfxProfile.NEW);
         builder.pop();
         SPEC = builder.build();
     }

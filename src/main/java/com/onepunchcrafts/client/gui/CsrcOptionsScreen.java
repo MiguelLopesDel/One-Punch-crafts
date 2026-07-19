@@ -13,9 +13,9 @@ import net.minecraftforge.common.ForgeConfigSpec;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Live options for the Collapsing Star Roaring Cannon. Every widget writes the
+ * Live presentation options for Saitama and the Collapsing Star Roaring Cannon. Every widget writes the
  * client config immediately, so changes apply in real time (even mid-attack);
- * the file is persisted when the screen closes. Opened with the CSRC options
+ * the file is persisted when the screen closes. Opened with the VFX options
  * key (default H) or through the mod list config button.
  */
 public class CsrcOptionsScreen extends Screen {
@@ -23,14 +23,24 @@ public class CsrcOptionsScreen extends Screen {
     private final @Nullable Screen parent;
 
     public CsrcOptionsScreen(@Nullable Screen parent) {
-        super(Component.translatable("gui.onepunchcrafts.csrc_options.title"));
+        super(Component.translatable("gui.onepunchcrafts.vfx_options.title"));
         this.parent = parent;
     }
 
     @Override
     protected void init() {
         int x = width / 2 - 100;
-        int y = height / 6 + 12;
+        int y = height / 6 + 4;
+
+        addRenderableWidget(CycleButton.<ClientConfig.SaitamaVfxProfile>builder(profile ->
+                        Component.translatable("gui.onepunchcrafts.vfx_options.saitama_profile."
+                                + profile.name().toLowerCase()))
+                .withValues(ClientConfig.SaitamaVfxProfile.values())
+                .withInitialValue(ClientConfig.SAITAMA_VFX_PROFILE.get())
+                .create(x, y, 200, 20,
+                        Component.translatable("gui.onepunchcrafts.vfx_options.saitama_profile"),
+                        (button, value) -> ClientConfig.SAITAMA_VFX_PROFILE.set(value)));
+        y += 28;
 
         addRenderableWidget(CycleButton.onOffBuilder(ClientConfig.CSRC_CASTER_BEAM_VIEW.get())
                 .create(x, y, 200, 20,
@@ -65,10 +75,10 @@ public class CsrcOptionsScreen extends Screen {
 
         addRenderableWidget(new VolumeSlider(x, y,
                 "gui.onepunchcrafts.csrc_options.music_volume", ClientConfig.CSRC_MUSIC_VOLUME));
-        y += 32;
+        y += 28;
 
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> onClose())
-                .bounds(x, y, 200, 20).build());
+                .bounds(x, height - 28, 200, 20).build());
     }
 
     @Override

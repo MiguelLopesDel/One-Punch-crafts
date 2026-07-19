@@ -69,6 +69,8 @@ public final class SaitamaContent {
     public static final Id CUE_SERIOUS_AFTERMATH = id("cue/serious_aftermath");
     public static final Id CUE_DELAYED_EXPLOSION = id("cue/delayed_explosion");
     public static final Id EFFECT_PUNCHED = id("effect/saitama_punched");
+    public static final Id TIMELINE_QUICK_BACKSTAB = id("timeline/quick_backstab");
+    public static final Id TIMELINE_NORMAL_PUNCHES_IN_AREA = id("timeline/normal_punches_in_area");
 
     private SaitamaContent() {}
 
@@ -87,7 +89,7 @@ public final class SaitamaContent {
         registries.abilities.register(NORMAL_PUNCHES_IN_AREA, normalPunchesInArea());
         registries.abilities.register(QUICK_BACKSTAB, new DeclarativeAbility(QUICK_BACKSTAB,
                 ignored -> Optional.empty(), context -> new Ability.Activation.Scheduled(
-                        Timeline.builder(id("timeline/quick_backstab"), 1)
+                        Timeline.builder(TIMELINE_QUICK_BACKSTAB, 1)
                                 .at(0, new Timeline.Command.TeleportToTarget(Timeline.TargetRef.PRIMARY))
                                 .at(0, new Timeline.Command.StrikeTarget(NORMAL_STRIKE, Timeline.TargetRef.PRIMARY))
                                 .build())));
@@ -221,7 +223,7 @@ public final class SaitamaContent {
 
     private static Ability normalPunchesInArea() {
         return new DeclarativeAbility(NORMAL_PUNCHES_IN_AREA, ignored -> Optional.empty(), context -> {
-            Timeline.Builder timeline = Timeline.builder(id("timeline/normal_punches_in_area"),
+            Timeline.Builder timeline = Timeline.builder(TIMELINE_NORMAL_PUNCHES_IN_AREA,
                     Math.max(1, context.capturedTargets().size() * 5));
             for (int index = 0; index < context.capturedTargets().size(); index++) {
                 int tick = index * 5;
