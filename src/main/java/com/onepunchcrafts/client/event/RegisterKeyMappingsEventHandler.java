@@ -18,5 +18,6 @@ public class RegisterKeyMappingsEventHandler {
         event.register(Keybinding.INSTANCE.USE_TELEPORT);
         event.register(Keybinding.INSTANCE.OPEN_DIMENSIONS_GUI);
         event.register(Keybinding.INSTANCE.OPEN_CSRC_OPTIONS);
+        event.register(Keybinding.INSTANCE.USE_DIMENSIONAL_PUNCH);
     }
 }

@@ -15,7 +15,7 @@ import static com.onepunchcrafts.OnePunchCrafts.MODID;
 public class NetworkRegister {
 
     private static int id = 0;
-    private static final String PROTOCOL_VERSION = "5";
+    private static final String PROTOCOL_VERSION = "6";
     private static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, "main"),
             () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals
     );
@@ -45,6 +45,16 @@ public class NetworkRegister {
                 .encoder(TeleportPacket::encode)
                 .decoder(TeleportPacket::new)
                 .consumerMainThread(TeleportPacket::handle)
+                .add();
+        INSTANCE.messageBuilder(DimensionalPunchPacket.class, ++id, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(DimensionalPunchPacket::encode)
+                .decoder(DimensionalPunchPacket::new)
+                .consumerMainThread(DimensionalPunchPacket::handle)
+                .add();
+        INSTANCE.messageBuilder(DimensionalPunchVfxPacket.class, ++id, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(DimensionalPunchVfxPacket::encode)
+                .decoder(DimensionalPunchVfxPacket::new)
+                .consumerMainThread(DimensionalPunchVfxPacket::handle)
                 .add();
         INSTANCE.messageBuilder(CheckAndDestructionBlockInAroundPacket.class, ++id, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(CheckAndDestructionBlockInAroundPacket::encode)

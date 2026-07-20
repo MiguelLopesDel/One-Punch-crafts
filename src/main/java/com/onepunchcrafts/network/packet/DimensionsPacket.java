@@ -45,10 +45,14 @@ public class DimensionsPacket {
         NetworkEvent.Context context = ctx.get();
         if (ctx.get().getDirection().getReceptionSide().isServer()) {
             ServerPlayer sender = context.getSender();
-            HelpUtility.verifyIsSaitamaAndGetCapability(sender).ifPresent(cap -> {
+            // v3 Saitama carries the power set, not the legacy capability, so
+            // accept either — otherwise the server never answers and the GUI
+            // hangs on "loading dimensions".
+            if (sender != null
+                    && (HelpUtility.hasSaitamaPowerSet(sender) || HelpUtility.verifyIsSaitamaAndGetCapability(sender).isPresent())) {
                 dimensions.addAll(sender.level().getServer().levelKeys());
                 NetworkRegister.sendToPlayer(sender, new DimensionsPacket(dimensions));
-            });
+            }
         } else {
             DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> HandlerClientPacket.dimensionPacketResponse(dimensions));
         }

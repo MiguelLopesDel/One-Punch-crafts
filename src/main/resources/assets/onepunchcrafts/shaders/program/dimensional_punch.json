@@ -1,0 +1,24 @@
+{
+  "blend": {
+    "func": "add",
+    "srcrgb": "one",
+    "dstrgb": "zero"
+  },
+  "vertex": "onepunchcrafts:csrc",
+  "fragment": "onepunchcrafts:dimensional_punch",
+  "attributes": [ "Position" ],
+  "samplers": [
+    { "name": "DiffuseSampler" }
+  ],
+  "uniforms": [
+    { "name": "ProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+    { "name": "OutSize", "type": "float", "count": 2, "values": [ 1.0, 1.0 ] },
+    { "name": "FocusPoint", "type": "float", "count": 2, "values": [ 0.5, 0.5 ] },
+    { "name": "FocusValid", "type": "float", "count": 1, "values": [ 0.0 ] },
+    { "name": "CrackAmount", "type": "float", "count": 1, "values": [ 0.0 ] },
+    { "name": "RiftOpen", "type": "float", "count": 1, "values": [ 0.0 ] },
+    { "name": "Distort", "type": "float", "count": 1, "values": [ 0.0 ] },
+    { "name": "Aberration", "type": "float", "count": 1, "values": [ 0.0 ] },
+    { "name": "Flash", "type": "float", "count": 1, "values": [ 0.0 ] }
+  ]
+}

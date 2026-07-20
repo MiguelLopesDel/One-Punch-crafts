@@ -35,4 +35,22 @@ public class ImmersivePortalsCompat {
     public static void destroyPortals(ServerLevel level, AABB pArea) {
         level.getEntitiesOfClass(Portal.class, pArea).forEach(Entity::kill);
     }
+
+    /** Open a bi-way portal for a Dimensional Punch and return its origin position. */
+    public static Vec3 openTrackedPortal(ServerPlayer player, ResourceKey<Level> dimension) {
+        Portal portal = new Portal(IPRegistry.PORTAL.get(), player.level());
+        Vec3 front = HelpUtility.getFrontPosition(player, 2);
+        portal.setOriginPos(front);
+        portal.setDestinationDimension(dimension);
+        portal.setDestination(front);
+        portal.setOrientationAndSize(new Vec3(1, 0, 0), new Vec3(0, 1, 0), 4, 4);
+        McHelper.spawnServerEntity(portal);
+        PortalManipulation.completeBiWayBiFacedPortal(portal, p -> {}, p -> {}, IPRegistry.PORTAL.get());
+        return front;
+    }
+
+    /** Kill any portals around a point (closing a Dimensional Punch portal). */
+    public static void closePortalsAt(ServerLevel level, Vec3 pos, double radius) {
+        level.getEntitiesOfClass(Portal.class, new AABB(pos, pos).inflate(radius)).forEach(Entity::kill);
+    }
 }

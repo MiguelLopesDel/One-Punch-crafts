@@ -57,4 +57,10 @@ public class Keybinding {
             InputConstants.getKey(InputConstants.KEY_H, -1),
             CATEGORY
     );
+    public final KeyMapping USE_DIMENSIONAL_PUNCH = new KeyMapping(
+            defaultKeyCode + "use_dimensional_punch",
+            KeyConflictContext.IN_GAME,
+            InputConstants.getKey(InputConstants.KEY_K, -1),
+            CATEGORY
+    );
 }

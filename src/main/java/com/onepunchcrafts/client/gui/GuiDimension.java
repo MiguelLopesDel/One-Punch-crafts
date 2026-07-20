@@ -1,6 +1,7 @@
 package com.onepunchcrafts.client.gui;
 
 import com.onepunchcrafts.network.NetworkRegister;
+import com.onepunchcrafts.network.packet.DimensionalPunchPacket;
 import com.onepunchcrafts.network.packet.DimensionsPacket;
 import com.onepunchcrafts.network.packet.TeleportPacket;
 import net.minecraft.client.Minecraft;
@@ -31,11 +32,19 @@ public class GuiDimension extends Screen {
 
     private static List<ResourceKey<Level>> dimensions = new ArrayList<>();
     private StringWidget pWidget;
+    private boolean dimensionalPunch = false;
 
     public GuiDimension(Component title) {
         super(title);
         if (dimensions.isEmpty())
             NetworkRegister.sendToServer(new DimensionsPacket());
+    }
+
+    /** Picker whose selection triggers the Dimensional Punch instead of a plain portal. */
+    public static GuiDimension forDimensionalPunch(Component title) {
+        GuiDimension gui = new GuiDimension(title);
+        gui.dimensionalPunch = true;
+        return gui;
     }
 
     public static void setDimensions(List<ResourceKey<Level>> dimensions) {
@@ -135,7 +144,10 @@ public class GuiDimension extends Screen {
 
 
     private void onDimensionButtonClicked(ResourceKey<Level> dimension) {
-        NetworkRegister.sendToServer(new TeleportPacket(dimension));
+        if (dimensionalPunch)
+            NetworkRegister.sendToServer(new DimensionalPunchPacket(dimension));
+        else
+            NetworkRegister.sendToServer(new TeleportPacket(dimension));
         onClose();
     }
 
