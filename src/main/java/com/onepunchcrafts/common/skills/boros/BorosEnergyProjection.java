@@ -125,11 +125,7 @@ public class BorosEnergyProjection implements Skill {
     private void sendBeamVfx(ServerLevel level, Player player, Vec3 start, Vec3 look, double beamLength) {
         BorosBeamVfxPacket packet = new BorosBeamVfxPacket(player.getId(), start, look, beamLength,
                 BorosBeamVfxPacket.STYLE_ENERGY_PROJECTION, 14);
-        for (ServerPlayer serverPlayer : level.getServer().getPlayerList().getPlayers()) {
-            if (serverPlayer.level() == level && serverPlayer.distanceToSqr(player) <= 256.0D * 256.0D) {
-                NetworkRegister.sendToPlayer(serverPlayer, packet);
-            }
-        }
+        NetworkRegister.sendToNearby(level, player.position(), 256.0D, packet);
     }
 
     @Override

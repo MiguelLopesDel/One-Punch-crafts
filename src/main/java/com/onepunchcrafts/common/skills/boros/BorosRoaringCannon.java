@@ -83,11 +83,7 @@ public class BorosRoaringCannon implements Skill {
         BorosBeamVfxPacket beamPacket = new BorosBeamVfxPacket(player.getId(), start, look, samples * step,
                 meteoric ? BorosBeamVfxPacket.STYLE_ROARING_CANNON_METEORIC : BorosBeamVfxPacket.STYLE_ROARING_CANNON,
                 meteoric ? 30 : 24);
-        for (ServerPlayer nearby : level.getServer().getPlayerList().getPlayers()) {
-            if (nearby.level() == level && nearby.distanceToSqr(player) <= 256.0D * 256.0D) {
-                NetworkRegister.sendToPlayer(nearby, beamPacket);
-            }
-        }
+        NetworkRegister.sendToNearby(level, player.position(), 256.0D, beamPacket);
 
         for (int i = 0; i < samples; i++) {
             Vec3 pos = start.add(look.scale(i * step));

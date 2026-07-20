@@ -7,6 +7,7 @@ import com.onepunchcrafts.common.skills.sync.SyncableSkillPack;
 import com.onepunchcrafts.constant.NbtBooleanValues;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.PlayerSyncPacket;
+import com.onepunchcrafts.network.packet.SaitamaVfxPacket;
 import com.onepunchcrafts.util.HelpUtility;
 import it.unimi.dsi.fastutil.shorts.ShortConsumer;
 import lombok.Getter;
@@ -25,6 +26,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.ForgeMod;
@@ -389,13 +391,36 @@ public class SaitamaPack extends SyncableSkillPack {
 
     private static final Map<Player, Integer> shiftHoldTime = new HashMap<>();
 
+    // Server-side high-speed trail tracking (VFX only, no sync needed)
+    private double trailPrevX = Double.NaN;
+    private double trailPrevZ = Double.NaN;
+
     @Override
     public void tick(TickEvent.PlayerTickEvent event) {
         if (event.player instanceof ServerPlayer serverPlayer) {
             manageEffectsAndAttributes(event);
             explodeNormalMobs(serverPlayer);
+            if (event.phase == TickEvent.Phase.END)
+                handleSpeedTrail(serverPlayer);
         }
         super.tick(event);
+    }
+
+    /** Whip out afterimage streaks behind Saitama while he moves at superhuman speed. */
+    private void handleSpeedTrail(ServerPlayer player) {
+        double dx = Double.isNaN(trailPrevX) ? 0 : player.getX() - trailPrevX;
+        double dz = Double.isNaN(trailPrevZ) ? 0 : player.getZ() - trailPrevZ;
+        trailPrevX = player.getX();
+        trailPrevZ = player.getZ();
+
+        double speed = Math.sqrt(dx * dx + dz * dz);
+        if (speed < 0.5 || player.isSpectator()) return;
+        if (player.level().getGameTime() % 2 != 0) return;
+
+        Vec3 moveDir = new Vec3(dx, 0, dz).normalize();
+        SaitamaVfxPacket.broadcast(player.serverLevel(), new SaitamaVfxPacket(player.getId(),
+                player.position().add(0, 0.9, 0).subtract(moveDir.scale(0.6)), moveDir,
+                (float) speed, SaitamaVfxPacket.STYLE_SPEED_TRAIL, 6));
     }
 
     private void manageEffectsAndAttributes(TickEvent.PlayerTickEvent event) {

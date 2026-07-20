@@ -4,6 +4,7 @@ import com.onepunchcrafts.common.skills.Skill;
 import com.onepunchcrafts.common.skills.SkillExecutionResult;
 import com.onepunchcrafts.network.NetworkRegister;
 import com.onepunchcrafts.network.packet.AnimationPacket;
+import com.onepunchcrafts.network.packet.SaitamaVfxPacket;
 import com.onepunchcrafts.util.HelpUtility;
 import com.onepunchcrafts.util.TickScheduler;
 import net.minecraft.client.gui.Font;
@@ -15,9 +16,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 
 import java.awt.*;
 import java.time.Duration;
@@ -37,8 +37,14 @@ public class WeakPunch implements Skill {
 
     public static void flux(LivingDamageEvent event) {
         if (event.getSource().getEntity() instanceof ServerPlayer player) {
-            HelpUtility.verifyIsSaitamaAndSkill(player, WeakPunch.class).ifPresent(p ->
-                    event.setAmount(event.getAmount() * 100_000));
+            HelpUtility.verifyIsSaitamaAndSkill(player, WeakPunch.class).ifPresent(p -> {
+                event.setAmount(event.getAmount() * 100_000);
+                LivingEntity target = event.getEntity();
+                Vec3 punchDir = new Vec3(target.getX() - player.getX(), 0, target.getZ() - player.getZ()).normalize();
+                SaitamaVfxPacket.broadcast(player.serverLevel(), new SaitamaVfxPacket(player.getId(),
+                        target.position().add(0, target.getBbHeight() * 0.6, 0), punchDir, 0.5f,
+                        SaitamaVfxPacket.STYLE_PUNCH_IMPACT, 10));
+            });
         }
     }
 
@@ -69,5 +75,7 @@ public class WeakPunch implements Skill {
         });
         NetworkRegister.sendToAllClientsExcept(player, new AnimationPacket(player.getStringUUID(), "multiple_punches"));
         TickScheduler.scheduleFromHere(Duration.of(5, ChronoUnit.SECONDS), () -> NetworkRegister.sendToAllClientsExcept(player, new AnimationPacket(player.getStringUUID(), "stop")));
+        SaitamaVfxPacket.broadcast(serverLevel, new SaitamaVfxPacket(player.getId(),
+                player.getEyePosition(), player.getLookAngle(), 0.6f, SaitamaVfxPacket.STYLE_BARRAGE, 100));
     }
 }

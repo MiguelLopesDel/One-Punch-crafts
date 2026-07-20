@@ -2,6 +2,7 @@ package com.onepunchcrafts.common.skills.saitama;
 
 import com.onepunchcrafts.common.skills.Skill;
 import com.onepunchcrafts.common.skills.SkillExecutionResult;
+import com.onepunchcrafts.network.packet.SaitamaVfxPacket;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.particles.ParticleTypes;
@@ -51,6 +52,8 @@ public class SaitamaDash implements Skill {
 
         level.playSound(null, finalTeleportPos.x, finalTeleportPos.y, finalTeleportPos.z, SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 0.7F, 1.5F);
         level.sendParticles(ParticleTypes.SONIC_BOOM, finalTeleportPos.x, finalTeleportPos.y, finalTeleportPos.z, 1, 0, 0, 0, 0);
+        SaitamaVfxPacket.broadcast(level, new SaitamaVfxPacket(player.getId(), startPos, lookVec,
+                (float) startPos.distanceTo(finalTeleportPos), SaitamaVfxPacket.STYLE_DASH, 12));
     }
 
     private static void knockback(LivingEntity target, double strength, double pX, double pZ) {
