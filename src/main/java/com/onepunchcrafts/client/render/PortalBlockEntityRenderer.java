@@ -6,138 +6,159 @@ import com.mojang.math.Axis;
 import com.onepunchcrafts.common.block.entity.PortalBlockEntity;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
-import java.util.Random;
+import static com.onepunchcrafts.OnePunchCrafts.MODID;
 
-public class PortalBlockEntityRenderer implements BlockEntityRenderer<PortalBlockEntity> {
-    private static final int SEGMENTS = 32;
-    private static final float PORTAL_WIDTH = 1.0f;
-    private static final float PORTAL_HEIGHT = 2.0f;
-    private static final int PARTICLE_COUNT = 16;
-    private final float[] particleOffsets = new float[PARTICLE_COUNT];
-    private final float[] particlePhases = new float[PARTICLE_COUNT];
-    private final float[] particleColors = new float[PARTICLE_COUNT * 3];
+/** Renders the fallback portal as a tall emissive tear instead of a cube. */
+public final class PortalBlockEntityRenderer implements BlockEntityRenderer<PortalBlockEntity> {
+    private static final ResourceLocation RIFT_TEXTURE =
+            new ResourceLocation(MODID, "textures/block/dimensional_portal_rift.png");
+    private static final float WIDTH = 1.65f;
+    private static final float HEIGHT = 2.9f;
+    private static final int RIM_SEGMENTS = 36;
 
-    public PortalBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
-        Random random = new Random();
-        for (int i = 0; i < PARTICLE_COUNT; i++) {
-            particleOffsets[i] = random.nextFloat();
-            particlePhases[i] = random.nextFloat() * (float) Math.PI * 2;
-            particleColors[i * 3] = random.nextFloat();
-            particleColors[i * 3 + 1] = random.nextFloat();
-            particleColors[i * 3 + 2] = random.nextFloat();
-        }
-    }
+    public PortalBlockEntityRenderer(BlockEntityRendererProvider.Context context) {}
 
     @Override
-    public void render(PortalBlockEntity portalEntity, float partialTicks, PoseStack poseStack,
-                       MultiBufferSource bufferSource, int combinedLight, int overlay) {
+    public void render(PortalBlockEntity portal, float partialTick, PoseStack poseStack,
+                       MultiBufferSource buffers, int packedLight, int packedOverlay) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null) return;
+
+        float time = minecraft.level.getGameTime() + partialTick;
+        float pulse = 1.0f + 0.025f * (float) Math.sin(time * 0.18f);
+
         poseStack.pushPose();
-        poseStack.translate(0.5D, 0.5D, 0.5D);
+        poseStack.translate(0.5, 1.46, 0.5);
 
-        Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
-        Vec3 cameraPos = camera.getPosition();
-        Vec3 blockPos = Vec3.atCenterOf(portalEntity.getBlockPos());
-        Vec3 direction = cameraPos.subtract(blockPos).normalize();
+        // Keep the rift vertical while turning only around Y to face observers.
+        Camera camera = minecraft.gameRenderer.getMainCamera();
+        Vec3 toCamera = camera.getPosition().subtract(Vec3.atCenterOf(portal.getBlockPos()));
+        poseStack.mulPose(Axis.YP.rotation((float) Math.atan2(toCamera.x, toCamera.z)));
+        poseStack.scale(pulse, pulse, pulse);
 
-        double rotY = Math.atan2(direction.x, direction.z);
-        double rotX = Math.atan2(direction.y, Math.sqrt(direction.x * direction.x + direction.z * direction.z));
-
-        poseStack.mulPose(Axis.YP.rotation((float) rotY));
-        poseStack.mulPose(Axis.XP.rotation((float) rotX));
-
-        renderPortalOval(poseStack, bufferSource, combinedLight);
-        renderGlowingParticles(poseStack, bufferSource, combinedLight, partialTicks);
-
+        renderRiftTexture(poseStack, buffers, time);
+        renderLivingRim(poseStack, buffers, time);
+        renderOrbitingShards(poseStack, buffers, time);
         poseStack.popPose();
     }
 
-    private void renderGlowingParticles(PoseStack poseStack, MultiBufferSource bufferSource, int light, float partialTicks) {
-        float time = (Minecraft.getInstance().level.getGameTime() + partialTicks) / 20.0f;
-        VertexConsumer buffer = bufferSource.getBuffer(RenderType.lightning());
+    private static void renderRiftTexture(PoseStack poseStack, MultiBufferSource buffers, float time) {
+        VertexConsumer vertices = buffers.getBuffer(RenderType.entityTranslucentEmissive(RIFT_TEXTURE));
         Matrix4f matrix = poseStack.last().pose();
+        float shimmer = 0.94f + 0.06f * (float) Math.sin(time * 0.31f);
+        float halfWidth = WIDTH * 0.5f;
+        float halfHeight = HEIGHT * 0.5f;
 
-        for (int i = 0; i < PARTICLE_COUNT; i++) {
-            float phase = particlePhases[i] + time;
-            float chaosFactor = (float) Math.sin(time * 0.5) * 0.5f + 0.5f;
-            float offset = particleOffsets[i];
+        texturedVertex(vertices, matrix, -halfWidth, -halfHeight, 0.0f, 0, 1, shimmer);
+        texturedVertex(vertices, matrix, halfWidth, -halfHeight, 0.0f, 1, 1, shimmer);
+        texturedVertex(vertices, matrix, halfWidth, halfHeight, 0.0f, 1, 0, shimmer);
+        texturedVertex(vertices, matrix, -halfWidth, halfHeight, 0.0f, 0, 0, shimmer);
 
-            float progress = ((time + offset) % 3.0f) / 3.0f;
-            float radius = (1 - progress) * PORTAL_WIDTH * 0.5f;
+        // Back face for observers standing on the other side of the tear.
+        texturedVertex(vertices, matrix, -halfWidth, halfHeight, -0.006f, 0, 0, shimmer);
+        texturedVertex(vertices, matrix, halfWidth, halfHeight, -0.006f, 1, 0, shimmer);
+        texturedVertex(vertices, matrix, halfWidth, -halfHeight, -0.006f, 1, 1, shimmer);
+        texturedVertex(vertices, matrix, -halfWidth, -halfHeight, -0.006f, 0, 1, shimmer);
+    }
 
-            float angle = phase + chaosFactor * (float) Math.sin(time * 2 + offset * 10) * 2;
-            float x = (float) (radius * Math.cos(angle));
-            float y = (float) (radius * Math.sin(angle));
-
-            float r = particleColors[i * 3];
-            float g = particleColors[i * 3 + 1];
-            float b = particleColors[i * 3 + 2];
-
-            float alpha = (1 - progress) * (0.8f + 0.2f * (float) Math.sin(time * 5 + offset * 20));
-
-            renderGlowingParticle(buffer, matrix, x, y, r, g, b, alpha);
+    private static void renderLivingRim(PoseStack poseStack, MultiBufferSource buffers, float time) {
+        VertexConsumer vertices = buffers.getBuffer(RenderType.lightning());
+        Matrix4f matrix = poseStack.last().pose();
+        for (int i = 0; i < RIM_SEGMENTS; i++) {
+            float a1 = (float) (Math.PI * 2.0 * i / RIM_SEGMENTS);
+            float a2 = (float) (Math.PI * 2.0 * (i + 1) / RIM_SEGMENTS);
+            float jitter1 = 1.0f + 0.045f * (float) Math.sin(i * 5.17f + time * 0.27f);
+            float jitter2 = 1.0f + 0.045f * (float) Math.sin((i + 1) * 5.17f + time * 0.27f);
+            float x1 = (float) Math.cos(a1) * WIDTH * 0.42f * jitter1;
+            float y1 = (float) Math.sin(a1) * HEIGHT * 0.47f * jitter1;
+            float x2 = (float) Math.cos(a2) * WIDTH * 0.42f * jitter2;
+            float y2 = (float) Math.sin(a2) * HEIGHT * 0.47f * jitter2;
+            boolean cyan = (i + (int) (time / 4)) % 5 == 0;
+            addGlowSegment(vertices, matrix, x1, y1, x2, y2, 0.014f,
+                    cyan ? 0.30f : 0.67f, cyan ? 0.92f : 0.22f, 1.0f, 0.75f);
         }
     }
 
-    private void renderGlowingParticle(VertexConsumer buffer, Matrix4f matrix, float x, float y,
-                                       float r, float g, float b, float alpha) {
-        float size = 0.05f;
-        buffer.vertex(matrix, x - size, y - size, 0).color(r, g, b, alpha).endVertex();
-        buffer.vertex(matrix, x + size, y - size, 0).color(r, g, b, alpha).endVertex();
-        buffer.vertex(matrix, x + size, y + size, 0).color(r, g, b, alpha).endVertex();
-        buffer.vertex(matrix, x - size, y + size, 0).color(r, g, b, alpha).endVertex();
-    }
-
-    private void renderPortalOval(PoseStack poseStack, MultiBufferSource bufferSource, int light) {
-        VertexConsumer buffer = bufferSource.getBuffer(RenderType.translucent());
+    private static void renderOrbitingShards(PoseStack poseStack, MultiBufferSource buffers, float time) {
+        VertexConsumer vertices = buffers.getBuffer(RenderType.lightning());
         Matrix4f matrix = poseStack.last().pose();
-
-        for (int i = 0; i < SEGMENTS; i++) {
-            float angle1 = (float) (2 * Math.PI * i / SEGMENTS);
-            float angle2 = (float) (2 * Math.PI * (i + 1) / SEGMENTS);
-
-            float x1 = (float) (PORTAL_WIDTH * Math.cos(angle1) * 0.5);
-            float y1 = (float) (PORTAL_HEIGHT * Math.sin(angle1) * 0.5);
-            float x2 = (float) (PORTAL_WIDTH * Math.cos(angle2) * 0.5);
-            float y2 = (float) (PORTAL_HEIGHT * Math.sin(angle2) * 0.5);
-
-            addVertex(buffer, matrix, 0, 0, 0, 0.5f, 0.5f, light);
-            addVertex(buffer, matrix, x1, y1, 0, 0, 1, light);
-            addVertex(buffer, matrix, x2, y2, 0, 1, 1, light);
+        for (int i = 0; i < 12; i++) {
+            float phase = i * 2.399f + time * (0.012f + i % 3 * 0.004f);
+            float orbit = 0.76f + hash(i * 31) * 0.24f;
+            float x = (float) Math.cos(phase) * WIDTH * orbit * 0.55f;
+            float y = (hash(i * 71) - 0.5f) * HEIGHT * 0.94f
+                    + 0.08f * (float) Math.sin(time * 0.08f + i);
+            float size = 0.018f + hash(i * 13) * 0.024f;
+            addDiamond(vertices, matrix, x, y, 0.012f, size,
+                    i % 3 == 0 ? 0.35f : 0.72f, i % 3 == 0 ? 0.90f : 0.28f, 1.0f, 0.7f);
         }
     }
 
-    private void addVertex(VertexConsumer buffer, Matrix4f matrix,
-                           float x, float y, float z, float u, float v, int light) {
-        buffer.vertex(matrix, x, y, z)
-                .color(1.0f, 1.0f, 1.0f, 1.0f)
+    private static void texturedVertex(VertexConsumer vertices, Matrix4f matrix,
+                                       float x, float y, float z, float u, float v, float alpha) {
+        vertices.vertex(matrix, x, y, z)
+                .color(1.0f, 1.0f, 1.0f, alpha)
                 .uv(u, v)
                 .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(light)
-                .normal(0, 1, 0)
+                .uv2(LightTexture.FULL_BRIGHT)
+                .normal(0, 0, 1)
                 .endVertex();
     }
 
-    private void addGlowVertex(VertexConsumer buffer, Matrix4f matrix,
-                               float x, float y, float z, float u, float v, int light) {
-        buffer.vertex(matrix, x, y, z)
-                .color(0.5f, 0.8f, 1.0f, 0.7f)
-                .uv(u, v)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(light)
-                .normal(0, 1, 0)
-                .endVertex();
+    private static void addGlowSegment(VertexConsumer vertices, Matrix4f matrix,
+                                       float x1, float y1, float x2, float y2, float width,
+                                       float red, float green, float blue, float alpha) {
+        float dx = x2 - x1;
+        float dy = y2 - y1;
+        float length = (float) Math.sqrt(dx * dx + dy * dy);
+        if (length < 1.0e-4f) return;
+        float px = -dy / length * width;
+        float py = dx / length * width;
+        glowVertex(vertices, matrix, x1 - px, y1 - py, 0.01f, red, green, blue, alpha);
+        glowVertex(vertices, matrix, x1 + px, y1 + py, 0.01f, red, green, blue, alpha);
+        glowVertex(vertices, matrix, x2 + px, y2 + py, 0.01f, red, green, blue, alpha);
+        glowVertex(vertices, matrix, x2 - px, y2 - py, 0.01f, red, green, blue, alpha);
+    }
+
+    private static void addDiamond(VertexConsumer vertices, Matrix4f matrix,
+                                   float x, float y, float z, float size,
+                                   float red, float green, float blue, float alpha) {
+        glowVertex(vertices, matrix, x, y - size * 1.8f, z, red, green, blue, alpha);
+        glowVertex(vertices, matrix, x + size, y, z, red, green, blue, alpha);
+        glowVertex(vertices, matrix, x, y + size * 1.8f, z, red, green, blue, alpha);
+        glowVertex(vertices, matrix, x - size, y, z, red, green, blue, alpha);
+    }
+
+    private static void glowVertex(VertexConsumer vertices, Matrix4f matrix,
+                                   float x, float y, float z,
+                                   float red, float green, float blue, float alpha) {
+        vertices.vertex(matrix, x, y, z).color(red, green, blue, alpha).endVertex();
+    }
+
+    private static float hash(int value) {
+        int mixed = value * 0x45d9f3b;
+        mixed = (mixed ^ (mixed >>> 16)) * 0x45d9f3b;
+        mixed ^= mixed >>> 16;
+        return (mixed & 0xFFFFFF) / (float) 0x1000000;
     }
 
     @Override
     public boolean shouldRenderOffScreen(PortalBlockEntity blockEntity) {
         return true;
+    }
+
+    @Override
+    public int getViewDistance() {
+        return 128;
     }
 }

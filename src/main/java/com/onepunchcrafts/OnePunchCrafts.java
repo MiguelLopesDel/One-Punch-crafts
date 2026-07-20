@@ -85,6 +85,8 @@ public class OnePunchCrafts {
     public static final RegistryObject<PortalBlock> PORTAL_BLOCK = BLOCKS.register("portal_block", () ->
             new PortalBlock(BlockBehaviour.Properties.of()
                     .noCollission()
+                    .noOcclusion()
+                    .lightLevel(state -> 15)
                     .strength(-1.0F)
     ));
 

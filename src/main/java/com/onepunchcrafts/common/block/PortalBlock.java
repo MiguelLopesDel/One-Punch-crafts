@@ -8,6 +8,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
+import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -16,6 +17,12 @@ import java.util.HashSet;
 public class PortalBlock extends BaseEntityBlock {
     public PortalBlock(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    public RenderShape getRenderShape(BlockState state) {
+        // The block entity renderer draws a free-standing spatial tear.
+        return RenderShape.INVISIBLE;
     }
 
     @Override
