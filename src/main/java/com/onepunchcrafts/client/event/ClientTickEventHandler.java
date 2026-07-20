@@ -108,13 +108,8 @@ public class ClientTickEventHandler {
         }
         if (Keybinding.INSTANCE.OPEN_DIMENSIONS_GUI.consumeClick() && playerExist) {
             if (HelpUtility.hasSaitamaPowerSet(player) || HelpUtility.verifyIsSaitamaAndGetCapability(player).isPresent())
-                Minecraft.getInstance().setScreen(new GuiDimension(MutableComponent.create(new LiteralContents("Select Dimension"))));
-            NetworkRegister.sendToServer(new TeleportPacket());
-        }
-        if (Keybinding.INSTANCE.USE_DIMENSIONAL_PUNCH.consumeClick() && playerExist
-                && (HelpUtility.hasSaitamaPowerSet(player) || HelpUtility.verifyIsSaitamaAndGetCapability(player).isPresent())) {
-            Minecraft.getInstance().setScreen(GuiDimension.forDimensionalPunch(
-                    MutableComponent.create(new LiteralContents("Dimensional Punch"))));
+                Minecraft.getInstance().setScreen(GuiDimension.forDimensionalPunch(
+                        MutableComponent.create(new LiteralContents("Dimensional Punch"))));
         }
     }
 
