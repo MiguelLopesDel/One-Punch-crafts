@@ -1,5 +1,6 @@
 package com.onepunchcrafts.minecraft;
 
+import com.onepunchcrafts.common.skills.saitama.NormalBarragePressure;
 import com.onepunchcrafts.common.skills.saitama.SeriousPunch;
 import com.onepunchcrafts.network.packet.SaitamaVfxPacket;
 import com.onepunchcrafts.network.packet.SeriousPunchVfxPacket;
@@ -164,13 +165,15 @@ public final class MinecraftExecutionSink implements PowerEngine.ExecutionSink {
         if (cue.equals(SaitamaContent.CUE_SERIOUS_WINDUP)) {
             HelpUtility.clientEffects(actor);
             SeriousPunchVfxPacket.broadcast(actor.serverLevel(), new SeriousPunchVfxPacket(
-                    actor.getId(), origin(emission).add(0, actor.getEyeHeight(), 0).add(look(emission).scale(1.2)),
+                    com.onepunchcrafts.common.vfx.SeriousPunchFront.nextInstanceId(),
+                    origin(emission).add(0, actor.getEyeHeight(), 0).add(look(emission).scale(1.2)),
                     look(emission), SeriousPunch.WINDUP_TICKS, profile(SaitamaContent.SERIOUS_PUNCH)));
         } else if (cue.equals(SaitamaContent.CUE_BARRAGE)) {
             NetworkRegister.sendToAllClientsExcept(actor, new AnimationPacket(actor.getStringUUID(), "multiple_punches"));
             SaitamaVfxPacket.broadcast(actor.serverLevel(), new SaitamaVfxPacket(actor.getId(), actor.getEyePosition(),
                     actor.getLookAngle(), 1, SaitamaVfxPacket.STYLE_BARRAGE,
                     ConsecutiveNormalPunches.DURATION_TICKS, profile(SaitamaContent.NORMAL_PUNCH)));
+            NormalBarragePressure.start(actor);
         } else if (cue.equals(SaitamaContent.CUE_WEAK_BARRAGE)) {
             NetworkRegister.sendToAllClientsExcept(actor, new AnimationPacket(actor.getStringUUID(), "multiple_punches"));
             SaitamaVfxPacket.broadcast(actor.serverLevel(), new SaitamaVfxPacket(actor.getId(), actor.getEyePosition(),
@@ -183,6 +186,7 @@ public final class MinecraftExecutionSink implements PowerEngine.ExecutionSink {
                     0.45f + progress * 0.2f, 0.8f + progress * 0.7f);
         } else if (cue.equals(SaitamaContent.CUE_BARRAGE_FINISH)) {
             barrageFinisher();
+            NormalBarragePressure.finish(actor, actor.getEyePosition(), actor.getLookAngle());
         } else if (cue.equals(SaitamaContent.CUE_BARRAGE_END)) {
             NetworkRegister.sendToAllClientsExcept(actor, new AnimationPacket(actor.getStringUUID(), "stop"));
         }

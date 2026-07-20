@@ -126,7 +126,7 @@ public class SeriousPunch implements Skill {
         // The cinematic timeline (hush, razor line, cone, impact) runs client
         // side; the actual destruction is held back until the windup ends.
         SeriousPunchVfxPacket.broadcast(serverLevel, new SeriousPunchVfxPacket(
-                player.getId(), fist, lookVec, WINDUP_TICKS));
+                com.onepunchcrafts.common.vfx.SeriousPunchFront.nextInstanceId(), fist, lookVec, WINDUP_TICKS));
 
         Vec3 cylinderStartPos = playerPos.add(lookVec.scale(3));
         ArrayList<BlockPos> blockPos = markBlocksToClear(serverLevel, 15, 1000, (int) Math.floor(cylinderStartPos.x), (int) Math.floor(cylinderStartPos.y), (int) Math.floor(cylinderStartPos.z), lookVec);

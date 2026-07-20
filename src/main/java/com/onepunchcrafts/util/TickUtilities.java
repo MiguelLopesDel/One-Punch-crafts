@@ -24,6 +24,9 @@ import static com.onepunchcrafts.OnePunchCrafts.IMMERSIVE_PORTALS_MOD;
 public class TickUtilities {
 
     private int startIndex;
+    // One id per legacy Serious Punch instance, so concurrent casts don't share
+    // a client-side front entry (matches the v3 destruction system's keying).
+    private final int frontId = com.onepunchcrafts.common.vfx.SeriousPunchFront.nextInstanceId();
 
 
     //z é a profundidade ou melhor dizendo a altura do cilindro
@@ -36,7 +39,7 @@ public class TickUtilities {
         int currentIteration = 0;
         if (blocksPos.isEmpty() || startIndex >= blocksPos.size())
             return true;
-        SeriousPunchFront.advance(level, player, blocksPos, startIndex, axisOrigin, direction, radius);
+        SeriousPunchFront.advance(level, player, frontId, blocksPos, startIndex, axisOrigin, direction, radius);
         BlockPos pStart = blocksPos.get(startIndex);
         int i = 15;
         AABB pArea = new AABB(new BlockPos(pStart.getX() - i, pStart.getY() - i, pStart.getZ() - i),
@@ -78,7 +81,7 @@ public class TickUtilities {
             if (currentIteration % breakBlocksPerTick == 0)
                 return false;
         }
-        SeriousPunchFront.finish(level, player, blocksPos, axisOrigin, direction, radius);
+        SeriousPunchFront.finish(level, player, frontId, blocksPos, axisOrigin, direction, radius);
         return true;
     }
 }

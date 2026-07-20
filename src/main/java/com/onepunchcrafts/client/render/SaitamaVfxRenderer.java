@@ -8,6 +8,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.entity.Entity;
@@ -46,6 +48,8 @@ public final class SaitamaVfxRenderer {
 
     /** Impact shakes are throttled so barrages rumble instead of convulsing. */
     private static long lastImpactShakeTick = Long.MIN_VALUE;
+    /** Barrage punch sound is throttled to a machine-gun rattle, not a buzz. */
+    private static long lastBarrageSoundTick = Long.MIN_VALUE;
     private static long lastBarrageShakeTick = Long.MIN_VALUE;
 
     private record VfxEffect(int casterId, Vec3 pos, Vec3 direction, float scale,
@@ -88,6 +92,7 @@ public final class SaitamaVfxRenderer {
         long now = minecraft.level.getGameTime();
         EFFECTS.removeIf(effect -> now - effect.createdTick > effect.lifeTicks + 2L);
         applyBarrageRumble(minecraft, now);
+        emitBarrageParticles(minecraft, now);
 
         // Real dust/debris around impacts: vanilla particles read as matter in
         // a way additive quads never do. Budget is split across live impacts
@@ -126,6 +131,66 @@ public final class SaitamaVfxRenderer {
                     1.0f - 0.025f * crescendo * attenuation);
             lastBarrageShakeTick = now;
             return;
+        }
+    }
+
+    /**
+     * Real matter for the NEW barrage profile: a dust wall billowing down the
+     * cone and, on each punch wave, hit puffs at the focal points plus a
+     * machine-gun punch sound whose pitch climbs with the crescendo. Additive
+     * quads carry the fists; these vanilla particles are what read as impact.
+     */
+    private static void emitBarrageParticles(Minecraft minecraft, long now) {
+        if (EFFECTS.isEmpty()) return;
+        Vec3 camera = minecraft.gameRenderer.getMainCamera().getPosition();
+        for (VfxEffect effect : EFFECTS) {
+            if (effect.style != SaitamaVfxPacket.STYLE_BARRAGE || effect.profile != VfxProfile.NEW) continue;
+            int age = (int) (now - effect.createdTick);
+            if (age < 0 || age > effect.lifeTicks) continue;
+
+            Vec3 origin = trackedOrigin(minecraft, effect, 0.72);
+            if (camera.distanceToSqr(origin) > 64.0 * 64.0) continue;
+            Vec3 dir = trackedDirection(minecraft, effect);
+            Vec3 side = stableSide(dir);
+            Vec3 up = side.cross(dir).normalize();
+            boolean strong = effect.scale >= 0.9f;
+            float crescendo = ConsecutiveNormalPunches.progress(age);
+
+            // Dust wall drifting out along the cone, thickening as it builds.
+            if (now % 2 == 0) {
+                int puffs = strong ? 4 : 2;
+                for (int i = 0; i < puffs; i++) {
+                    double along = (1.0 + RANDOM.nextDouble() * (strong ? 6.0 : 3.0)) * (0.6 + crescendo);
+                    double spread = along * 0.4;
+                    Vec3 spawn = origin.add(dir.scale(along))
+                            .add(side.scale((RANDOM.nextDouble() - 0.5) * spread))
+                            .add(up.scale((RANDOM.nextDouble() - 0.5) * spread));
+                    Vec3 velocity = dir.scale(0.15 + RANDOM.nextDouble() * 0.2);
+                    minecraft.level.addParticle(i % 2 == 0 ? ParticleTypes.CLOUD : ParticleTypes.POOF,
+                            spawn.x, spawn.y, spawn.z, velocity.x, velocity.y + 0.02, velocity.z);
+                }
+            }
+
+            // Each punch wave: hit sparks/puffs at the focal points and a punch beat.
+            if (ConsecutiveNormalPunches.isWaveTick(age)) {
+                int foci = strong ? 3 : 1;
+                for (int f = 0; f < foci; f++) {
+                    double lateral = strong ? (f - 1) * 1.2 : 0.0;
+                    Vec3 focus = origin.add(dir.scale(4.5 + RANDOM.nextDouble() * 2.0)).add(side.scale(lateral));
+                    minecraft.level.addParticle(ParticleTypes.CRIT, focus.x, focus.y, focus.z,
+                            (RANDOM.nextDouble() - 0.5) * 0.2, 0.05, (RANDOM.nextDouble() - 0.5) * 0.2);
+                    if (strong)
+                        minecraft.level.addParticle(ParticleTypes.POOF, focus.x, focus.y, focus.z, 0, 0, 0);
+                }
+                // Machine-gun cadence, throttled so the frantic end rattles instead of buzzing.
+                if (now - lastBarrageSoundTick >= 2) {
+                    lastBarrageSoundTick = now;
+                    float pitch = 1.35f + 0.45f * crescendo + (RANDOM.nextFloat() - 0.5f) * 0.12f;
+                    minecraft.level.playLocalSound(origin.x, origin.y, origin.z,
+                            strong ? SoundEvents.PLAYER_ATTACK_STRONG : SoundEvents.PLAYER_ATTACK_WEAK,
+                            SoundSource.PLAYERS, strong ? 0.5f : 0.35f, pitch, false);
+                }
+            }
         }
     }
 

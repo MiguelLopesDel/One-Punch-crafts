@@ -47,10 +47,12 @@ public class TeleportPacket {
 
     public void handle(Supplier<NetworkEvent.Context> ctx) {
         ServerPlayer player = ctx.get().getSender();
-        if (player != null && HelpUtility.hasSaitamaPowerSet(player)) teleport(player);
-        HelpUtility.verifyIsSaitamaAndGetCapability(player).ifPresent(cap -> {
+        // Exactly once: the custom-portal path toggles (place then remove), so a
+        // second call here would undo the portal it just created.
+        if (player != null
+                && (HelpUtility.hasSaitamaPowerSet(player) || HelpUtility.verifyIsSaitamaAndGetCapability(player).isPresent())) {
             teleport(player);
-        });
+        }
         ctx.get().setPacketHandled(true);
     }
 

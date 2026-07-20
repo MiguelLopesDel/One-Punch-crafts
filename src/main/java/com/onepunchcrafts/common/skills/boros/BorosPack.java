@@ -233,6 +233,27 @@ public class BorosPack extends SyncableSkillPack {
         return false;
     }
 
+    /**
+     * Pours out every last drop for an all-in attack. Returns the energy spent
+     * (which drives the attack's power), or {@code -1} when Boros is Exhausted
+     * or below {@code minimum}. In creative he stays topped up, spending the
+     * full pool's worth of power without draining.
+     */
+    public float consumeAllEnergy(float minimum) {
+        if (infiniteEnergy) {
+            config.setExhausted(false);
+            energy = BorosConfig.MAX_ENERGY;
+            return BorosConfig.MAX_ENERGY;
+        }
+        if (config.isExhausted() || energy < minimum) return -1f;
+
+        float spent = energy;
+        energy = 0;
+        config.setExhausted(true);
+        config.setExhaustedTimestamp(System.currentTimeMillis() / 50);
+        return spent;
+    }
+
     @Override
     public void execute(Player player) {
         Skill skill = getCurrentSkill();

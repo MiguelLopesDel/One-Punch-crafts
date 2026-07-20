@@ -78,8 +78,25 @@ public final class SeriousPunchCinematic {
 
     private static final Map<Integer, Front> FRONTS = new HashMap<>();
 
-    private static boolean active;
-    private static int casterId;
+    /** One in-flight cinematic; several can play at once for concurrent punches. */
+    private static final class Cinematic {
+        final Vec3 origin;
+        final Vec3 direction;
+        final int windupTicks;
+        final long startTick;
+        boolean impactCued;
+        Cinematic(Vec3 origin, Vec3 direction, int windupTicks, long startTick) {
+            this.origin = origin;
+            this.direction = direction;
+            this.windupTicks = windupTicks;
+            this.startTick = startTick;
+        }
+    }
+
+    private static final Map<Integer, Cinematic> CINEMATICS = new HashMap<>();
+
+    // Scratch context loaded from the cinematic currently being ticked/rendered,
+    // so the existing per-phase code can keep reading these directly.
     private static Vec3 origin = Vec3.ZERO;
     private static Vec3 direction = new Vec3(0, 0, 1);
     private static int windupTicks = 14;
@@ -88,18 +105,20 @@ public final class SeriousPunchCinematic {
 
     private SeriousPunchCinematic() {}
 
-    public static void start(int caster, Vec3 pos, Vec3 dir, int windup) {
+    private static void load(Cinematic cinematic) {
+        origin = cinematic.origin;
+        direction = cinematic.direction;
+        windupTicks = cinematic.windupTicks;
+        startTick = cinematic.startTick;
+        impactCued = cinematic.impactCued;
+    }
+
+    public static void start(int id, Vec3 pos, Vec3 dir, int windup) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) return;
-        casterId = caster;
-        origin = pos;
-        direction = dir.lengthSqr() < 1.0e-4 ? new Vec3(0, 0, 1) : dir.normalize();
-        windupTicks = Math.max(1, windup);
-        startTick = minecraft.level.getGameTime();
-        impactCued = false;
-        active = true;
-
-        minecraft.level.playLocalSound(origin.x, origin.y, origin.z,
+        Vec3 dirN = dir.lengthSqr() < 1.0e-4 ? new Vec3(0, 0, 1) : dir.normalize();
+        CINEMATICS.put(id, new Cinematic(pos, dirN, Math.max(1, windup), minecraft.level.getGameTime()));
+        minecraft.level.playLocalSound(pos.x, pos.y, pos.z,
                 SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 0.8f, 0.55f, false);
     }
 
@@ -146,12 +165,22 @@ public final class SeriousPunchCinematic {
     /** Timeline state consumed by {@link SeriousPostChainHandler}. */
     public record State(int casterId, Vec3 origin, Vec3 direction, float age, int windupTicks) {}
 
+    /** Freshest live cinematic — the screen post-chain and FOV follow the newest. */
     public static State state(float partialTick) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (!active || minecraft.level == null) return null;
-        float age = minecraft.level.getGameTime() - startTick + partialTick;
-        if (age < 0 || age > windupTicks + TAIL_TICKS) return null;
-        return new State(casterId, origin, direction, age, windupTicks);
+        if (minecraft.level == null || CINEMATICS.isEmpty()) return null;
+        long now = minecraft.level.getGameTime();
+        Cinematic best = null;
+        float bestAge = Float.MAX_VALUE;
+        for (Cinematic cinematic : CINEMATICS.values()) {
+            float age = now - cinematic.startTick + partialTick;
+            if (age < 0 || age > cinematic.windupTicks + TAIL_TICKS) continue;
+            if (age < bestAge) {
+                bestAge = age;
+                best = cinematic;
+            }
+        }
+        return best == null ? null : new State(0, best.origin, best.direction, bestAge, best.windupTicks);
     }
 
     @SubscribeEvent
@@ -159,59 +188,64 @@ public final class SeriousPunchCinematic {
         if (event.phase != TickEvent.Phase.END) return;
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) {
-            active = false;
+            CINEMATICS.clear();
             FRONTS.clear();
             return;
         }
         tickFronts(minecraft);
-        if (!active) return;
+        if (CINEMATICS.isEmpty()) return;
 
-        long age = minecraft.level.getGameTime() - startTick;
-        if (age > windupTicks + TAIL_TICKS) {
-            active = false;
-            return;
-        }
-
-        double camDist = minecraft.gameRenderer.getMainCamera().getPosition().distanceTo(origin);
-
-        // Windup: the air itself stalls — sparse motes hanging still.
-        if (age < windupTicks && camDist < 64.0) {
-            for (int i = 0; i < 3; i++) {
-                Vec3 offset = new Vec3(RANDOM.nextGaussian(), RANDOM.nextGaussian() * 0.6, RANDOM.nextGaussian()).scale(2.8);
-                Vec3 pos = origin.add(offset);
-                minecraft.level.addParticle(ParticleTypes.END_ROD, pos.x, pos.y, pos.z, 0.0, -0.002, 0.0);
+        long now = minecraft.level.getGameTime();
+        Iterator<Map.Entry<Integer, Cinematic>> iterator = CINEMATICS.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Cinematic cinematic = iterator.next().getValue();
+            long age = now - cinematic.startTick;
+            if (age > cinematic.windupTicks + TAIL_TICKS) {
+                iterator.remove();
+                continue;
             }
-        }
+            load(cinematic);
+            double camDist = minecraft.gameRenderer.getMainCamera().getPosition().distanceTo(origin);
 
-        // Impact beat: whip-crack, then the boom, then the camera kick.
-        if (age >= windupTicks && !impactCued) {
-            impactCued = true;
-            minecraft.level.playLocalSound(origin.x, origin.y, origin.z,
-                    SoundEvents.TRIDENT_RIPTIDE_1, SoundSource.PLAYERS, 0.6f, 1.85f, false);
-            float shake = (float) Math.min(7.0, 7.0 * 60.0 / (camDist + 20.0));
-            ScreenEffectHandler.addEffect(shake, 9, 1.0f);
-        }
-        if (age == windupTicks + 2L) {
-            minecraft.level.playLocalSound(origin.x, origin.y, origin.z,
-                    SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS, 1.0f, 0.72f, false);
-            minecraft.level.playLocalSound(origin.x, origin.y, origin.z,
-                    SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 0.8f, 0.45f, false);
-        }
+            // Windup: the air itself stalls — sparse motes hanging still.
+            if (age < windupTicks && camDist < 64.0) {
+                for (int i = 0; i < 3; i++) {
+                    Vec3 offset = new Vec3(RANDOM.nextGaussian(), RANDOM.nextGaussian() * 0.6, RANDOM.nextGaussian()).scale(2.8);
+                    Vec3 pos = origin.add(offset);
+                    minecraft.level.addParticle(ParticleTypes.END_ROD, pos.x, pos.y, pos.z, 0.0, -0.002, 0.0);
+                }
+            }
 
-        // Aftermath: only the wind is left, dragging dust down the punch line.
-        if (age == windupTicks + 16L) {
-            minecraft.level.playLocalSound(origin.x, origin.y, origin.z,
-                    SoundEvents.ELYTRA_FLYING, SoundSource.PLAYERS, 0.30f, 0.7f, false);
-        }
-        if (age > windupTicks + 14 && age % 2 == 0 && camDist < 96.0) {
-            for (int i = 0; i < 2; i++) {
-                double along = RANDOM.nextDouble() * 50.0;
-                Vec3 offset = stableSide(direction).scale(RANDOM.nextGaussian() * 4.0)
-                        .add(0, RANDOM.nextGaussian() * 2.5, 0);
-                Vec3 pos = origin.add(direction.scale(along)).add(offset);
-                minecraft.level.addParticle(ParticleTypes.CLOUD, pos.x, pos.y, pos.z,
-                        direction.x * 0.22, direction.y * 0.22 - 0.01, direction.z * 0.22);
-                minecraft.level.addParticle(ParticleTypes.WHITE_ASH, pos.x, pos.y + 1.5, pos.z, 0.0, -0.05, 0.0);
+            // Impact beat: whip-crack, then the boom, then the camera kick.
+            if (age >= windupTicks && !cinematic.impactCued) {
+                cinematic.impactCued = true;
+                minecraft.level.playLocalSound(origin.x, origin.y, origin.z,
+                        SoundEvents.TRIDENT_RIPTIDE_1, SoundSource.PLAYERS, 0.6f, 1.85f, false);
+                float shake = (float) Math.min(7.0, 7.0 * 60.0 / (camDist + 20.0));
+                ScreenEffectHandler.addEffect(shake, 9, 1.0f);
+            }
+            if (age == windupTicks + 2L) {
+                minecraft.level.playLocalSound(origin.x, origin.y, origin.z,
+                        SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS, 1.0f, 0.72f, false);
+                minecraft.level.playLocalSound(origin.x, origin.y, origin.z,
+                        SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 0.8f, 0.45f, false);
+            }
+
+            // Aftermath: only the wind is left, dragging dust down the punch line.
+            if (age == windupTicks + 16L) {
+                minecraft.level.playLocalSound(origin.x, origin.y, origin.z,
+                        SoundEvents.ELYTRA_FLYING, SoundSource.PLAYERS, 0.30f, 0.7f, false);
+            }
+            if (age > windupTicks + 14 && age % 2 == 0 && camDist < 96.0) {
+                for (int i = 0; i < 2; i++) {
+                    double along = RANDOM.nextDouble() * 50.0;
+                    Vec3 offset = stableSide(direction).scale(RANDOM.nextGaussian() * 4.0)
+                            .add(0, RANDOM.nextGaussian() * 2.5, 0);
+                    Vec3 pos = origin.add(direction.scale(along)).add(offset);
+                    minecraft.level.addParticle(ParticleTypes.CLOUD, pos.x, pos.y, pos.z,
+                            direction.x * 0.22, direction.y * 0.22 - 0.01, direction.z * 0.22);
+                    minecraft.level.addParticle(ParticleTypes.WHITE_ASH, pos.x, pos.y + 1.5, pos.z, 0.0, -0.05, 0.0);
+                }
             }
         }
     }
@@ -293,25 +327,29 @@ public final class SeriousPunchCinematic {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) return;
-        State state = state(event.getPartialTick());
-        if (state == null && FRONTS.isEmpty()) return;
+        if (CINEMATICS.isEmpty() && FRONTS.isEmpty()) return;
 
         VfxQuadBatch batch = VfxQuadBatch.begin(event);
 
-        if (state != null) {
-            float age = state.age();
-            int windup = state.windupTicks();
-            Vec3 side = stableSide(direction);
-            Vec3 up = side.cross(direction).normalize();
+        if (!CINEMATICS.isEmpty()) {
+            long gameTime = minecraft.level.getGameTime();
+            for (Cinematic cinematic : CINEMATICS.values()) {
+                float age = gameTime - cinematic.startTick + event.getPartialTick();
+                if (age < 0 || age > cinematic.windupTicks + TAIL_TICKS) continue;
+                load(cinematic);
+                int windup = cinematic.windupTicks;
+                Vec3 side = stableSide(direction);
+                Vec3 up = side.cross(direction).normalize();
 
-            if (age < windup) {
-                renderWindup(batch, side, up, age / windup, age);
-            } else {
-                float sinceImpact = age - windup;
-                renderLineAndCone(batch, side, up, sinceImpact);
-                renderImpact(batch, side, up, sinceImpact);
-                renderSkyTear(batch, minecraft, sinceImpact);
-                renderAftermath(batch, side, up, sinceImpact);
+                if (age < windup) {
+                    renderWindup(batch, side, up, age / windup, age);
+                } else {
+                    float sinceImpact = age - windup;
+                    renderLineAndCone(batch, side, up, sinceImpact);
+                    renderImpact(batch, side, up, sinceImpact);
+                    renderSkyTear(batch, minecraft, sinceImpact);
+                    renderAftermath(batch, side, up, sinceImpact);
+                }
             }
         }
 

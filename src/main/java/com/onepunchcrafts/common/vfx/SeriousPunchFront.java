@@ -27,6 +27,18 @@ public final class SeriousPunchFront {
 
     private static final double BROADCAST_RANGE = 512.0;
 
+    /**
+     * Unique id per Serious Punch instance. The client keys its travelling
+     * front (and the cinematic) by this, so two punches from the same caster
+     * never collide on one entry — the whole point of the concurrency fix.
+     */
+    private static final java.util.concurrent.atomic.AtomicInteger SEQUENCE =
+            new java.util.concurrent.atomic.AtomicInteger();
+
+    public static int nextInstanceId() {
+        return SEQUENCE.incrementAndGet();
+    }
+
     private SeriousPunchFront() {}
 
     /**
@@ -34,7 +46,7 @@ public final class SeriousPunchFront {
      * has not been cleared yet; {@code axisOrigin} must be the same point the
      * block list was generated from so the front lands on the cylinder axis.
      */
-    public static void advance(ServerLevel level, ServerPlayer caster, List<BlockPos> blocks, int index,
+    public static void advance(ServerLevel level, ServerPlayer caster, int instanceId, List<BlockPos> blocks, int index,
                                Vec3 axisOrigin, Vec3 direction, float radius) {
         if (blocks.isEmpty() || index >= blocks.size()) return;
         Vec3 front = frontPosition(blocks.get(index), axisOrigin, direction);
@@ -43,7 +55,7 @@ public final class SeriousPunchFront {
 
         if (time % 2 == 0) {
             NetworkRegister.sendToNearby(level, front, BROADCAST_RANGE, new SaitamaVfxPacket(
-                    caster.getId(), front, direction, radius,
+                    instanceId, front, direction, radius,
                     SaitamaVfxPacket.STYLE_SERIOUS_FRONT, 4));
         }
 
@@ -84,12 +96,12 @@ public final class SeriousPunchFront {
     }
 
     /** Terminal burst where the punch finally spends itself. */
-    public static void finish(ServerLevel level, ServerPlayer caster, List<BlockPos> blocks,
+    public static void finish(ServerLevel level, ServerPlayer caster, int instanceId, List<BlockPos> blocks,
                               Vec3 axisOrigin, Vec3 direction, float radius) {
         if (blocks.isEmpty()) return;
         Vec3 front = frontPosition(blocks.get(blocks.size() - 1), axisOrigin, direction);
         NetworkRegister.sendToNearby(level, front, BROADCAST_RANGE, new SaitamaVfxPacket(
-                caster.getId(), front, direction, radius,
+                instanceId, front, direction, radius,
                 SaitamaVfxPacket.STYLE_SERIOUS_FRONT_END, 0));
         level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, front.x, front.y, front.z,
                 3, radius * 0.4, radius * 0.4, radius * 0.4, 0.0);

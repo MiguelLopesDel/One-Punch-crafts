@@ -36,7 +36,9 @@ import static com.onepunchcrafts.OnePunchCrafts.IMMERSIVE_PORTALS_MOD;
 @Mod.EventBusSubscriber
 public final class MinecraftDestructionSystem {
     private static final int BLOCKS_PER_TICK = 1_000;
-    private static final Map<UUID, Job> JOBS = new LinkedHashMap<>();
+    // Keyed by a unique per-cast instance id, NOT the player: a player can have
+    // several Serious Punches carving at once and each keeps its own job.
+    private static final Map<Integer, Job> JOBS = new LinkedHashMap<>();
 
     private MinecraftDestructionSystem() {}
 
@@ -45,22 +47,24 @@ public final class MinecraftDestructionSystem {
         Vec3 start = origin.add(direction.scale(3));
         ArrayList<BlockPos> blocks = LivingDamageEventHandler.markBlocksToClear(player.serverLevel(), (int) radius,
                 (int) length, (int) Math.floor(start.x), (int) Math.floor(start.y), (int) Math.floor(start.z), direction);
-        JOBS.put(player.getUUID(), new Job(player.serverLevel(), blocks, 0, start, direction, (float) radius, strikeId));
+        int instanceId = SeriousPunchFront.nextInstanceId();
+        JOBS.put(instanceId, new Job(player.getUUID(), instanceId, player.serverLevel(), blocks, 0,
+                start, direction, (float) radius, strikeId));
     }
 
     @SubscribeEvent
     public static void tick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        Iterator<Map.Entry<UUID, Job>> iterator = JOBS.entrySet().iterator();
+        Iterator<Map.Entry<Integer, Job>> iterator = JOBS.entrySet().iterator();
         while (iterator.hasNext()) {
-            Map.Entry<UUID, Job> entry = iterator.next();
+            Map.Entry<Integer, Job> entry = iterator.next();
             Job job = entry.getValue();
-            ServerPlayer player = event.getServer().getPlayerList().getPlayer(entry.getKey());
+            ServerPlayer player = event.getServer().getPlayerList().getPlayer(job.owner);
             if (player == null) {
                 iterator.remove();
                 continue;
             }
-            SeriousPunchFront.advance(job.level, player, job.blocks, job.index,
+            SeriousPunchFront.advance(job.level, player, job.id, job.blocks, job.index,
                     job.axisOrigin, job.direction, job.radius);
             sweepFront(job, player);
             int end = Math.min(job.blocks.size(), job.index + BLOCKS_PER_TICK);
@@ -69,12 +73,12 @@ public final class MinecraftDestructionSystem {
                 if (job.level.isLoaded(position)) job.level.setBlock(position, Blocks.AIR.defaultBlockState(), 3);
             }
             if (end >= job.blocks.size()) {
-                SeriousPunchFront.finish(job.level, player, job.blocks,
+                SeriousPunchFront.finish(job.level, player, job.id, job.blocks,
                         job.axisOrigin, job.direction, job.radius);
                 iterator.remove();
             } else {
-                entry.setValue(new Job(job.level, job.blocks, end, job.axisOrigin, job.direction,
-                        job.radius, job.strikeId));
+                entry.setValue(new Job(job.owner, job.id, job.level, job.blocks, end, job.axisOrigin,
+                        job.direction, job.radius, job.strikeId));
             }
         }
     }
@@ -104,6 +108,6 @@ public final class MinecraftDestructionSystem {
         if (IMMERSIVE_PORTALS_MOD.isPresent()) ImmersivePortalsCompat.destroyPortals(job.level, area);
     }
 
-    private record Job(ServerLevel level, ArrayList<BlockPos> blocks, int index,
+    private record Job(UUID owner, int id, ServerLevel level, ArrayList<BlockPos> blocks, int index,
                        Vec3 axisOrigin, Vec3 direction, float radius, Id strikeId) {}
 }

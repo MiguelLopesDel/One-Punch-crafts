@@ -34,6 +34,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
 import net.minecraft.server.level.TicketType;
@@ -106,13 +107,20 @@ public class BorosCollapsingStarCannon implements Skill {
             return SkillExecutionResult.CONTINUE;
         }
 
-        if (!player.isCreative() && !pack.consumeEnergy(BorosConfig.CSRC_COST)) {
-            player.sendSystemMessage(Component.translatable("skill.boros.csrc.insufficient_energy"));
-            return SkillExecutionResult.CONTINUE;
+        // "All my remaining energy": spend whatever Boros has, and let the beam's
+        // power scale with it — a half-full cast is a leaner beam, not a fixed one.
+        float powerScale = 1.0f;
+        if (!player.isCreative()) {
+            float spent = pack.consumeAllEnergy(BorosConfig.CSRC_MIN_ENERGY);
+            if (spent < 0f) {
+                player.sendSystemMessage(Component.translatable("skill.boros.csrc.insufficient_energy"));
+                return SkillExecutionResult.CONTINUE;
+            }
+            powerScale = Mth.clamp(spent / BorosConfig.MAX_ENERGY, 0.4f, 1.0f);
         }
 
         if (player.level() instanceof ServerLevel serverLevel) {
-            fireUltimate(serverLevel, player);
+            fireUltimate(serverLevel, player, powerScale);
         }
 
         if (!player.isCreative()) {
@@ -123,7 +131,7 @@ public class BorosCollapsingStarCannon implements Skill {
         return SkillExecutionResult.CONTINUE;
     }
 
-    private void fireUltimate(ServerLevel level, Player player) {
+    private void fireUltimate(ServerLevel level, Player player, float powerScale) {
         // Lock aim and position at the start of the charge, like Boros planting
         // himself for the release; the client shader follows the same timeline.
         Vec3 look = player.getLookAngle().normalize();
@@ -139,21 +147,28 @@ public class BorosCollapsingStarCannon implements Skill {
         sendCinematicVfx(level, player, start, look, impact);
 
         TickScheduler.scheduleFromHere(Duration.ofMillis(CHARGE_TICKS * 50L),
-                () -> releaseBeam(level, player, start, look, impact));
+                () -> releaseBeam(level, player, start, look, impact, powerScale));
     }
 
-    private void releaseBeam(ServerLevel level, Player player, Vec3 start, Vec3 look, Vec3 beamEnd) {
+    /** Scales a destruction dimension by the poured-in energy, never below 1. */
+    private static int sc(int base, float scale) {
+        return Math.max(1, Math.round(base * scale));
+    }
+
+    private void releaseBeam(ServerLevel level, Player player, Vec3 start, Vec3 look, Vec3 beamEnd, float powerScale) {
         if (player.isRemoved() || !player.isAlive() || player.level() != level) return;
         // A charged action belongs to the Pack instance that started it. A
         // character switch invalidates it before it can release as the new one.
         if (HelpUtility.getSkillData(player).getSkillPack() != pack) return;
 
-        double baseRadius = 6.5;
+        // Width and destruction footprint scale with the energy poured in; the
+        // beam LENGTH stays fixed so it keeps matching the client cinematic.
+        double baseRadius = 6.5 * powerScale;
         double beamLength = (BEAM_SAMPLES - 1) * BEAM_STEP;
         double baseAttack = player.getAttributeValue(Attributes.ATTACK_DAMAGE);
-        float damage = (float) Math.max(MIN_DIRECT_DAMAGE, baseAttack * DIRECT_DAMAGE_MULTIPLIER);
-        float backblastDamage = (float) Math.max(MIN_BACKBLAST_DAMAGE, baseAttack * BACKBLAST_DAMAGE_MULTIPLIER);
-        float shockwaveDamage = (float) Math.max(MIN_SHOCKWAVE_DAMAGE, baseAttack * SHOCKWAVE_DAMAGE_MULTIPLIER);
+        float damage = (float) (Math.max(MIN_DIRECT_DAMAGE, baseAttack * DIRECT_DAMAGE_MULTIPLIER) * powerScale);
+        float backblastDamage = (float) (Math.max(MIN_BACKBLAST_DAMAGE, baseAttack * BACKBLAST_DAMAGE_MULTIPLIER) * powerScale);
+        float shockwaveDamage = (float) (Math.max(MIN_SHOCKWAVE_DAMAGE, baseAttack * SHOCKWAVE_DAMAGE_MULTIPLIER) * powerScale);
 
         // Kept well below the shout/soundtrack so the voice leads the mix.
         level.playSound(null, player.getX(), player.getY(), player.getZ(),
@@ -183,16 +198,18 @@ public class BorosCollapsingStarCannon implements Skill {
         // Two destruction zones advance in parallel every tick, so the launch
         // site and the impact site erupt together instead of one waiting for
         // the other; within each zone stages still roll near -> far.
+        // Crater footprint scales with power too (the `power` arg is block
+        // toughness, left intact so a leaner beam still bites hard terrain).
         List<DestructionStage> muzzleZone = List.of(
-                new DeepCraterStage(muzzleGround, 96, 54, 72, 2800.0f),
-                new RadialBlastStage(coreGround, 58, 30, 42, 2200.0f),
-                new SurfaceScrapeStage(muzzleGround, 78, 135, 8)
+                new DeepCraterStage(muzzleGround, sc(96, powerScale), sc(54, powerScale), sc(72, powerScale), 2800.0f),
+                new RadialBlastStage(coreGround, sc(58, powerScale), sc(30, powerScale), sc(42, powerScale), 2200.0f),
+                new SurfaceScrapeStage(muzzleGround, sc(78, powerScale), sc(135, powerScale), sc(8, powerScale))
         );
         List<DestructionStage> impactZone = List.of(
                 new BeamTrenchStage(start, look, baseRadius),
-                new DeepCraterStage(impactGround, 104, 62, 46, 2100.0f),
-                new RadialBlastStage(impactGround, 88, 52, 36, 1700.0f),
-                new SurfaceScrapeStage(impactGround, 100, 195, 13)
+                new DeepCraterStage(impactGround, sc(104, powerScale), sc(62, powerScale), sc(46, powerScale), 2100.0f),
+                new RadialBlastStage(impactGround, sc(88, powerScale), sc(52, powerScale), sc(36, powerScale), 1700.0f),
+                new SurfaceScrapeStage(impactGround, sc(100, powerScale), sc(195, powerScale), sc(13, powerScale))
         );
 
         emitServerCinematicVfx(level, player, start, look, impact);

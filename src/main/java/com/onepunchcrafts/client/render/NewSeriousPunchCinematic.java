@@ -14,6 +14,9 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Random;
 
 import static com.onepunchcrafts.OnePunchCrafts.MODID;
@@ -29,105 +32,154 @@ public final class NewSeriousPunchCinematic {
     private static final int TAIL = 90;
     private static final Random RANDOM = new Random();
 
-    private static boolean active;
+    /** One in-flight cinematic; several can play at once for concurrent punches. */
+    private static final class Cinematic {
+        final int id;
+        final Vec3 origin;
+        final Vec3 direction;
+        final int windup;
+        final long started;
+        boolean impactPlayed;
+        Cinematic(int id, Vec3 origin, Vec3 direction, int windup, long started) {
+            this.id = id;
+            this.origin = origin;
+            this.direction = direction;
+            this.windup = windup;
+            this.started = started;
+        }
+    }
+
+    private static final Map<Integer, Cinematic> CINEMATICS = new HashMap<>();
+
+    // Scratch context loaded from the cinematic currently ticked/rendered.
     private static int casterId;
     private static Vec3 origin = Vec3.ZERO;
     private static Vec3 direction = new Vec3(0, 0, 1);
     private static int windup;
     private static long started;
-    private static boolean impactPlayed;
 
     private NewSeriousPunchCinematic() {}
 
-    public static void start(int caster, Vec3 pos, Vec3 dir, int windupTicks) {
+    private static void load(Cinematic cinematic) {
+        casterId = cinematic.id;
+        origin = cinematic.origin;
+        direction = cinematic.direction;
+        windup = cinematic.windup;
+        started = cinematic.started;
+    }
+
+    public static void start(int id, Vec3 pos, Vec3 dir, int windupTicks) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) return;
-        casterId = caster;
-        origin = pos;
-        direction = dir.lengthSqr() < 1.0e-4 ? new Vec3(0, 0, 1) : dir.normalize();
-        windup = Math.max(1, windupTicks);
-        started = minecraft.level.getGameTime();
-        impactPlayed = false;
-        active = true;
+        Vec3 dirN = dir.lengthSqr() < 1.0e-4 ? new Vec3(0, 0, 1) : dir.normalize();
+        CINEMATICS.put(id, new Cinematic(id, pos, dirN, Math.max(1, windupTicks), minecraft.level.getGameTime()));
         minecraft.level.playLocalSound(pos.x, pos.y, pos.z, SoundEvents.WARDEN_HEARTBEAT,
                 SoundSource.PLAYERS, 0.32f, 0.45f, false);
     }
 
     @SubscribeEvent
     public static void tick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || !active) return;
+        if (event.phase != TickEvent.Phase.END) return;
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) {
-            active = false;
+            CINEMATICS.clear();
             return;
         }
-        long age = minecraft.level.getGameTime() - started;
-        if (age > windup + TAIL) {
-            active = false;
-            return;
-        }
+        if (CINEMATICS.isEmpty()) return;
 
-        // The world is drawn toward the fist during the hush, not emitted by it.
-        if (age < windup) {
-            Vec3 side = stableSide(direction);
-            Vec3 up = side.cross(direction).normalize();
-            for (int i = 0; i < 5; i++) {
-                Vec3 radial = side.scale(RANDOM.nextGaussian() * 2.8)
-                        .add(up.scale(RANDOM.nextGaussian() * 1.7))
-                        .subtract(direction.scale(0.8 + RANDOM.nextDouble() * 4.0));
-                Vec3 point = origin.add(radial);
-                Vec3 velocity = origin.subtract(point).normalize().scale(0.07 + age * 0.004);
-                minecraft.level.addParticle(i % 2 == 0 ? ParticleTypes.WHITE_ASH : ParticleTypes.POOF,
-                        point.x, point.y, point.z, velocity.x, velocity.y, velocity.z);
+        long now = minecraft.level.getGameTime();
+        Iterator<Map.Entry<Integer, Cinematic>> iterator = CINEMATICS.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Cinematic cinematic = iterator.next().getValue();
+            long age = now - cinematic.started;
+            if (age > cinematic.windup + TAIL) {
+                iterator.remove();
+                continue;
             }
-        }
+            load(cinematic);
 
-        if (age >= windup && !impactPlayed) {
-            impactPlayed = true;
-            double distance = minecraft.gameRenderer.getMainCamera().getPosition().distanceTo(origin);
-            float shake = (float) Math.min(6.0, 6.0 * 60.0 / (distance + 18.0));
-            ScreenEffectHandler.addEffect(shake, 7, 0.96f);
-            minecraft.level.playLocalSound(origin.x, origin.y, origin.z,
-                    SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS, 1.0f, 0.62f, false);
-        }
-        if (age > windup + 16 && age % 3 == 0) {
-            Vec3 side = stableSide(direction);
-            double along = 4 + RANDOM.nextDouble() * 70;
-            Vec3 point = origin.add(direction.scale(along))
-                    .add(side.scale(RANDOM.nextGaussian() * (1 + along * 0.08)));
-            minecraft.level.addParticle(ParticleTypes.CLOUD, point.x, point.y, point.z,
-                    direction.x * 0.18, direction.y * 0.18, direction.z * 0.18);
+            // The world is drawn toward the fist during the hush, not emitted by it.
+            if (age < windup) {
+                Vec3 side = stableSide(direction);
+                Vec3 up = side.cross(direction).normalize();
+                for (int i = 0; i < 5; i++) {
+                    Vec3 radial = side.scale(RANDOM.nextGaussian() * 2.8)
+                            .add(up.scale(RANDOM.nextGaussian() * 1.7))
+                            .subtract(direction.scale(0.8 + RANDOM.nextDouble() * 4.0));
+                    Vec3 point = origin.add(radial);
+                    Vec3 velocity = origin.subtract(point).normalize().scale(0.07 + age * 0.004);
+                    minecraft.level.addParticle(i % 2 == 0 ? ParticleTypes.WHITE_ASH : ParticleTypes.POOF,
+                            point.x, point.y, point.z, velocity.x, velocity.y, velocity.z);
+                }
+            }
+
+            if (age >= windup && !cinematic.impactPlayed) {
+                cinematic.impactPlayed = true;
+                double distance = minecraft.gameRenderer.getMainCamera().getPosition().distanceTo(origin);
+                float shake = (float) Math.min(6.0, 6.0 * 60.0 / (distance + 18.0));
+                ScreenEffectHandler.addEffect(shake, 7, 0.96f);
+                minecraft.level.playLocalSound(origin.x, origin.y, origin.z,
+                        SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS, 1.0f, 0.62f, false);
+            }
+            if (age > windup + 16 && age % 3 == 0) {
+                Vec3 side = stableSide(direction);
+                double along = 4 + RANDOM.nextDouble() * 70;
+                Vec3 point = origin.add(direction.scale(along))
+                        .add(side.scale(RANDOM.nextGaussian() * (1 + along * 0.08)));
+                minecraft.level.addParticle(ParticleTypes.CLOUD, point.x, point.y, point.z,
+                        direction.x * 0.18, direction.y * 0.18, direction.z * 0.18);
+            }
         }
     }
 
     @SubscribeEvent
     public static void fov(ViewportEvent.ComputeFov event) {
-        if (!active) return;
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.level == null) return;
-        float age = minecraft.level.getGameTime() - started + (float) event.getPartialTick();
-        if (age < windup) {
-            float p = age / windup;
+        if (minecraft.level == null || CINEMATICS.isEmpty()) return;
+        Cinematic cinematic = freshest(minecraft.level.getGameTime(), (float) event.getPartialTick());
+        if (cinematic == null) return;
+        float age = minecraft.level.getGameTime() - cinematic.started + (float) event.getPartialTick();
+        if (age < cinematic.windup) {
+            float p = age / cinematic.windup;
             event.setFOV(event.getFOV() * (1.0 - p * p * 0.075));
         } else {
-            event.setFOV(event.getFOV() * (1.0 + 0.055 * Math.exp(-(age - windup) * 0.5)));
+            event.setFOV(event.getFOV() * (1.0 + 0.055 * Math.exp(-(age - cinematic.windup) * 0.5)));
         }
     }
 
     @SubscribeEvent
     public static void render(RenderLevelStageEvent event) {
-        if (!active || event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) return;
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.level == null) return;
-        float age = minecraft.level.getGameTime() - started + event.getPartialTick();
-        if (age < 0 || age > windup + TAIL) return;
+        if (minecraft.level == null || CINEMATICS.isEmpty()) return;
 
-        Vec3 side = stableSide(direction);
-        Vec3 up = side.cross(direction).normalize();
+        long now = minecraft.level.getGameTime();
         try (VfxQuadBatch batch = VfxQuadBatch.begin(event)) {
-            if (age < windup) renderHush(batch, side, up, age / windup, age);
-            else renderRelease(batch, side, up, age - windup);
+            for (Cinematic cinematic : CINEMATICS.values()) {
+                float age = now - cinematic.started + event.getPartialTick();
+                if (age < 0 || age > cinematic.windup + TAIL) continue;
+                load(cinematic);
+                Vec3 side = stableSide(direction);
+                Vec3 up = side.cross(direction).normalize();
+                if (age < windup) renderHush(batch, side, up, age / windup, age);
+                else renderRelease(batch, side, up, age - windup);
+            }
         }
+    }
+
+    /** Freshest live cinematic — the screen/FOV follow the newest cast. */
+    private static Cinematic freshest(long now, float partialTick) {
+        Cinematic best = null;
+        float bestAge = Float.MAX_VALUE;
+        for (Cinematic cinematic : CINEMATICS.values()) {
+            float age = now - cinematic.started + partialTick;
+            if (age < 0 || age > cinematic.windup + TAIL) continue;
+            if (age < bestAge) {
+                bestAge = age;
+                best = cinematic;
+            }
+        }
+        return best;
     }
 
     private static void renderHush(VfxQuadBatch batch, Vec3 side, Vec3 up, float p, float age) {
